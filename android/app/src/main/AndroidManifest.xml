@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="fern_money"
+        android:label="fern"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
