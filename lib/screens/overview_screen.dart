@@ -20,6 +20,8 @@ class OverviewScreen extends StatefulWidget {
 class _OverviewScreenState extends State<OverviewScreen> {
   List<Transaction>? _txns;
   bool _refreshing = false;
+  List<Transaction>? _cachedTxns;
+  Map<String, double>? _cachedGroups;
 
   @override
   void initState() {
@@ -40,7 +42,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
 
   Future<void> _load() async {
     if (_txns == null) {
-      final cached = await widget.state.loadCachedTransactions(limit: 30);
+      final cached = await widget.state.loadCachedTransactions(limit: 200);
       if (mounted && _txns == null) {
         setState(() => _txns = cached);
       }
@@ -68,6 +70,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
   }
 
   Map<String, double> _spendByGroup(List<Transaction> txns) {
+    if (identical(_cachedTxns, txns)) return _cachedGroups!;
+    _cachedTxns = txns;
     final totals = <String, double>{};
     for (final tx in txns) {
       if (tx.amount >= 0) continue;
@@ -75,8 +79,12 @@ class _OverviewScreenState extends State<OverviewScreen> {
       totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
     }
     final entries = totals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return Map.fromEntries(entries.take(6));
+      ..sort((a, b) {
+        final byValue = b.value.compareTo(a.value);
+        return byValue != 0 ? byValue : a.key.compareTo(b.key);
+      });
+    _cachedGroups = Map.fromEntries(entries.take(6));
+    return _cachedGroups!;
   }
 
   @override
