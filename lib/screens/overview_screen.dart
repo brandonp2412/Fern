@@ -55,7 +55,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     final totals = <String, double>{};
     for (final tx in txns) {
       if (tx.amount >= 0) continue;
-      final group = tx.category?.groupName ?? 'Uncategorised';
+      final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
       totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
     }
     final entries = totals.entries.toList()
@@ -66,6 +66,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final masked = state.settings.hideBalances;
     return Scaffold(
       body: SafeArea(
         child: state.loading
@@ -78,14 +79,14 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       children: [
-                        _header(state),
+                        _header(context, state),
                         const SizedBox(height: 20),
-                        _balanceCard(state),
+                        _balanceCard(context, state),
                         const SectionHeader('Accounts'),
-                        _accountStrip(state.accounts),
+                        _accountStrip(state.visibleAccounts, masked),
                         if (_txns != null && _txns!.isNotEmpty) ...[
                           const SectionHeader('Spending this month'),
-                          _spendCard(_spendByGroup(_txns!)),
+                          _spendCard(context, _spendByGroup(_txns!)),
                           const SectionHeader('Recent activity'),
                           Card(
                             child: Padding(
@@ -98,8 +99,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
                                       accountName: state
                                           .accountById(tx.account)
                                           ?.name,
+                                      categoryGroupOverride:
+                                          state.categoryGroupFor(tx),
+                                      masked: masked,
                                       onTap: () => showTxnDetail(
-                                          context, widget.state.api, tx),
+                                          context, widget.state, tx),
                                     ),
                                 ],
                               ),
@@ -117,7 +121,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _header(AppState state) {
+  Widget _header(BuildContext context, AppState state) {
+    final fern = context.fern;
     final hour = DateTime.now().hour;
     final greeting =
         hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -130,7 +135,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(greeting,
-                    style: const TextStyle(color: Fern.slate, fontSize: 13)),
+                    style: TextStyle(color: fern.slate, fontSize: 13)),
                 const SizedBox(height: 2),
                 const Text(
                   'Fern',
@@ -145,44 +150,47 @@ class _OverviewScreenState extends State<OverviewScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Fern.mist,
+            decoration: BoxDecoration(
+              color: fern.mist,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.eco_outlined, color: Fern.green),
+            child: Icon(Icons.eco_outlined, color: fern.green),
           ),
         ],
       ),
     );
   }
 
-  Widget _balanceCard(AppState state) {
-    final assets = state.accounts
+  Widget _balanceCard(BuildContext context, AppState state) {
+    final fern = context.fern;
+    final masked = state.settings.hideBalances;
+    final visible = state.visibleAccounts;
+    final assets = visible
         .where((a) => !a.isDebt)
         .fold<num>(0, (s, a) => s + (a.displayBalance ?? 0));
-    final debt = state.accounts
+    final debt = visible
         .where((a) => a.isDebt)
         .fold<num>(0, (s, a) => s + (a.displayBalance ?? 0));
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Fern.deep, Fern.green, Fern.moss],
+          colors: [fern.deep, fern.green, fern.moss],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Net position',
-            style: TextStyle(color: Fern.sprout, fontSize: 13),
+            style: TextStyle(color: fern.sprout, fontSize: 13),
           ),
           const SizedBox(height: 6),
           Text(
-            money(state.totalBalance),
+            masked ? '••••' : money(state.totalBalance),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -193,13 +201,15 @@ class _OverviewScreenState extends State<OverviewScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _miniStat('Assets', assets, Fern.sprout),
+              _miniStat('Assets', assets, fern.sprout, masked),
               const SizedBox(width: 24),
-              _miniStat('Debt', debt.abs(), const Color(0xFFF2B8A0)),
+              if (state.settings.showDebt)
+                _miniStat(
+                    'Debt', debt.abs(), const Color(0xFFF2B8A0), masked),
               const Spacer(),
               Text(
-                '${state.accounts.length} accounts',
-                style: const TextStyle(color: Fern.sprout, fontSize: 12.5),
+                '${visible.length} accounts',
+                style: TextStyle(color: fern.sprout, fontSize: 12.5),
               ),
             ],
           ),
@@ -208,7 +218,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _miniStat(String label, num value, Color color) {
+  Widget _miniStat(String label, num value, Color color, bool masked) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,7 +226,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
             style: TextStyle(
                 color: color.withValues(alpha: 0.8), fontSize: 11.5)),
         Text(
-          money(value),
+          masked ? '••••' : money(value),
           style: TextStyle(
               color: color, fontSize: 15, fontWeight: FontWeight.w700),
         ),
@@ -224,7 +234,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _accountStrip(List<Account> accounts) {
+  Widget _accountStrip(List<Account> accounts, bool masked) {
     return SizedBox(
       height: 128,
       child: ListView.separated(
@@ -232,6 +242,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         itemCount: accounts.length,
         separatorBuilder: (_, i) => const SizedBox(width: 10),
         itemBuilder: (context, i) {
+          final fern = context.fern;
           final a = accounts[i];
           return Container(
             width: 190,
@@ -252,8 +263,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                       size: 30,
                     ),
                     const Spacer(),
-                    if (!a.isActive)
-                      const StatusChip('Inactive', Fern.clay),
+                    if (!a.isActive) StatusChip('Inactive', fern.clay),
                   ],
                 ),
                 const Spacer(),
@@ -261,9 +271,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
                   a.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12.5,
-                      color: Fern.slate,
+                      color: fern.slate,
                       fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 2),
@@ -271,6 +281,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                   a.displayBalance,
                   currency: a.balance?.currency ?? 'NZD',
                   size: 18,
+                  masked: masked,
                 ),
               ],
             ),
@@ -280,13 +291,14 @@ class _OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _spendCard(Map<String, double> groups) {
+  Widget _spendCard(BuildContext context, Map<String, double> groups) {
+    final fern = context.fern;
     if (groups.isEmpty) {
-      return const Card(
+      return Card(
         child: Padding(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: Text('No spending this month',
-              style: TextStyle(color: Fern.slate)),
+              style: TextStyle(color: fern.slate)),
         ),
       );
     }
@@ -317,8 +329,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         child: LinearProgressIndicator(
                           value: max == 0 ? 0 : e.value / max,
                           minHeight: 10,
-                          backgroundColor: Fern.mist,
-                          valueColor: const AlwaysStoppedAnimation(Fern.fern),
+                          backgroundColor: fern.mist,
+                          valueColor: AlwaysStoppedAnimation(fern.green),
                         ),
                       ),
                     ),

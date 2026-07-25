@@ -71,9 +71,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             ),
                             if (!c.newConnectionsEnabled) ...[
                               const SizedBox(height: 4),
-                              const Text('Unavailable',
+                              Text('Unavailable',
                                   style: TextStyle(
-                                      fontSize: 10, color: Fern.clay)),
+                                      fontSize: 10, color: context.fern.clay)),
                             ],
                           ],
                         ),

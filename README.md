@@ -3,8 +3,8 @@
 A beautiful personal-finance app for New Zealand banks, built on the
 [Akahu Enduring API](https://www.akahu.nz). Fern connects to your bank
 accounts through Akahu and gives you a full dashboard: balances, net
-position, spending breakdowns, searchable transaction history, payments,
-transfers, IRD tax payments, webhooks, and more.
+position, spending breakdowns, searchable transaction history, webhooks,
+and more.
 
 ## The Akahu API spec
 
@@ -52,7 +52,7 @@ Akahu uses two auth styles, both supported by the app:
 
 | Style      | Header                                            | Used for |
 |------------|---------------------------------------------------|----------|
-| User token | `Authorization: Bearer <user_token>` + `X-Akahu-Id: <app_token>` | All user-data endpoints (accounts, transactions, payments, …) |
+| User token | `Authorization: Bearer <user_token>` + `X-Akahu-Id: <app_token>` | All user-data endpoints (accounts, transactions, …) |
 | App auth   | `Authorization: Basic base64(app_token:app_secret)` + `X-Akahu-Id` | App-level endpoints (categories, connections, identity, keys, webhook events) |
 
 Get your tokens from [my.akahu.nz](https://my.akahu.nz) → Developers.
@@ -71,7 +71,6 @@ lib/
 │   ├── transaction.dart    Transaction, PendingTransaction, merchant, NZFCC
 │   │                       category + groups, meta (PCR fields, FX conversion,
 │   │                       card suffix, logo)
-│   ├── payment.dart        Payment, recipient, timeline events, status helpers
 │   ├── party.dart          Bank-held party profile (name, dob, IRD number,
 │   │                       phones, emails, addresses)
 │   ├── category.dart       NZFCC category tree
@@ -83,12 +82,12 @@ lib/
 │   └── akahu_api.dart      Full API client — every endpoint in the spec
 ├── state/
 │   └── app_state.dart      Session state (user, accounts, refresh orchestration)
-├── utils/format.dart       Money, dates, account/transaction/payment labels
+├── utils/format.dart       Money, dates, account/transaction labels
 ├── widgets/
 │   ├── common.dart         MoneyText, LogoAvatar, StatusChip, state views
 │   └── txn_tile.dart       Transaction row with merchant logos
 └── screens/
-    ├── home_shell.dart            Bottom-nav shell (5 tabs)
+    ├── home_shell.dart            Bottom-nav shell (4 tabs)
     ├── overview_screen.dart       Net position, account carousel, spending-by-
     │                              category bars, recent activity
     ├── accounts_screen.dart       All accounts + bank-data refresh
@@ -97,9 +96,6 @@ lib/
     ├── transactions_screen.dart   Search, direction + date-range filters,
     │                              day-grouped feed, cursor infinite scroll
     ├── txn_detail.dart            Enriched transaction sheet + issue reporting
-    ├── payments_screen.dart       Payment list, statuses, detail + cancel
-    ├── new_payment_sheet.dart     Pay someone / transfer between own accounts /
-    │                              IRD tax payment, with PCR fields
     ├── profile_screen.dart        User card, parties, name verification,
     │                              disconnect (token revocation)
     ├── webhooks_screen.dart       Subscribe / list / delete webhooks + events
@@ -124,11 +120,6 @@ Every endpoint in the Akahu Enduring API spec is implemented in
 - `GET /transactions`, `GET /transactions/{id}` — cross-account feed
 - `GET /transactions/pending` — all pending transactions
 - `POST /transactions/ids` — fetch transactions by ID list
-- `GET /payments`, `GET /payments/{id}` — payment list & detail
-- `POST /payments` — one-off payment (also used for transfers between your
-  own accounts by paying your own account number)
-- `POST /payments/ird` — IRD tax payments (tax number, type, period)
-- `PUT /payments/{id}/cancel` — cancel a `PENDING_APPROVAL` payment
 - `GET /parties` — bank-held customer profiles
 - `POST /refresh`, `POST /refresh/{id}` — request data refreshes
 - `POST /support/{transaction_id}` — report duplicates / enrichment issues
@@ -179,7 +170,7 @@ source ~/.zprofile   # provides AKAHU_ACCESS_TOKEN & AKAHU_APP_ID_TOKEN
 dart test test/integration_test.dart
 ```
 
-- Endpoints your token/app doesn't have scopes for (e.g. payments, parties,
+- Endpoints your token/app doesn't have scopes for (e.g. parties,
   name verification) are reported as **skips**, not failures.
 - App-auth endpoint tests run only when `AKAHU_APP_SECRET` is set.
 - A `model parsing` group validates JSON → model mapping offline.

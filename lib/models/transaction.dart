@@ -136,6 +136,55 @@ class Transaction {
 
   String get title => merchant?.name ?? (description.isNotEmpty ? description : type);
 
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      '_account': account,
+      '_connection': connection,
+      'date': date,
+      'description': description,
+      'amount': amount,
+      'balance': balance,
+      'type': type,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'merchant': merchant == null
+          ? null
+          : {
+              '_id': merchant!.id,
+              'name': merchant!.name,
+              'website': merchant!.website,
+            },
+      'category': category == null
+          ? null
+          : {
+              '_id': category!.id,
+              'name': category!.name,
+              'groups': {
+                for (final e in category!.groups.entries)
+                  e.key: {'_id': e.value.id, 'name': e.value.name},
+              },
+            },
+      'meta': meta == null
+          ? null
+          : {
+              'particulars': meta!.particulars,
+              'code': meta!.code,
+              'reference': meta!.reference,
+              'other_account': meta!.otherAccount,
+              'conversion': meta!.conversion == null
+                  ? null
+                  : {
+                      'amount': meta!.conversion!.amount,
+                      'currency': meta!.conversion!.currency,
+                      'rate': meta!.conversion!.rate,
+                    },
+              'card_suffix': meta!.cardSuffix,
+              'logo': meta!.logo,
+            },
+    };
+  }
+
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
       id: json['_id'] ?? '',

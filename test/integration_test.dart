@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:test/test.dart';
-import 'package:fern_money/models/account.dart';
-import 'package:fern_money/models/payment.dart';
-import 'package:fern_money/models/transaction.dart';
-import 'package:fern_money/models/user.dart';
-import 'package:fern_money/services/akahu_api.dart';
+import 'package:fern/models/account.dart';
+import 'package:fern/models/transaction.dart';
+import 'package:fern/models/user.dart';
+import 'package:fern/services/akahu_api.dart';
 
 void main() {
   final userToken = Platform.environment['AKAHU_ACCESS_TOKEN'];
@@ -135,15 +134,6 @@ void main() {
       expect(txns.map((t) => t.id).toSet(), ids.toSet());
     });
 
-    test('GET /payments returns list', () => scoped(() async {
-          final payments = await api.getPayments();
-          expect(payments, isA<List<Payment>>());
-          for (final p in payments) {
-            expect(p.id, startsWith('payment_'));
-            expect(p.status, isNotEmpty);
-          }
-        }));
-
     test('GET /parties returns parties', () => scoped(() async {
           final parties = await api.getParties();
           for (final p in parties) {
@@ -155,11 +145,6 @@ void main() {
           final res = await api.verifyName(familyName: 'Test');
           expect(res['success'], isTrue);
         }));
-
-    test('GET /webhooks returns subscriptions', () async {
-      final hooks = await api.getWebhooks();
-      expect(hooks, isA<List>());
-    });
 
     test('POST /refresh requests a refresh', () async {
       await api.refreshAll();
@@ -186,11 +171,6 @@ void main() {
         final connections = await api.getConnections();
         expect(connections, isNotEmpty);
         expect(connections.first.id, startsWith('conn_'));
-      });
-
-      test('GET /webhook-events returns events', () async {
-        final events = await api.getWebhookEvents();
-        expect(events, isA<List>());
       });
     });
   });
@@ -261,25 +241,6 @@ void main() {
       expect(tx.category!.groupName, 'Food & Drink');
       expect(tx.meta!.cardSuffix, '4506');
       expect(tx.meta!.conversion!.currency, 'USD');
-    });
-
-    test('Payment', () {
-      final payment = Payment.fromJson({
-        '_id': 'payment_1',
-        'from': 'acc_1',
-        'to': {'account_number': '12-1234-1234567-00', 'name': 'Sam'},
-        'amount': 9.5,
-        'sid': 'akp123',
-        'status': 'PENDING_APPROVAL',
-        'final': false,
-        'timeline': [
-          {'status': 'READY', 'time': '2026-07-25T00:00:00.000Z'},
-        ],
-        'created_at': '2026-07-25T00:00:00.000Z',
-      });
-      expect(payment.cancellable, isTrue);
-      expect(payment.to!.name, 'Sam');
-      expect(payment.timeline.single.status, 'READY');
     });
 
     test('User', () {

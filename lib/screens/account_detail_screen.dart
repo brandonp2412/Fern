@@ -129,9 +129,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Share this token with an app so they can pay this account.',
-                style: TextStyle(color: Fern.slate, fontSize: 13),
+                style: TextStyle(color: context.fern.slate, fontSize: 13),
               ),
               const SizedBox(height: 12),
               SelectableText(token,
@@ -167,7 +167,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 }
               },
               child:
-                  const Text('Revoke', style: TextStyle(color: Fern.clay)),
+                  Text('Revoke', style: TextStyle(color: context.fern.clay)),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -187,6 +187,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     final a = widget.account;
     return Scaffold(
       appBar: AppBar(
@@ -231,11 +232,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                       ],
                       SectionHeader('Transactions'),
                       if (_txns.isEmpty)
-                        const Card(
+                        Card(
                           child: Padding(
-                            padding: EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(20),
                             child: Text('No transactions found',
-                                style: TextStyle(color: Fern.slate)),
+                                style: TextStyle(color: fern.slate)),
                           ),
                         )
                       else
@@ -247,8 +248,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                                 for (final tx in _txns)
                                   TxnTile(
                                     tx: tx,
+                                    masked: widget.state.settings.hideBalances,
+                                    categoryGroupOverride: widget.state
+                                        .categoryGroupFor(tx),
                                     onTap: () => showTxnDetail(
-                                        context, widget.state.api, tx),
+                                        context, widget.state, tx),
                                   ),
                               ],
                             ),
@@ -260,12 +264,12 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                           child: Center(child: CircularProgressIndicator()),
                         )
                       else if (_cursor == null && _txns.isNotEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(20),
+                        Padding(
+                          padding: const EdgeInsets.all(20),
                           child: Center(
                             child: Text('End of history',
                                 style: TextStyle(
-                                    color: Fern.slate, fontSize: 12)),
+                                    color: fern.slate, fontSize: 12)),
                           ),
                         ),
                     ],
@@ -275,14 +279,16 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Widget _balanceHero(Account a) {
+    final fern = context.fern;
+    final masked = widget.state.settings.hideBalances;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Fern.deep, Fern.green],
+          colors: [fern.deep, fern.green],
         ),
         borderRadius: BorderRadius.circular(22),
       ),
@@ -302,21 +308,23 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(a.connection?.name ?? '',
-                        style: const TextStyle(
-                            color: Fern.sprout, fontSize: 12.5)),
+                        style:
+                            TextStyle(color: fern.sprout, fontSize: 12.5)),
                     Text(accountTypeLabel(a.type),
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 12)),
                   ],
                 ),
               ),
-              if (!a.isActive) const StatusChip('Inactive', Fern.clay),
+              if (!a.isActive) StatusChip('Inactive', fern.clay),
             ],
           ),
           const SizedBox(height: 18),
           Text(
-            money(a.displayBalance,
-                currency: a.balance?.currency ?? 'NZD'),
+            masked
+                ? '••••'
+                : money(a.displayBalance,
+                    currency: a.balance?.currency ?? 'NZD'),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 32,
@@ -329,17 +337,20 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             spacing: 14,
             children: [
               if (a.balance?.available != null)
-                Text('${money(a.balance!.available)} available',
-                    style:
-                        const TextStyle(color: Fern.sprout, fontSize: 12.5)),
+                Text(
+                    masked
+                        ? '•••• available'
+                        : '${money(a.balance!.available)} available',
+                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
               if (a.balance?.limit != null)
-                Text('${money(a.balance!.limit)} limit',
-                    style:
-                        const TextStyle(color: Fern.sprout, fontSize: 12.5)),
+                Text(
+                    masked
+                        ? '•••• limit'
+                        : '${money(a.balance!.limit)} limit',
+                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
               if (a.refreshed?.balance != null)
                 Text('Updated ${relativeDate(a.refreshed!.balance)}',
-                    style:
-                        const TextStyle(color: Fern.sprout, fontSize: 12.5)),
+                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
             ],
           ),
           if (a.formattedAccount != null) ...[
@@ -353,6 +364,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Widget _pendingRow(PendingTransaction p) {
+    final fern = context.fern;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
@@ -379,12 +391,13 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 ),
                 Text(
                   '${relativeDate(p.date)} · pending',
-                  style: const TextStyle(fontSize: 12, color: Fern.slate),
+                  style: TextStyle(fontSize: 12, color: fern.slate),
                 ),
               ],
             ),
           ),
-          AmountText(p.amount),
+          AmountText(p.amount,
+              masked: widget.state.settings.hideBalances),
         ],
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../theme.dart';
 
 final _money = NumberFormat('#,##0.00');
 
@@ -73,26 +72,6 @@ IconData accountTypeIcon(String type) => switch (type.toUpperCase()) {
       'REWARDS' => Icons.card_giftcard,
       'WALLET' => Icons.account_balance_wallet_outlined,
       _ => Icons.account_balance_outlined,
-    };
-
-String paymentStatusLabel(String status) => switch (status) {
-      'READY' => 'Ready',
-      'PENDING_APPROVAL' => 'Needs approval',
-      'SENT' => 'Sent',
-      'PAUSED' => 'Paused',
-      'DECLINED' => 'Declined',
-      'CANCELLED' => 'Cancelled',
-      'ERROR' => 'Error',
-      _ => status,
-    };
-
-Color paymentStatusColor(String status) => switch (status) {
-      'SENT' => Fern.green,
-      'READY' => Fern.moss,
-      'PENDING_APPROVAL' => const Color(0xFFB8860B),
-      'PAUSED' => Fern.slate,
-      'DECLINED' || 'CANCELLED' || 'ERROR' => Fern.clay,
-      _ => Fern.slate,
     };
 
 String txTypeLabel(String type) => switch (type) {

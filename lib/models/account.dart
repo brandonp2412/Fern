@@ -104,6 +104,42 @@ class Account {
     return isDebt && v > 0 ? -v : v;
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'status': status,
+      'type': type,
+      'attributes': attributes,
+      'formatted_account': formattedAccount,
+      'connection': connection == null
+          ? null
+          : {
+              '_id': connection!.id,
+              'name': connection!.name,
+              'logo': connection!.logo,
+              'connection_type': connection!.connectionType,
+            },
+      'balance': balance == null
+          ? null
+          : {
+              'currency': balance!.currency,
+              'current': balance!.current,
+              'available': balance!.available,
+              'limit': balance!.limit,
+              'overdrawn': balance!.overdrawn,
+            },
+      'meta': holder == null ? null : {'holder': holder},
+      'refreshed': refreshed == null
+          ? null
+          : {
+              'balance': refreshed!.balance,
+              'meta': refreshed!.meta,
+              'transactions': refreshed!.transactions,
+            },
+    };
+  }
+
   factory Account.fromJson(Map<String, dynamic> json) {
     final meta = json['meta'];
     return Account(

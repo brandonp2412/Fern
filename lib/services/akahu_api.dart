@@ -5,10 +5,8 @@ import '../models/category.dart';
 import '../models/connection.dart';
 import '../models/page.dart';
 import '../models/party.dart';
-import '../models/payment.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
-import '../models/webhook.dart';
 
 class AkahuApi {
   static const _baseUrl = 'https://api.akahu.io/v1';
@@ -71,9 +69,6 @@ class AkahuApi {
   Future<Map<String, dynamic>> _post(String path,
           {Object? body, bool noAuth = false}) =>
       _request('POST', path, body: body, noAuth: noAuth);
-
-  Future<Map<String, dynamic>> _put(String path, {Object? body}) =>
-      _request('PUT', path, body: body);
 
   Future<Map<String, dynamic>> _delete(String path, {bool appAuth = false}) =>
       _request('DELETE', path, appAuth: appAuth);
@@ -176,78 +171,6 @@ class AkahuApi {
         .toList();
   }
 
-  Future<List<Payment>> getPayments({String? start, String? end}) async {
-    final data = await _get('/payments', params: _range(start, end));
-    return (data['items'] as List<dynamic>)
-        .map((e) => Payment.fromJson(e))
-        .toList();
-  }
-
-  Future<Payment> getPayment(String id) async =>
-      Payment.fromJson((await _get('/payments/$id'))['item']);
-
-  Future<Payment> createPayment({
-    required String from,
-    required String toAccountNumber,
-    String? toName,
-    required double amount,
-    String? sourceCode,
-    String? sourceReference,
-    String? destParticulars,
-    String? destCode,
-    String? destReference,
-  }) async {
-    final body = {
-      'from': from,
-      'to': {
-        'account_number': toAccountNumber,
-        if (toName != null && toName.isNotEmpty) 'name': toName,
-      },
-      'amount': amount,
-      if (sourceCode != null ||
-          sourceReference != null ||
-          destParticulars != null ||
-          destCode != null ||
-          destReference != null)
-        'meta': {
-          if (sourceCode != null || sourceReference != null)
-            'source': {
-              if (sourceCode != null) 'code': sourceCode,
-              if (sourceReference != null) 'reference': sourceReference,
-            },
-          if (destParticulars != null || destCode != null || destReference != null)
-            'destination': {
-              if (destParticulars != null) 'particulars': destParticulars,
-              if (destCode != null) 'code': destCode,
-              if (destReference != null) 'reference': destReference,
-            },
-        },
-    };
-    return Payment.fromJson((await _post('/payments', body: body))['item']);
-  }
-
-  Future<Payment> createIrdPayment({
-    required String from,
-    required double amount,
-    required String taxNumber,
-    required String taxType,
-    String? taxPeriod,
-  }) async {
-    final body = {
-      'from': from,
-      'amount': amount,
-      'meta': {
-        'tax_number': taxNumber,
-        'tax_type': taxType,
-        if (taxPeriod != null && taxPeriod.isNotEmpty) 'tax_period': taxPeriod,
-      },
-    };
-    return Payment.fromJson((await _post('/payments/ird', body: body))['item']);
-  }
-
-  Future<Payment> cancelPayment(String id) async =>
-      Payment.fromJson((await _put('/payments/$id/cancel'))['item']);
-
   Future<List<Party>> getParties() async {
     final data = await _get('/parties');
     return (data['items'] as List<dynamic>)
@@ -304,23 +227,6 @@ class AkahuApi {
         if (initials != null && initials.isNotEmpty) 'initials': initials,
       });
 
-  Future<List<Webhook>> getWebhooks() async {
-    final data = await _get('/webhooks');
-    return (data['items'] as List<dynamic>)
-        .map((e) => Webhook.fromJson(e))
-        .toList();
-  }
-
-  Future<Webhook> createWebhook(String webhookType, {String? state}) async {
-    final data = await _post('/webhooks', body: {
-      'webhook_type': webhookType,
-      if (state != null && state.isNotEmpty) 'state': state,
-    });
-    return Webhook.fromJson(data['item']);
-  }
-
-  Future<void> deleteWebhook(String id) => _delete('/webhooks/$id').then((_) {});
-
   Future<List<NzfccCategory>> getCategories() async {
     final data = await _get('/categories', appAuth: true);
     return (data['items'] as List<dynamic>)
@@ -346,21 +252,6 @@ class AkahuApi {
 
   Future<Map<String, dynamic>> getKey(String id) =>
       _get('/keys/$id', appAuth: true);
-
-  Future<List<WebhookEvent>> getWebhookEvents({
-    String? status,
-    String? start,
-    String? end,
-  }) async {
-    final data = await _get('/webhook-events', appAuth: true, params: {
-      if (status != null) 'status': status,
-      if (start != null) 'start': start,
-      if (end != null) 'end': end,
-    });
-    return (data['items'] as List<dynamic>)
-        .map((e) => WebhookEvent.fromJson(e))
-        .toList();
-  }
 
   static Future<Map<String, dynamic>> exchangeToken({
     required String code,

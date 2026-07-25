@@ -1,30 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_shell.dart';
 import 'services/akahu_api.dart';
+import 'services/secure_store.dart';
+import 'state/app_settings.dart';
 import 'state/app_state.dart';
 import 'theme.dart';
 
 void main() {
-  runApp(const FernMoneyApp());
+  runApp(const FernApp());
 }
 
-class FernMoneyApp extends StatelessWidget {
-  const FernMoneyApp({super.key});
+class FernApp extends StatefulWidget {
+  const FernApp({super.key});
+
+  @override
+  State<FernApp> createState() => _FernAppState();
+}
+
+class _FernAppState extends State<FernApp> {
+  final _settings = AppSettings();
+
+  @override
+  void initState() {
+    super.initState();
+    _settings.addListener(_onSettingsChanged);
+    _settings.load();
+  }
+
+  void _onSettingsChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _settings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Fern',
       debugShowCheckedModeBanner: false,
-      theme: Fern.theme(),
-      home: const SetupScreen(),
+      themeMode: _settings.themeMode,
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: _settings.seedColor),
+      darkTheme: Fern.buildTheme(brightness: Brightness.dark, seed: _settings.seedColor),
+      home: SetupScreen(settings: _settings),
     );
   }
 }
 
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key});
+  final AppSettings settings;
+
+  const SetupScreen({super.key, required this.settings});
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -49,15 +76,14 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<void> _restore() async {
-    final prefs = await SharedPreferences.getInstance();
     if (_userCtrl.text.isEmpty) {
-      _userCtrl.text = prefs.getString('user_token') ?? '';
+      _userCtrl.text = await SecureStore.userToken ?? '';
     }
     if (_appCtrl.text.isEmpty) {
-      _appCtrl.text = prefs.getString('app_token') ?? '';
+      _appCtrl.text = await SecureStore.appToken ?? '';
     }
     if (_secretCtrl.text.isEmpty) {
-      _secretCtrl.text = prefs.getString('app_secret') ?? '';
+      _secretCtrl.text = await SecureStore.appSecret ?? '';
     }
     if (mounted && _userCtrl.text.isNotEmpty && _appCtrl.text.isNotEmpty) {
       _connect();
@@ -85,12 +111,13 @@ class _SetupScreenState extends State<SetupScreen> {
     );
     try {
       await api.getMe();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_token', _userCtrl.text.trim());
-      await prefs.setString('app_token', _appCtrl.text.trim());
-      await prefs.setString('app_secret', _secretCtrl.text.trim());
+      await SecureStore.saveCredentials(
+        userToken: _userCtrl.text.trim(),
+        appToken: _appCtrl.text.trim(),
+        appSecret: _secretCtrl.text.trim(),
+      );
       if (!mounted) return;
-      final state = AppState(api);
+      final state = AppState(api, widget.settings);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => HomeShell(state: state)),
       );
@@ -104,140 +131,148 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Fern.deep, Fern.green, Fern.cream],
-            stops: [0, 0.42, 0.42],
+            colors: [fern.deep, fern.green, fern.cream],
+            stops: const [0, 0.42, 0.42],
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.eco_outlined,
-                          size: 56, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Fern',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const Text(
-                      'Your money, beautifully organised',
-                      style: TextStyle(color: Fern.sprout, fontSize: 14),
-                    ),
-                    const SizedBox(height: 32),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Text(
-                                'Connect to Akahu',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _userCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'User access token',
-                                  hintText: 'user_token_…',
-                                  prefixIcon:
-                                      Icon(Icons.person_outline, size: 20),
-                                ),
-                                validator: (v) =>
-                                    v == null || v.trim().isEmpty
-                                        ? 'Required'
-                                        : null,
-                              ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _appCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'App ID token',
-                                  hintText: 'app_token_…',
-                                  prefixIcon:
-                                      Icon(Icons.apps_outlined, size: 20),
-                                ),
-                                validator: (v) =>
-                                    v == null || v.trim().isEmpty
-                                        ? 'Required'
-                                        : null,
-                              ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _secretCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'App secret (optional)',
-                                  helperText:
-                                      'Unlocks categories, connections & identity',
-                                  prefixIcon:
-                                      Icon(Icons.key_outlined, size: 20),
-                                ),
-                                obscureText: true,
-                              ),
-                              if (_error != null) ...[
-                                const SizedBox(height: 12),
-                                Text(
-                                  _error!,
-                                  style: const TextStyle(
-                                      color: Fern.clay, fontSize: 12.5),
-                                ),
-                              ],
-                              const SizedBox(height: 20),
-                              FilledButton(
-                                onPressed: _connecting ? null : _connect,
-                                child: _connecting
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Text('Connect'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Get your tokens at my.akahu.nz',
-                      style: TextStyle(color: Fern.slate, fontSize: 12),
-                    ),
-                  ],
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.eco_outlined, size: 56, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Fern',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1,
                 ),
               ),
-            ),
+              Text(
+                'Your money, beautifully organised',
+                style: TextStyle(color: fern.sprout, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Column(
+                        children: [
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Text(
+                                      'Connect to Akahu',
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextFormField(
+                                      controller: _userCtrl,
+                                      decoration: const InputDecoration(
+                                        labelText: 'User access token',
+                                        hintText: 'user_token_…',
+                                        prefixIcon:
+                                            Icon(Icons.person_outline, size: 20),
+                                      ),
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                              ? 'Required'
+                                              : null,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextFormField(
+                                      controller: _appCtrl,
+                                      decoration: const InputDecoration(
+                                        labelText: 'App ID token',
+                                        hintText: 'app_token_…',
+                                        prefixIcon:
+                                            Icon(Icons.apps_outlined, size: 20),
+                                      ),
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                              ? 'Required'
+                                              : null,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextFormField(
+                                      controller: _secretCtrl,
+                                      decoration: const InputDecoration(
+                                        labelText: 'App secret (optional)',
+                                        helperText:
+                                            'Unlocks categories, connections & identity',
+                                        prefixIcon:
+                                            Icon(Icons.key_outlined, size: 20),
+                                      ),
+                                      obscureText: true,
+                                    ),
+                                    if (_error != null) ...[
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _error!,
+                                        style: TextStyle(
+                                            color: fern.clay, fontSize: 12.5),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 20),
+                                    FilledButton(
+                                      onPressed: _connecting ? null : _connect,
+                                      child: _connecting
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text('Connect'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Get your tokens at my.akahu.nz',
+                            style: TextStyle(color: fern.slate, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

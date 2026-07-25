@@ -76,6 +76,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: groups.length,
       itemBuilder: (context, i) {
+        final fern = context.fern;
         final group = groups[i];
         final cats = byGroup[group]!..sort((a, b) => a.name.compareTo(b.name));
         return Column(
@@ -93,18 +94,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Fern.mist,
+                          color: fern.mist,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.label_outline,
-                            size: 16, color: Fern.green),
+                        child: Icon(Icons.label_outline,
+                            size: 16, color: fern.green),
                       ),
                       title: Text(cats[j].name,
                           style: const TextStyle(
                               fontSize: 13.5, fontWeight: FontWeight.w600)),
                       subtitle: Text(cats[j].id,
-                          style: const TextStyle(
-                              fontSize: 10.5, color: Fern.slate)),
+                          style: TextStyle(
+                              fontSize: 10.5, color: fern.slate)),
                     ),
                   ],
                 ],

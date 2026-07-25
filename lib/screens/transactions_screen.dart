@@ -191,7 +191,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         selected: selected,
         onSelected: (_) => onTap(),
         labelStyle: TextStyle(
-          color: selected ? Colors.white : Fern.ink,
+          color: selected ? Colors.white : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -226,9 +226,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   )
                 : const SizedBox(height: 40);
           }
+          final fern = context.fern;
           final key = keys[i];
           final dayTxns = grouped[key]!;
           final net = dayTxns.fold<num>(0, (s, t) => s + t.amount);
+          final masked = widget.state.settings.hideBalances;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -238,18 +240,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   children: [
                     Text(
                       relativeDate(key),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Fern.slate),
+                          color: fern.slate),
                     ),
                     const Spacer(),
                     Text(
-                      money(net, sign: true),
+                      masked ? '••••' : money(net, sign: true),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: net >= 0 ? Fern.green : Fern.slate,
+                        color: net >= 0 ? fern.green : fern.slate,
                       ),
                     ),
                   ],
@@ -265,8 +267,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           tx: tx,
                           accountName:
                               widget.state.accountById(tx.account)?.name,
+                          categoryGroupOverride:
+                              widget.state.categoryGroupFor(tx),
+                          masked: masked,
                           onTap: () =>
-                              showTxnDetail(context, widget.state.api, tx),
+                              showTxnDetail(context, widget.state, tx),
                         ),
                     ],
                   ),

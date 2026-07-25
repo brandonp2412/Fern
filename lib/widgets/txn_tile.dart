@@ -8,15 +8,26 @@ class TxnTile extends StatelessWidget {
   final Transaction tx;
   final VoidCallback? onTap;
   final String? accountName;
+  final String? categoryGroupOverride;
+  final bool masked;
 
-  const TxnTile({super.key, required this.tx, this.onTap, this.accountName});
+  const TxnTile({
+    super.key,
+    required this.tx,
+    this.onTap,
+    this.accountName,
+    this.categoryGroupOverride,
+    this.masked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
+    final group = categoryGroupOverride ?? tx.category?.groupName;
     final subtitle = <String>[
       if (accountName != null) accountName!,
       relativeDate(tx.date),
-      if (tx.category?.groupName != null) tx.category!.groupName!,
+      if (group != null) group,
     ].join(' · ');
 
     return InkWell(
@@ -40,10 +51,10 @@ class TxnTile extends StatelessWidget {
                     tx.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
-                      color: Fern.ink,
+                      color: fern.ink,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -51,13 +62,13 @@ class TxnTile extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Fern.slate),
+                    style: TextStyle(fontSize: 12, color: fern.slate),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            AmountText(tx.amount),
+            AmountText(tx.amount, masked: masked),
           ],
         ),
       ),

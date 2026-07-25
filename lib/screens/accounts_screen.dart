@@ -50,6 +50,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final accounts = state.visibleAccounts;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Accounts'),
@@ -72,7 +73,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       ),
       body: state.loading
           ? const Center(child: CircularProgressIndicator())
-          : state.accounts.isEmpty
+          : accounts.isEmpty
               ? const EmptyState(
                   icon: Icons.account_balance_outlined,
                   title: 'No accounts',
@@ -81,9 +82,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   onRefresh: () => state.reloadAccounts(),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: state.accounts.length,
+                    itemCount: accounts.length,
                     itemBuilder: (context, i) =>
-                        _AccountCard(account: state.accounts[i], state: state),
+                        _AccountCard(account: accounts[i], state: state),
                   ),
                 ),
     );
@@ -98,6 +99,8 @@ class _AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
+    final masked = state.settings.hideBalances;
     final a = account;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -138,8 +141,7 @@ class _AccountCard extends StatelessWidget {
                               if (a.formattedAccount != null)
                                 a.formattedAccount!,
                             ].where((e) => e.isNotEmpty).join(' · '),
-                            style: const TextStyle(
-                                fontSize: 12, color: Fern.slate),
+                            style: TextStyle(fontSize: 12, color: fern.slate),
                           ),
                         ],
                       ),
@@ -151,16 +153,18 @@ class _AccountCard extends StatelessWidget {
                           a.displayBalance,
                           currency: a.balance?.currency ?? 'NZD',
                           size: 17,
+                          masked: masked,
                           color: (a.displayBalance ?? 0) < 0
-                              ? Fern.clay
-                              : Fern.ink,
+                              ? fern.clay
+                              : fern.ink,
                         ),
                         if (a.balance?.available != null &&
                             a.balance!.available != a.balance!.current)
                           Text(
-                            '${money(a.balance!.available)} available',
-                            style: const TextStyle(
-                                fontSize: 11, color: Fern.slate),
+                            masked
+                                ? '•••• available'
+                                : '${money(a.balance!.available)} available',
+                            style: TextStyle(fontSize: 11, color: fern.slate),
                           ),
                       ],
                     ),
@@ -171,10 +175,10 @@ class _AccountCard extends StatelessWidget {
                   Row(
                     children: [
                       if (!a.isActive)
-                        const StatusChip('Connection inactive', Fern.clay),
+                        StatusChip('Connection inactive', fern.clay),
                       if (a.balance?.overdrawn == true) ...[
                         const SizedBox(width: 6),
-                        const StatusChip('Overdrawn', Fern.clay),
+                        StatusChip('Overdrawn', fern.clay),
                       ],
                     ],
                   ),

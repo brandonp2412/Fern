@@ -9,6 +9,7 @@ class MoneyText extends StatelessWidget {
   final FontWeight weight;
   final Color? color;
   final bool signed;
+  final bool masked;
 
   const MoneyText(
     this.value, {
@@ -18,16 +19,17 @@ class MoneyText extends StatelessWidget {
     this.weight = FontWeight.w700,
     this.color,
     this.signed = false,
+    this.masked = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      money(value, currency: currency, sign: signed),
+      masked ? '••••' : money(value, currency: currency, sign: signed),
       style: TextStyle(
         fontSize: size,
         fontWeight: weight,
-        color: color ?? Fern.ink,
+        color: color ?? context.fern.ink,
         letterSpacing: -0.3,
         fontFeatures: const [],
       ),
@@ -49,11 +51,12 @@ class LogoAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     final bg = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Fern.mist,
+        color: fern.mist,
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
       clipBehavior: Clip.antiAlias,
@@ -63,17 +66,17 @@ class LogoAvatar extends StatelessWidget {
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorBuilder: (_, e, s) => _icon(),
+              errorBuilder: (_, e, s) => _icon(fern),
               loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : _icon(),
+                  progress == null ? child : _icon(fern),
             )
-          : _icon(),
+          : _icon(fern),
     );
     return bg;
   }
 
-  Widget _icon() => Center(
-        child: Icon(fallback, color: Fern.green, size: size * 0.55),
+  Widget _icon(FernPalette fern) => Center(
+        child: Icon(fallback, color: fern.green, size: size * 0.55),
       );
 }
 
@@ -119,11 +122,11 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
-                color: Fern.ink,
+                color: context.fern.ink,
               ),
             ),
           ),
@@ -148,6 +151,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -156,11 +160,11 @@ class EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Fern.mist,
+              decoration: BoxDecoration(
+                color: fern.mist,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Fern.green, size: 36),
+              child: Icon(icon, color: fern.green, size: 36),
             ),
             const SizedBox(height: 16),
             Text(title,
@@ -171,7 +175,7 @@ class EmptyState extends StatelessWidget {
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Fern.slate, fontSize: 13.5),
+                style: TextStyle(color: fern.slate, fontSize: 13.5),
               ),
             ],
           ],
@@ -189,18 +193,19 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, color: Fern.clay, size: 40),
+            Icon(Icons.cloud_off_outlined, color: fern.clay, size: 40),
             const SizedBox(height: 12),
             Text(
               error.toString(),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Fern.slate, fontSize: 13),
+              style: TextStyle(color: fern.slate, fontSize: 13),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
@@ -218,18 +223,20 @@ class ErrorState extends StatelessWidget {
 class AmountText extends StatelessWidget {
   final num value;
   final double size;
+  final bool masked;
 
-  const AmountText(this.value, {super.key, this.size = 14});
+  const AmountText(this.value, {super.key, this.size = 14, this.masked = false});
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
     final positive = value > 0;
     return Text(
-      money(value, sign: true),
+      masked ? '••••' : money(value, sign: true),
       style: TextStyle(
         fontSize: size,
         fontWeight: FontWeight.w600,
-        color: positive ? Fern.green : Fern.ink,
+        color: positive ? fern.green : fern.ink,
       ),
     );
   }

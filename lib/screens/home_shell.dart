@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import 'accounts_screen.dart';
 import 'overview_screen.dart';
-import 'payments_screen.dart';
 import 'profile_screen.dart';
 import 'transactions_screen.dart';
 
@@ -17,11 +16,29 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
+  late final PageController _pageController = PageController(initialPage: _tab);
 
   @override
   void initState() {
     super.initState();
     widget.state.bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _selectTab(int i) {
+    setState(() => _tab = i);
+    if (widget.state.settings.swipeTabs && _pageController.hasClients) {
+      _pageController.animateToPage(
+        i,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -31,14 +48,19 @@ class _HomeShellState extends State<HomeShell> {
       OverviewScreen(state: state),
       AccountsScreen(state: state),
       TransactionsScreen(state: state),
-      PaymentsScreen(state: state),
       ProfileScreen(state: state),
     ];
     return Scaffold(
-      body: IndexedStack(index: _tab, children: screens),
+      body: state.settings.swipeTabs
+          ? PageView(
+              controller: _pageController,
+              onPageChanged: (i) => setState(() => _tab = i),
+              children: screens,
+            )
+          : IndexedStack(index: _tab, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
+        onDestinationSelected: _selectTab,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
@@ -52,10 +74,6 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.receipt_long_outlined),
               selectedIcon: Icon(Icons.receipt_long),
               label: 'Activity'),
-          NavigationDestination(
-              icon: Icon(Icons.payments_outlined),
-              selectedIcon: Icon(Icons.payments),
-              label: 'Payments'),
           NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
