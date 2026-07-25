@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
 import '../services/akahu_api.dart';
+import '../services/auto_categorizer.dart';
 import 'app_settings.dart';
 
 class AppState extends ChangeNotifier {
@@ -106,12 +107,24 @@ class AppState extends ChangeNotifier {
   }
 
   /// The category name to display for a transaction, applying any manual
-  /// override the user has set (since Akahu has no direct write endpoint).
+  /// override the user has set (since Akahu has no direct write endpoint),
+  /// then falling back to a local heuristic guess if Akahu left it blank.
   String? categoryNameFor(Transaction t) =>
-      _categoryOverrides[t.id]?.categoryName ?? t.category?.name;
+      _categoryOverrides[t.id]?.categoryName ??
+      t.category?.name ??
+      AutoCategorizer.categorize(t)?.name;
 
-  String? categoryGroupFor(Transaction t) =>
-      _categoryOverrides.containsKey(t.id) ? null : t.category?.groupName;
+  String? categoryGroupFor(Transaction t) {
+    if (_categoryOverrides.containsKey(t.id)) return null;
+    return t.category?.groupName ?? AutoCategorizer.categorize(t)?.group;
+  }
+
+  /// True when the displayed category is fern's own guess rather than one
+  /// sourced from Akahu or confirmed by the user.
+  bool isAutoCategory(Transaction t) =>
+      !_categoryOverrides.containsKey(t.id) &&
+      t.category == null &&
+      AutoCategorizer.categorize(t) != null;
 
   bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
 

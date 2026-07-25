@@ -91,6 +91,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
     final categoryName = state.categoryNameFor(tx);
     final categoryGroup = state.categoryGroupFor(tx);
     final overridden = state.hasOverride(tx.id);
+    final autoGuess = state.isAutoCategory(tx);
     return DraggableScrollableSheet(
       initialChildSize: 0.62,
       maxChildSize: 0.9,
@@ -170,7 +171,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                   _row(Icons.language, 'Website', tx.merchant!.website!),
                 if (categoryName != null)
                   _row(Icons.category_outlined, 'Category',
-                      '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden ? ' (edited)' : ''}'),
+                      '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden ? ' (edited)' : autoGuess ? ' (auto)' : ''}'),
                 if (meta?.particulars != null)
                   _row(Icons.tag, 'Particulars', meta!.particulars!),
                 if (meta?.code != null)
