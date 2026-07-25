@@ -1,17 +1,185 @@
-# fern_money
+# Fern
 
-A new Flutter project.
+A beautiful personal-finance app for New Zealand banks, built on the
+[Akahu Enduring API](https://www.akahu.nz). Fern connects to your bank
+accounts through Akahu and gives you a full dashboard: balances, net
+position, spending breakdowns, searchable transaction history, payments,
+transfers, IRD tax payments, webhooks, and more.
 
-## Getting Started
+## The Akahu API spec
 
-This project is a starting point for a Flutter application.
+The machine-readable OpenAPI 3.1 spec that this app is built against lives
+in [`akahu-openapi.json`](./akahu-openapi.json) at the repo root.
 
-A few resources to get you started if this is your first Flutter project:
+### How it was obtained
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+The spec was downloaded directly from ReadMe's public API registry (the
+service that hosts Akahu's developer docs):
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```
+curl -sL https://dash.readme.com/api/v1/api-registry/1myv13mqkadg46 \
+  -o akahu-openapi.json
+```
+
+That endpoint returns the raw OpenAPI 3.1.0 document
+(`"title": "Akahu Enduring API"`, server `https://api.akahu.io/v1`)
+describing every endpoint, parameter, request body, and schema.
+
+### If that link stops working
+
+The `dash.readme.com/api/v1/api-registry/<id>` URL is an undocumented,
+volatile ReadMe-internal endpoint — the ID changes whenever Akahu
+re-publishes their docs. If it 404s or stops resolving:
+
+1. **Browse to Akahu's API reference** at
+   [developers.akahu.nz](https://developers.akahu.nz) (or
+   [akahu.docs.apiary.io](https://developers.akahu.nz/reference) — their
+   docs are hosted on ReadMe).
+2. Open your browser's devtools **Network** tab, reload the API reference
+   page, and look for a request to
+   `https://dash.readme.com/api/v1/api-registry/<some-id>` — that response
+   is the current OpenAPI JSON. Save it over `akahu-openapi.json`.
+3. Alternatively, ReadMe exposes a "Download OpenAPI" option in some docs
+   sites' reference section menus.
+
+The human-readable docs (guides, endpoint descriptions) are always at
+https://developers.akahu.nz — the endpoints themselves are stable:
+`https://api.akahu.io/v1`.
+
+## Authentication
+
+Akahu uses two auth styles, both supported by the app:
+
+| Style      | Header                                            | Used for |
+|------------|---------------------------------------------------|----------|
+| User token | `Authorization: Bearer <user_token>` + `X-Akahu-Id: <app_token>` | All user-data endpoints (accounts, transactions, payments, …) |
+| App auth   | `Authorization: Basic base64(app_token:app_secret)` + `X-Akahu-Id` | App-level endpoints (categories, connections, identity, keys, webhook events) |
+
+Get your tokens from [my.akahu.nz](https://my.akahu.nz) → Developers.
+The app secret is optional in Fern — without it, the categories,
+connections, identity and webhook-event features are hidden.
+
+## Project structure
+
+```
+akahu-openapi.json          The OpenAPI 3.1 spec this app was built from (see above)
+lib/
+├── main.dart               App entry + fern-themed Akahu connect screen
+├── theme.dart              "Fern" design system (palette + Material 3 theme)
+├── models/                 Typed models mirroring the spec's schemas
+│   ├── account.dart        Account, balance, connection info, refresh stamps
+│   ├── transaction.dart    Transaction, PendingTransaction, merchant, NZFCC
+│   │                       category + groups, meta (PCR fields, FX conversion,
+│   │                       card suffix, logo)
+│   ├── payment.dart        Payment, recipient, timeline events, status helpers
+│   ├── party.dart          Bank-held party profile (name, dob, IRD number,
+│   │                       phones, emails, addresses)
+│   ├── category.dart       NZFCC category tree
+│   ├── connection.dart     Financial institution connections
+│   ├── webhook.dart        Webhook subscriptions + delivery events
+│   ├── user.dart           The /me user
+│   └── page.dart           Cursor-paginated result wrapper
+├── services/
+│   └── akahu_api.dart      Full API client — every endpoint in the spec
+├── state/
+│   └── app_state.dart      Session state (user, accounts, refresh orchestration)
+├── utils/format.dart       Money, dates, account/transaction/payment labels
+├── widgets/
+│   ├── common.dart         MoneyText, LogoAvatar, StatusChip, state views
+│   └── txn_tile.dart       Transaction row with merchant logos
+└── screens/
+    ├── home_shell.dart            Bottom-nav shell (5 tabs)
+    ├── overview_screen.dart       Net position, account carousel, spending-by-
+    │                              category bars, recent activity
+    ├── accounts_screen.dart       All accounts + bank-data refresh
+    ├── account_detail_screen.dart Balance hero, pending txns, paginated history,
+    │                              account refresh, verification-token management
+    ├── transactions_screen.dart   Search, direction + date-range filters,
+    │                              day-grouped feed, cursor infinite scroll
+    ├── txn_detail.dart            Enriched transaction sheet + issue reporting
+    ├── payments_screen.dart       Payment list, statuses, detail + cancel
+    ├── new_payment_sheet.dart     Pay someone / transfer between own accounts /
+    │                              IRD tax payment, with PCR fields
+    ├── profile_screen.dart        User card, parties, name verification,
+    │                              disconnect (token revocation)
+    ├── webhooks_screen.dart       Subscribe / list / delete webhooks + events
+    ├── categories_screen.dart     NZFCC category browser (app auth)
+    └── connections_screen.dart    Institution grid (app auth)
+test/
+└── integration_test.dart   Live end-to-end suite hitting the real API
+```
+
+## API coverage
+
+Every endpoint in the Akahu Enduring API spec is implemented in
+`lib/services/akahu_api.dart`:
+
+**User-token endpoints**
+
+- `GET /me` — profile & access info
+- `GET /accounts`, `GET /accounts/{id}` — account list & detail
+- `GET /accounts/{id}/transactions` — cursor-paginated history
+- `GET /accounts/{id}/transactions/pending` — pending transactions
+- `GET` / `DELETE /accounts/{id}/verification-token` — payee verification tokens
+- `GET /transactions`, `GET /transactions/{id}` — cross-account feed
+- `GET /transactions/pending` — all pending transactions
+- `POST /transactions/ids` — fetch transactions by ID list
+- `GET /payments`, `GET /payments/{id}` — payment list & detail
+- `POST /payments` — one-off payment (also used for transfers between your
+  own accounts by paying your own account number)
+- `POST /payments/ird` — IRD tax payments (tax number, type, period)
+- `PUT /payments/{id}/cancel` — cancel a `PENDING_APPROVAL` payment
+- `GET /parties` — bank-held customer profiles
+- `POST /refresh`, `POST /refresh/{id}` — request data refreshes
+- `POST /support/{transaction_id}` — report duplicates / enrichment issues
+- `DELETE /authorisations/{id}` — revoke an institution authorisation
+- `DELETE /token` — revoke the user access token (Fern's "disconnect")
+- `POST /verify/name`, `POST /verify/name/{id}` — name verification
+- `GET` / `POST /webhooks`, `DELETE /webhooks/{id}` — webhook subscriptions
+
+**App-auth endpoints** (require app secret)
+
+- `GET /categories`, `GET /categories/{id}` — NZFCC category tree
+- `GET /connections`, `GET /connections/{id}` — institutions
+- `GET /identity/{id}`, `POST /identity/{id}/verify/name` — identity verification
+- `GET /keys/{id}` — public keys
+- `GET /webhook-events` — webhook delivery history
+
+**OAuth helpers**
+
+- `POST /token` — authorization-code exchange (`AkahuApi.exchangeToken`)
+- `POST /par` — pushed authorization requests are documented in the spec;
+  Fern performs token-based sign-in directly, so PAR is not used by the UI.
+
+## Running the app
+
+```
+flutter pub get
+
+# Run with tokens prefilled (they're still editable on the connect screen)
+flutter run \
+  --dart-define=AKAHU_ACCESS_TOKEN=user_token_… \
+  --dart-define=AKAHU_APP_ID_TOKEN=app_token_… \
+  --dart-define=AKAHU_APP_SECRET=…   # optional, unlocks app-auth features
+```
+
+Tokens entered on the connect screen are stored locally with
+`shared_preferences`, so you only sign in once per device.
+
+Note: the Akahu API does not send CORS headers, so Flutter **web** builds
+can't call it from a browser — use Android, iOS, or desktop targets.
+
+## End-to-end tests
+
+`test/integration_test.dart` runs against the live Akahu API using real
+credentials from the environment:
+
+```
+source ~/.zprofile   # provides AKAHU_ACCESS_TOKEN & AKAHU_APP_ID_TOKEN
+dart test test/integration_test.dart
+```
+
+- Endpoints your token/app doesn't have scopes for (e.g. payments, parties,
+  name verification) are reported as **skips**, not failures.
+- App-auth endpoint tests run only when `AKAHU_APP_SECRET` is set.
+- A `model parsing` group validates JSON → model mapping offline.
