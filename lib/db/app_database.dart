@@ -96,18 +96,6 @@ class AppDatabase extends _$AppDatabase {
     return rows.map((r) => r.json).toList();
   }
 
-  Future<void> setCategoryOverride(
-      String transactionId, String categoryId, String categoryName) {
-    return into(categoryOverrides).insertOnConflictUpdate(
-      CategoryOverridesCompanion.insert(
-        transactionId: transactionId,
-        categoryId: categoryId,
-        categoryName: categoryName,
-        updatedAt: DateTime.now(),
-      ),
-    );
-  }
-
   Future<void> clearCategoryOverride(String transactionId) {
     return (delete(categoryOverrides)
           ..where((t) => t.transactionId.equals(transactionId)))

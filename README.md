@@ -48,16 +48,19 @@ https://developers.akahu.nz — the endpoints themselves are stable:
 
 ## Authentication
 
-Akahu uses two auth styles, both supported by the app:
+Fern uses Akahu's user-token auth style only:
 
 | Style      | Header                                            | Used for |
 |------------|---------------------------------------------------|----------|
 | User token | `Authorization: Bearer <user_token>` + `X-Akahu-Id: <app_token>` | All user-data endpoints (accounts, transactions, …) |
-| App auth   | `Authorization: Basic base64(app_token:app_secret)` + `X-Akahu-Id` | App-level endpoints (categories, connections, identity, keys, webhook events) |
 
 Get your tokens from [my.akahu.nz](https://my.akahu.nz) → Developers.
-The app secret is optional in Fern — without it, the categories,
-connections, identity and webhook-event features are hidden.
+
+Akahu's app-auth style (`Authorization: Basic base64(app_token:app_secret)`)
+is **not available to Personal Apps** at all, and several user-token
+endpoints (parties, name verification, verification tokens) return 403 for
+personal accounts too. Fern only implements the endpoints that actually
+work on a Personal App.
 
 ## Project structure
 
@@ -71,15 +74,11 @@ lib/
 │   ├── transaction.dart    Transaction, PendingTransaction, merchant, NZFCC
 │   │                       category + groups, meta (PCR fields, FX conversion,
 │   │                       card suffix, logo)
-│   ├── party.dart          Bank-held party profile (name, dob, IRD number,
-│   │                       phones, emails, addresses)
-│   ├── category.dart       NZFCC category tree
-│   ├── connection.dart     Financial institution connections
-│   ├── webhook.dart        Webhook subscriptions + delivery events
+│   ├── connection.dart     Financial institution connections (embedded in accounts)
 │   ├── user.dart           The /me user
 │   └── page.dart           Cursor-paginated result wrapper
 ├── services/
-│   └── akahu_api.dart      Full API client — every endpoint in the spec
+│   └── akahu_api.dart      API client — endpoints that work on a Personal App
 ├── state/
 │   └── app_state.dart      Session state (user, accounts, refresh orchestration)
 ├── utils/format.dart       Money, dates, account/transaction labels
@@ -92,55 +91,37 @@ lib/
     │                              category bars, recent activity
     ├── accounts_screen.dart       All accounts + bank-data refresh
     ├── account_detail_screen.dart Balance hero, pending txns, paginated history,
-    │                              account refresh, verification-token management
+    │                              account refresh
     ├── transactions_screen.dart   Search, direction + date-range filters,
     │                              day-grouped feed, cursor infinite scroll
     ├── txn_detail.dart            Enriched transaction sheet + issue reporting
-    ├── profile_screen.dart        User card, parties, name verification,
-    │                              disconnect (token revocation)
-    ├── webhooks_screen.dart       Subscribe / list / delete webhooks + events
-    ├── categories_screen.dart     NZFCC category browser (app auth)
-    └── connections_screen.dart    Institution grid (app auth)
+    └── profile_screen.dart        User card, disconnect (token revocation)
 test/
 └── integration_test.dart   Live end-to-end suite hitting the real API
 ```
 
 ## API coverage
 
-Every endpoint in the Akahu Enduring API spec is implemented in
-`lib/services/akahu_api.dart`:
-
-**User-token endpoints**
+`lib/services/akahu_api.dart` implements only the endpoints that work on a
+Personal App:
 
 - `GET /me` — profile & access info
 - `GET /accounts`, `GET /accounts/{id}` — account list & detail
 - `GET /accounts/{id}/transactions` — cursor-paginated history
 - `GET /accounts/{id}/transactions/pending` — pending transactions
-- `GET` / `DELETE /accounts/{id}/verification-token` — payee verification tokens
 - `GET /transactions`, `GET /transactions/{id}` — cross-account feed
 - `GET /transactions/pending` — all pending transactions
 - `POST /transactions/ids` — fetch transactions by ID list
-- `GET /parties` — bank-held customer profiles
 - `POST /refresh`, `POST /refresh/{id}` — request data refreshes
 - `POST /support/{transaction_id}` — report duplicates / enrichment issues
 - `DELETE /authorisations/{id}` — revoke an institution authorisation
 - `DELETE /token` — revoke the user access token (Fern's "disconnect")
-- `POST /verify/name`, `POST /verify/name/{id}` — name verification
-- `GET` / `POST /webhooks`, `DELETE /webhooks/{id}` — webhook subscriptions
 
-**App-auth endpoints** (require app secret)
-
-- `GET /categories`, `GET /categories/{id}` — NZFCC category tree
-- `GET /connections`, `GET /connections/{id}` — institutions
-- `GET /identity/{id}`, `POST /identity/{id}/verify/name` — identity verification
-- `GET /keys/{id}` — public keys
-- `GET /webhook-events` — webhook delivery history
-
-**OAuth helpers**
-
-- `POST /token` — authorization-code exchange (`AkahuApi.exchangeToken`)
-- `POST /par` — pushed authorization requests are documented in the spec;
-  Fern performs token-based sign-in directly, so PAR is not used by the UI.
+The spec documents further endpoints (parties, verification tokens, name
+verification, categories, connections, identity, keys, webhooks, OAuth
+token exchange) but they either require app-auth (unavailable to Personal
+Apps) or return 403 for personal accounts even with valid user-token auth,
+so they've been removed from the app.
 
 ## Running the app
 
@@ -150,8 +131,7 @@ flutter pub get
 # Run with tokens prefilled (they're still editable on the connect screen)
 flutter run \
   --dart-define=AKAHU_ACCESS_TOKEN=user_token_… \
-  --dart-define=AKAHU_APP_ID_TOKEN=app_token_… \
-  --dart-define=AKAHU_APP_SECRET=…   # optional, unlocks app-auth features
+  --dart-define=AKAHU_APP_ID_TOKEN=app_token_…
 ```
 
 Tokens entered on the connect screen are stored locally with
@@ -170,7 +150,4 @@ source ~/.zprofile   # provides AKAHU_ACCESS_TOKEN & AKAHU_APP_ID_TOKEN
 dart test test/integration_test.dart
 ```
 
-- Endpoints your token/app doesn't have scopes for (e.g. parties,
-  name verification) are reported as **skips**, not failures.
-- App-auth endpoint tests run only when `AKAHU_APP_SECRET` is set.
 - A `model parsing` group validates JSON → model mapping offline.

@@ -60,13 +60,12 @@ class SetupScreen extends StatefulWidget {
 class _SetupScreenState extends State<SetupScreen> {
   static const _userToken = String.fromEnvironment('AKAHU_ACCESS_TOKEN');
   static const _appToken = String.fromEnvironment('AKAHU_APP_ID_TOKEN');
-  static const _appSecret = String.fromEnvironment('AKAHU_APP_SECRET');
 
   final _userCtrl = TextEditingController(text: _userToken);
   final _appCtrl = TextEditingController(text: _appToken);
-  final _secretCtrl = TextEditingController(text: _appSecret);
   final _formKey = GlobalKey<FormState>();
   bool _connecting = false;
+  bool _restoring = true;
   String? _error;
 
   @override
@@ -82,11 +81,11 @@ class _SetupScreenState extends State<SetupScreen> {
     if (_appCtrl.text.isEmpty) {
       _appCtrl.text = await SecureStore.appToken ?? '';
     }
-    if (_secretCtrl.text.isEmpty) {
-      _secretCtrl.text = await SecureStore.appSecret ?? '';
-    }
-    if (mounted && _userCtrl.text.isNotEmpty && _appCtrl.text.isNotEmpty) {
+    if (!mounted) return;
+    if (_userCtrl.text.isNotEmpty && _appCtrl.text.isNotEmpty) {
       _connect();
+    } else {
+      setState(() => _restoring = false);
     }
   }
 
@@ -94,12 +93,11 @@ class _SetupScreenState extends State<SetupScreen> {
   void dispose() {
     _userCtrl.dispose();
     _appCtrl.dispose();
-    _secretCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _connect() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() == false) return;
     setState(() {
       _connecting = true;
       _error = null;
@@ -107,14 +105,12 @@ class _SetupScreenState extends State<SetupScreen> {
     final api = AkahuApi(
       userToken: _userCtrl.text.trim(),
       appToken: _appCtrl.text.trim(),
-      appSecret: _secretCtrl.text.trim(),
     );
     try {
       await api.getMe();
       await SecureStore.saveCredentials(
         userToken: _userCtrl.text.trim(),
         appToken: _appCtrl.text.trim(),
-        appSecret: _secretCtrl.text.trim(),
       );
       if (!mounted) return;
       final state = AppState(api, widget.settings);
@@ -125,6 +121,7 @@ class _SetupScreenState extends State<SetupScreen> {
       setState(() {
         _error = e.toString();
         _connecting = false;
+        _restoring = false;
       });
     }
   }
@@ -145,7 +142,11 @@ class _SetupScreenState extends State<SetupScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: _restoring
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                )
+              : Column(
             children: [
               const SizedBox(height: 24),
               Container(
@@ -221,18 +222,6 @@ class _SetupScreenState extends State<SetupScreen> {
                                           v == null || v.trim().isEmpty
                                               ? 'Required'
                                               : null,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextFormField(
-                                      controller: _secretCtrl,
-                                      decoration: const InputDecoration(
-                                        labelText: 'App secret (optional)',
-                                        helperText:
-                                            'Unlocks categories, connections & identity',
-                                        prefixIcon:
-                                            Icon(Icons.key_outlined, size: 20),
-                                      ),
-                                      obscureText: true,
                                     ),
                                     if (_error != null) ...[
                                       const SizedBox(height: 12),

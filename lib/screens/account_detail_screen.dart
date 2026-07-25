@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../state/app_state.dart';
@@ -133,75 +132,6 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     }
   }
 
-  Future<void> _verificationToken() async {
-    final api = widget.state.api;
-    try {
-      final token = await api.getVerificationToken(widget.account.id);
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Verification token'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Share this token with an app so they can pay this account.',
-                style: TextStyle(color: context.fern.slate, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              SelectableText(token,
-                  style: const TextStyle(
-                      fontSize: 12, fontFamily: 'monospace')),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: token));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Copied')));
-                }
-              },
-              child: const Text('Copy'),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await api.deleteVerificationToken(widget.account.id);
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Verification token revoked')));
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(e.toString())));
-                  }
-                }
-              },
-              child:
-                  Text('Revoke', style: TextStyle(color: context.fern.clay)),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: FilledButton.styleFrom(minimumSize: const Size(80, 44)),
-              child: const Text('Done'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
@@ -216,12 +146,6 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             icon: const Icon(Icons.sync),
             onPressed: _refreshAccount,
           ),
-          if (a.canPayTo)
-            IconButton(
-              tooltip: 'Verification token',
-              icon: const Icon(Icons.verified_user_outlined),
-              onPressed: _verificationToken,
-            ),
         ],
       ),
       body: _loading

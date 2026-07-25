@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../db/app_database.dart';
 import '../models/account.dart';
-import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
 import '../services/akahu_api.dart';
@@ -148,11 +147,6 @@ class AppState extends ChangeNotifier {
       AutoCategorizer.categorize(t) != null;
 
   bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
-
-  Future<void> setCategoryOverride(String transactionId, NzfccCategory category) async {
-    await db.setCategoryOverride(transactionId, category.id, category.name);
-    await _loadCategoryOverrides();
-  }
 
   Future<void> clearCategoryOverride(String transactionId) async {
     await db.clearCategoryOverride(transactionId);

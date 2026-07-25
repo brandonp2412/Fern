@@ -8,30 +8,16 @@ import 'package:fern/services/akahu_api.dart';
 void main() {
   final userToken = Platform.environment['AKAHU_ACCESS_TOKEN'];
   final appToken = Platform.environment['AKAHU_APP_ID_TOKEN'];
-  final appSecret = Platform.environment['AKAHU_APP_SECRET'] ?? '';
   final hasCreds =
       userToken != null && userToken.isNotEmpty && appToken != null && appToken.isNotEmpty;
 
   group('Akahu API integration', skip: hasCreds ? null : 'no credentials', () {
     late AkahuApi api;
 
-    Future<void> scoped(Future<void> Function() call) async {
-      try {
-        await call();
-      } on ApiException catch (e) {
-        if (e.statusCode == 403) {
-          markTestSkipped('token lacks scope: ${e.message}');
-        } else {
-          rethrow;
-        }
-      }
-    }
-
     setUp(() {
       api = AkahuApi(
         userToken: userToken!,
         appToken: appToken!,
-        appSecret: appSecret,
       );
     });
 
@@ -134,18 +120,6 @@ void main() {
       expect(txns.map((t) => t.id).toSet(), ids.toSet());
     });
 
-    test('GET /parties returns parties', () => scoped(() async {
-          final parties = await api.getParties();
-          for (final p in parties) {
-            expect(p.id, isNotEmpty);
-          }
-        }));
-
-    test('POST /verify/name checks a name', () => scoped(() async {
-          final res = await api.verifyName(familyName: 'Test');
-          expect(res['success'], isTrue);
-        }));
-
     test('POST /refresh requests a refresh', () async {
       await api.refreshAll();
     });
@@ -158,20 +132,6 @@ void main() {
     test('API throws ApiException on bad auth', () async {
       final badApi = AkahuApi(userToken: 'bad_token', appToken: appToken!);
       expect(() => badApi.getAccounts(), throwsA(isA<ApiException>()));
-    });
-
-    group('app-auth endpoints', skip: appSecret.isEmpty ? 'no app secret' : null, () {
-      test('GET /categories returns NZFCC categories', () async {
-        final categories = await api.getCategories();
-        expect(categories, isNotEmpty);
-        expect(categories.first.id, startsWith('nzfcc_'));
-      });
-
-      test('GET /connections returns institutions', () async {
-        final connections = await api.getConnections();
-        expect(connections, isNotEmpty);
-        expect(connections.first.id, startsWith('conn_'));
-      });
     });
   });
 
