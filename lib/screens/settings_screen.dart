@@ -1,113 +1,210 @@
 import 'package:flutter/material.dart';
-import '../state/app_settings.dart';
+import '../main.dart';
+import '../services/secure_store.dart';
+import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/format.dart';
 import '../widgets/common.dart';
 
-class SettingsScreen extends StatelessWidget {
-  final AppSettings settings;
+class SettingsScreen extends StatefulWidget {
+  final AppState state;
 
-  const SettingsScreen({super.key, required this.settings});
+  const SettingsScreen({super.key, required this.state});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  Future<void> _disconnect() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Disconnect?'),
+        content: const Text(
+            'This revokes your Akahu access token and signs you out of Fern.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep connected'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+                backgroundColor: context.fern.clay,
+                minimumSize: const Size(110, 44)),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.state.api.revokeToken();
+    } catch (_) {}
+    await SecureStore.clear();
+    await widget.state.db.clearAll();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+          builder: (_) => SetupScreen(settings: widget.state.settings)),
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final fern = context.fern;
+    final state = widget.state;
+    final user = state.user;
+    final settings = state.settings;
     return AnimatedBuilder(
       animation: settings,
-      builder: (context, _) {
-        final fern = context.fern;
-        return Scaffold(
-          appBar: AppBar(title: const Text('Settings')),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const SectionHeader('Privacy'),
-              Card(
-                child: Column(
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(title: const Text('Settings')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
                   children: [
-                    SwitchListTile(
-                      title: const Text('Hide account balances',
-                          style: TextStyle(
-                              fontSize: 14.5, fontWeight: FontWeight.w600)),
-                      subtitle: Text('Mask totals and balances on screen',
-                          style: TextStyle(fontSize: 12, color: fern.slate)),
-                      value: settings.hideBalances,
-                      onChanged: settings.setHideBalances,
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                            colors: [fern.green, fern.moss]),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.person,
+                          color: Colors.white, size: 26),
                     ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: const Text('Show debt accounts',
-                          style: TextStyle(
-                              fontSize: 14.5, fontWeight: FontWeight.w600)),
-                      subtitle: Text(
-                          'Include credit cards & loans in totals and lists',
-                          style: TextStyle(fontSize: 12, color: fern.slate)),
-                      value: settings.showDebt,
-                      onChanged: settings.setShowDebt,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.email ?? 'Akahu user',
+                            style: const TextStyle(
+                                fontSize: 15.5, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              if (user?.id != null) user!.id,
+                              if (user?.accessGrantedAt != null)
+                                'connected ${relativeDate(user!.accessGrantedAt)}',
+                            ].join(' · '),
+                            style: TextStyle(fontSize: 12, color: fern.slate),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SectionHeader('Navigation'),
-              Card(
-                child: SwitchListTile(
-                  title: const Text('Swipe between tabs',
-                      style: TextStyle(
-                          fontSize: 14.5, fontWeight: FontWeight.w600)),
-                  subtitle: Text(
-                      'Swipe left/right to switch tabs, not just tap',
-                      style: TextStyle(fontSize: 12, color: fern.slate)),
-                  value: settings.swipeTabs,
-                  onChanged: settings.setSwipeTabs,
-                ),
-              ),
-              const SectionHeader('Appearance'),
-              Card(
-                child: Column(
-                  children: [
-                    RadioListTile<ThemeMode>(
-                      title: const Text('Light'),
-                      value: ThemeMode.light,
-                      groupValue: settings.themeMode,
-                      onChanged: (v) => settings.setThemeMode(v!),
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: const Text('Dark'),
-                      value: ThemeMode.dark,
-                      groupValue: settings.themeMode,
-                      onChanged: (v) => settings.setThemeMode(v!),
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: const Text('System'),
-                      value: ThemeMode.system,
-                      groupValue: settings.themeMode,
-                      onChanged: (v) => settings.setThemeMode(v!),
-                    ),
-                  ],
-                ),
-              ),
-              const SectionHeader('Color palette'),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Wrap(
-                    spacing: 14,
-                    runSpacing: 14,
-                    children: [
-                      for (final seed in FernSeed.values)
-                        _SeedSwatch(
-                          seed: seed,
-                          selected: settings.seedColor.toARGB32() ==
-                              seed.color.toARGB32(),
-                          onTap: () => settings.setSeedColor(seed.color),
-                        ),
-                    ],
+            ),
+            const SectionHeader('Privacy'),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Hide account balances',
+                        style: TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.w600)),
+                    subtitle: Text('Mask totals and balances on screen',
+                        style: TextStyle(fontSize: 12, color: fern.slate)),
+                    value: settings.hideBalances,
+                    onChanged: settings.setHideBalances,
                   ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Show debt accounts',
+                        style: TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                        'Include credit cards & loans in totals and lists',
+                        style: TextStyle(fontSize: 12, color: fern.slate)),
+                    value: settings.showDebt,
+                    onChanged: settings.setShowDebt,
+                  ),
+                ],
+              ),
+            ),
+            const SectionHeader('Navigation'),
+            Card(
+              child: SwitchListTile(
+                title: const Text('Swipe between tabs',
+                    style: TextStyle(
+                        fontSize: 14.5, fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                    'Swipe left/right to switch tabs, not just tap',
+                    style: TextStyle(fontSize: 12, color: fern.slate)),
+                value: settings.swipeTabs,
+                onChanged: settings.setSwipeTabs,
+              ),
+            ),
+            const SectionHeader('Appearance'),
+            Card(
+              child: Column(
+                children: [
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Light'),
+                    value: ThemeMode.light,
+                    groupValue: settings.themeMode,
+                    onChanged: (v) => settings.setThemeMode(v!),
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Dark'),
+                    value: ThemeMode.dark,
+                    groupValue: settings.themeMode,
+                    onChanged: (v) => settings.setThemeMode(v!),
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('System'),
+                    value: ThemeMode.system,
+                    groupValue: settings.themeMode,
+                    onChanged: (v) => settings.setThemeMode(v!),
+                  ),
+                ],
+              ),
+            ),
+            const SectionHeader('Color palette'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  children: [
+                    for (final seed in FernSeed.values)
+                      _SeedSwatch(
+                        seed: seed,
+                        selected: settings.seedColor.toARGB32() ==
+                            seed.color.toARGB32(),
+                        onTap: () => settings.setSeedColor(seed.color),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _disconnect,
+              icon: Icon(Icons.logout, size: 18, color: fern.clay),
+              label: Text('Disconnect & revoke access',
+                  style: TextStyle(color: fern.clay)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: fern.clay),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import 'overview_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
+import 'stats_screen.dart';
 import 'transactions_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -46,7 +47,8 @@ class _HomeShellState extends State<HomeShell> {
     final screens = [
       OverviewScreen(state: state),
       TransactionsScreen(state: state),
-      ProfileScreen(state: state),
+      StatsScreen(state: state),
+      SettingsScreen(state: state),
     ];
     return Scaffold(
       body: state.settings.swipeTabs
@@ -71,9 +73,14 @@ class _HomeShellState extends State<HomeShell> {
             label: 'Activity',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Stats',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
