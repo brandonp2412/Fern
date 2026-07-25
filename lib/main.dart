@@ -23,27 +23,21 @@ class _FernAppState extends State<FernApp> {
   @override
   void initState() {
     super.initState();
-    _settings.addListener(_onSettingsChanged);
     _settings.load();
-  }
-
-  void _onSettingsChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    _settings.removeListener(_onSettingsChanged);
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Fern',
-      debugShowCheckedModeBanner: false,
-      themeMode: _settings.themeMode,
-      theme: Fern.buildTheme(brightness: Brightness.light, seed: _settings.seedColor),
-      darkTheme: Fern.buildTheme(brightness: Brightness.dark, seed: _settings.seedColor),
-      home: SetupScreen(settings: _settings),
+    return ListenableBuilder(
+      listenable: _settings,
+      builder: (context, _) => MaterialApp(
+        title: 'Fern',
+        debugShowCheckedModeBanner: false,
+        themeMode: _settings.themeMode,
+        theme: Fern.buildTheme(brightness: Brightness.light, seed: _settings.seedColor),
+        darkTheme: Fern.buildTheme(brightness: Brightness.dark, seed: _settings.seedColor),
+        home: SetupScreen(settings: _settings),
+      ),
     );
   }
 }
@@ -147,122 +141,122 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: CircularProgressIndicator(color: Colors.white),
                 )
               : Column(
-            children: [
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.eco_outlined, size: 56, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Fern',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1,
-                ),
-              ),
-              Text(
-                'Your money, beautifully organised',
-                style: TextStyle(color: fern.sprout, fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Column(
-                        children: [
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    const Text(
-                                      'Connect to Akahu',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    TextFormField(
-                                      controller: _userCtrl,
-                                      decoration: const InputDecoration(
-                                        labelText: 'User access token',
-                                        hintText: 'user_token_…',
-                                        prefixIcon:
-                                            Icon(Icons.person_outline, size: 20),
-                                      ),
-                                      validator: (v) =>
-                                          v == null || v.trim().isEmpty
-                                              ? 'Required'
-                                              : null,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextFormField(
-                                      controller: _appCtrl,
-                                      decoration: const InputDecoration(
-                                        labelText: 'App ID token',
-                                        hintText: 'app_token_…',
-                                        prefixIcon:
-                                            Icon(Icons.apps_outlined, size: 20),
-                                      ),
-                                      validator: (v) =>
-                                          v == null || v.trim().isEmpty
-                                              ? 'Required'
-                                              : null,
-                                    ),
-                                    if (_error != null) ...[
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _error!,
-                                        style: TextStyle(
-                                            color: fern.clay, fontSize: 12.5),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 20),
-                                    FilledButton(
-                                      onPressed: _connecting ? null : _connect,
-                                      child: _connecting
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Text('Connect'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Get your tokens at my.akahu.nz',
-                            style: TextStyle(color: fern.slate, fontSize: 12),
-                          ),
-                        ],
+                  children: [
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.eco_outlined, size: 56, color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Fern',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
                       ),
                     ),
-                  ),
+                    Text(
+                      'Your money, beautifully organised',
+                      style: TextStyle(color: fern.sprout, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: Column(
+                              children: [
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          const Text(
+                                            'Connect to Akahu',
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          TextFormField(
+                                            controller: _userCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'User access token',
+                                              hintText: 'user_token_…',
+                                              prefixIcon:
+                                                  Icon(Icons.person_outline, size: 20),
+                                            ),
+                                            validator: (v) =>
+                                                v == null || v.trim().isEmpty
+                                                    ? 'Required'
+                                                    : null,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          TextFormField(
+                                            controller: _appCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'App ID token',
+                                              hintText: 'app_token_…',
+                                              prefixIcon:
+                                                  Icon(Icons.apps_outlined, size: 20),
+                                            ),
+                                            validator: (v) =>
+                                                v == null || v.trim().isEmpty
+                                                    ? 'Required'
+                                                    : null,
+                                          ),
+                                          if (_error != null) ...[
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              _error!,
+                                              style: TextStyle(
+                                                  color: fern.clay, fontSize: 12.5),
+                                            ),
+                                          ],
+                                          const SizedBox(height: 20),
+                                          FilledButton(
+                                            onPressed: _connecting ? null : _connect,
+                                            child: _connecting
+                                                ? const SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                                  )
+                                                : const Text('Connect'),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Get your tokens at my.akahu.nz',
+                                  style: TextStyle(color: fern.slate, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );

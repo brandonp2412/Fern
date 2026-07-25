@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../state/app_state.dart';
@@ -19,103 +21,67 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   final _scroll = ScrollController();
   final _searchCtrl = TextEditingController();
-  final List<Transaction> _txns = [];
-  String? _cursor;
-  bool _loading = true;
-  bool _refreshing = false;
-  bool _loadingMore = false;
-  String? _error;
   String _query = '';
   String _direction = 'all';
   int _days = 30;
+  Timer? _debounce;
+
+  List<Transaction>? _filteredSrc;
+  String _filteredQuery = '';
+  String _filteredDirection = 'all';
+  int _filteredDays = 30;
+  List<Transaction> _filteredCache = [];
+  Map<String, List<Transaction>>? _groupedCache;
 
   @override
   void initState() {
     super.initState();
-    _load();
     _scroll.addListener(() {
+      final state = widget.state;
       if (_scroll.position.pixels >
               _scroll.position.maxScrollExtent - 300 &&
-          !_loading &&
-          !_loadingMore &&
-          _cursor != null) {
-        _loadMore();
+          state.txnCursor != null) {
+        state.loadOlder();
       }
     });
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _scroll.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  String get _start =>
-      isoDay(DateTime.now().subtract(Duration(days: _days)));
-
-  Future<void> _load() async {
-    if (_txns.isEmpty) {
-      final cached = await widget.state.loadCachedTransactions(limit: 200);
-      if (mounted && _txns.isEmpty && cached.isNotEmpty) {
-        setState(() {
-          _txns.addAll(cached);
-          _loading = false;
-        });
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _refreshing = true;
-        _error = null;
-      });
-    }
-    try {
-      final page =
-          await widget.state.api.getTransactions(start: _start);
-      if (mounted) {
-        setState(() {
-          _txns
-            ..clear()
-            ..addAll(page.items);
-          _cursor = page.nextCursor;
-          _loading = false;
-          _refreshing = false;
-        });
-        widget.state.cacheTransactions(page.items);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _refreshing = false;
-          _loading = false;
-          if (_txns.isEmpty) _error = e.toString();
-        });
-      }
-    }
+  void _setQuery(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      setState(() => _query = v.trim());
+    });
   }
 
-  Future<void> _loadMore() async {
-    setState(() => _loadingMore = true);
-    try {
-      final page = await widget.state.api
-          .getTransactions(start: _start, cursor: _cursor);
-      if (mounted) {
-        setState(() {
-          _txns.addAll(page.items);
-          _cursor = page.nextCursor;
-          _loadingMore = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loadingMore = false);
-    }
-  }
+  DateTime _cutoff() => DateTime.now().subtract(Duration(days: _days));
 
   List<Transaction> get _filtered {
-    return _txns.where((tx) {
+    final txns = widget.state.transactions;
+    if (identical(_filteredSrc, txns) &&
+        _filteredQuery == _query &&
+        _filteredDirection == _direction &&
+        _filteredDays == _days) {
+      return _filteredCache;
+    }
+    _filteredSrc = txns;
+    _filteredQuery = _query;
+    _filteredDirection = _direction;
+    _filteredDays = _days;
+    final cut = _cutoff();
+    _filteredCache = txns.where((tx) {
       if (_direction == 'in' && tx.amount <= 0) return false;
       if (_direction == 'out' && tx.amount >= 0) return false;
+      final d = parseDate(tx.date);
+      if (d != null && d.isBefore(cut)) return false;
       if (_query.isNotEmpty) {
         final q = _query.toLowerCase();
         final hay = [
@@ -129,15 +95,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       }
       return true;
     }).toList();
+    _groupedCache = null;
+    return _filteredCache;
   }
 
   Map<String, List<Transaction>> get _grouped {
+    if (_groupedCache != null) return _groupedCache!;
     final map = <String, List<Transaction>>{};
     for (final tx in _filtered) {
       final d = parseDate(tx.date);
       final key = d == null ? 'Unknown' : isoDay(d);
       map.putIfAbsent(key, () => []).add(tx);
     }
+    _groupedCache = map;
     return map;
   }
 
@@ -147,7 +117,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       appBar: AppBar(
         title: const Text('Activity'),
         actions: [
-          if (_refreshing) const AppBarSpinner(),
+          if (widget.state.refreshing) const AppBarSpinner(),
         ],
       ),
       body: Column(
@@ -156,7 +126,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = v.trim()),
+              onChanged: _setQuery,
               decoration: InputDecoration(
                 hintText: 'Search merchants, categories…',
                 prefixIcon: const Icon(Icons.search, size: 20),
@@ -165,6 +135,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         icon: const Icon(Icons.close, size: 18),
                         onPressed: () {
                           _searchCtrl.clear();
+                          _debounce?.cancel();
                           setState(() => _query = '');
                         },
                       )
@@ -185,14 +156,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 _chip('Money out', _direction == 'out',
                     () => setState(() => _direction = 'out')),
                 const SizedBox(width: 8),
-                _chip('30 days', _days == 30, () {
-                  setState(() => _days = 30);
-                  _load();
-                }),
-                _chip('90 days', _days == 90, () {
-                  setState(() => _days = 90);
-                  _load();
-                }),
+                _chip('30 days', _days == 30,
+                    () => setState(() => _days = 30)),
+                _chip('90 days', _days == 90,
+                    () => setState(() => _days = 90)),
               ],
             ),
           ),
@@ -220,26 +187,39 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _body() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null && _txns.isEmpty) return ErrorState(error: _error!, onRetry: _load);
+    final state = widget.state;
+    final cold = state.accounts.isEmpty && state.transactions.isEmpty;
+    if (cold) {
+      if (state.error != null) return ErrorState(error: state.error!, onRetry: () => state.load());
+      return const Center(child: CircularProgressIndicator());
+    }
     final grouped = _grouped;
     if (grouped.isEmpty) {
-      return const EmptyState(
-        icon: Icons.receipt_long_outlined,
-        title: 'No transactions',
-        message: 'Try widening your filters or date range.',
+      return ListenableBuilder(
+        listenable: state,
+        builder: (context, _) {
+          final txns = state.transactions;
+          if (txns.isEmpty && state.refreshing) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return const EmptyState(
+            icon: Icons.receipt_long_outlined,
+            title: 'No transactions',
+            message: 'Try widening your filters or date range.',
+          );
+        },
       );
     }
     final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => state.load(force: true),
       child: ListView.builder(
         controller: _scroll,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         itemCount: keys.length + 1,
         itemBuilder: (context, i) {
           if (i == keys.length) {
-            return _loadingMore
+            return state.txnCursor != null
                 ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator()),
@@ -250,7 +230,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           final key = keys[i];
           final dayTxns = grouped[key]!;
           final net = dayTxns.fold<num>(0, (s, t) => s + t.amount);
-          final masked = widget.state.settings.hideBalances;
+          final masked = state.settings.hideBalances;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -285,13 +265,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       for (final tx in dayTxns)
                         TxnTile(
                           tx: tx,
-                          accountName:
-                              widget.state.accountById(tx.account)?.name,
-                          categoryGroupOverride:
-                              widget.state.categoryGroupFor(tx),
+                          accountName: state.accountById(tx.account)?.name,
+                          categoryGroupOverride: state.categoryGroupFor(tx),
                           masked: masked,
-                          onTap: () =>
-                              showTxnDetail(context, widget.state, tx),
+                          onTap: () => showTxnDetail(context, state, tx),
                         ),
                     ],
                   ),

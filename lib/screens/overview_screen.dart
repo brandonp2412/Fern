@@ -1,7 +1,6 @@
 import 'package:fern/screens/account_detail_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/account.dart';
-import '../models/transaction.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -19,129 +18,67 @@ class OverviewScreen extends StatefulWidget {
 }
 
 class _OverviewScreenState extends State<OverviewScreen> {
-  List<Transaction>? _txns;
-  bool _refreshing = false;
-  List<Transaction>? _cachedTxns;
-  Map<String, double>? _cachedGroups;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.state.addListener(_onState);
-    _load();
-  }
-
-  @override
-  void dispose() {
-    widget.state.removeListener(_onState);
-    super.dispose();
-  }
-
-  void _onState() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _load() async {
-    if (_txns == null) {
-      final cached = await widget.state.loadCachedTransactions(limit: 200);
-      if (mounted && _txns == null) {
-        setState(() => _txns = cached);
-      }
-    }
-    if (mounted) setState(() => _refreshing = true);
-    try {
-      final page = await widget.state.api.getTransactions();
-      if (mounted) {
-        setState(() {
-          _txns = page.items;
-          _refreshing = false;
-        });
-        widget.state.cacheTransactions(page.items);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _refreshing = false);
-        if (_txns == null) setState(() => _txns = []);
-      }
-    }
-  }
-
-  Future<void> _refresh() async {
-    await Future.wait([widget.state.reloadAccounts(), _load()]);
-  }
-
-  Map<String, double> _spendByGroup(List<Transaction> txns) {
-    if (identical(_cachedTxns, txns)) return _cachedGroups!;
-    _cachedTxns = txns;
-    final totals = <String, double>{};
-    for (final tx in txns) {
-      if (tx.amount >= 0) continue;
-      final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
-      totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
-    }
-    final entries = totals.entries.toList()
-      ..sort((a, b) {
-        final byValue = b.value.compareTo(a.value);
-        return byValue != 0 ? byValue : a.key.compareTo(b.key);
-      });
-    _cachedGroups = Map.fromEntries(entries.take(6));
-    return _cachedGroups!;
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
     final masked = state.settings.hideBalances;
+    final cold = state.accounts.isEmpty && state.transactions.isEmpty;
+
+    if (cold && state.error != null) {
+      return Scaffold(
+        body: SafeArea(
+          child: ErrorState(error: state.error!, onRetry: () => state.load()),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
-        child: state.loading
-            ? const Center(child: CircularProgressIndicator())
-            : state.error != null && state.accounts.isEmpty
-            ? ErrorState(error: state.error!, onRetry: () => state.bootstrap())
-            : RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    _header(context, state),
-                    const SizedBox(height: 20),
-                    _balanceCard(context, state),
-                    const SectionHeader('Accounts'),
-                    _accountStrip(state.visibleAccounts, masked),
-                    if (_txns != null && _txns!.isNotEmpty) ...[
-                      const SectionHeader('Spending this month'),
-                      _spendCard(context, _spendByGroup(_txns!)),
-                      const SectionHeader('Recent activity'),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            children: [
-                              for (final tx in _txns!.take(8))
-                                TxnTile(
-                                  tx: tx,
-                                  accountName: state
-                                      .accountById(tx.account)
-                                      ?.name,
-                                  categoryGroupOverride: state.categoryGroupFor(
-                                    tx,
-                                  ),
-                                  masked: masked,
-                                  onTap: () =>
-                                      showTxnDetail(context, widget.state, tx),
-                                ),
-                            ],
-                          ),
+        child: RefreshIndicator(
+          onRefresh: () => state.load(force: true),
+          child: ListenableBuilder(
+            listenable: state,
+            builder: (context, _) {
+              final txns = state.transactions;
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  _header(context, state),
+                  const SizedBox(height: 20),
+                  _balanceCard(context, state),
+                  const SectionHeader('Accounts'),
+                  _accountStrip(state.visibleAccounts, masked),
+                  if (txns.isNotEmpty) ...[
+                    const SectionHeader('Spending this month'),
+                    _spendCard(context, state.spendByGroup),
+                    const SectionHeader('Recent activity'),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            for (final tx in txns.take(8))
+                              TxnTile(
+                                tx: tx,
+                                accountName: state.accountById(tx.account)?.name,
+                                categoryGroupOverride: state.categoryGroupFor(tx),
+                                masked: masked,
+                                onTap: () => showTxnDetail(context, state, tx),
+                              ),
+                          ],
                         ),
                       ),
-                    ] else if (_txns == null)
-                      const Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                  ],
-                ),
-              ),
+                    ),
+                  ] else if (cold)
+                    const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -152,8 +89,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-        ? 'Good afternoon'
-        : 'Good evening';
+            ? 'Good afternoon'
+            : 'Good evening';
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Row(
@@ -181,7 +118,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: fern.mist, shape: BoxShape.circle),
-            child: (state.refreshing || _refreshing)
+            child: state.refreshing
                 ? SizedBox(
                     width: 18,
                     height: 18,

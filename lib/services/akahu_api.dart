@@ -10,6 +10,7 @@ class AkahuApi {
 
   final String _userToken;
   final String _appToken;
+  final http.Client _client = http.Client();
 
   AkahuApi({
     required String userToken,
@@ -36,12 +37,12 @@ class AkahuApi {
       if (body != null) 'Content-Type': 'application/json',
     };
     final res = await switch (method) {
-      'GET' => http.get(uri, headers: headers),
-      'POST' => http.post(uri, headers: headers,
+      'GET' => _client.get(uri, headers: headers),
+      'POST' => _client.post(uri, headers: headers,
           body: body != null ? json.encode(body) : null),
-      'PUT' => http.put(uri, headers: headers,
+      'PUT' => _client.put(uri, headers: headers,
           body: body != null ? json.encode(body) : null),
-      'DELETE' => http.delete(uri, headers: headers),
+      'DELETE' => _client.delete(uri, headers: headers),
       _ => throw ArgumentError('Unsupported method $method'),
     };
     return _parseResponse(res);
@@ -169,6 +170,8 @@ class AkahuApi {
       }).then((_) {});
 
   Future<void> revokeToken() => _delete('/token').then((_) {});
+
+  void close() => _client.close();
 }
 
 class ApiException implements Exception {

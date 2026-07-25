@@ -14,20 +14,38 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _tab = 0;
   late final PageController _pageController = PageController(initialPage: _tab);
+
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    widget.state.bootstrap();
+    WidgetsBinding.instance.addObserver(this);
+    final state = widget.state;
+    _screens = [
+      OverviewScreen(key: const ValueKey('overview'), state: state),
+      TransactionsScreen(key: const ValueKey('activity'), state: state),
+      StatsScreen(key: const ValueKey('stats'), state: state),
+      SettingsScreen(key: const ValueKey('settings'), state: state),
+    ];
+    state.load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) {
+      widget.state.load();
+    }
   }
 
   void _selectTab(int i) {
@@ -43,21 +61,15 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final state = widget.state;
-    final screens = [
-      OverviewScreen(state: state),
-      TransactionsScreen(state: state),
-      StatsScreen(state: state),
-      SettingsScreen(state: state),
-    ];
+    final pages = [for (final s in _screens) RepaintBoundary(child: s)];
     return Scaffold(
-      body: state.settings.swipeTabs
+      body: widget.state.settings.swipeTabs
           ? PageView(
               controller: _pageController,
               onPageChanged: (i) => setState(() => _tab = i),
-              children: screens,
+              children: pages,
             )
-          : IndexedStack(index: _tab, children: screens),
+          : IndexedStack(index: _tab, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: _selectTab,
