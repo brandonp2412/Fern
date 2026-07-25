@@ -55,14 +55,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
       appBar: AppBar(
         title: const Text('Accounts'),
         actions: [
-          if (_refreshing)
-            const Padding(
-              padding: EdgeInsets.all(14),
-              child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-            )
+          if (_refreshing || state.refreshing)
+            const AppBarSpinner()
           else
             IconButton(
               tooltip: 'Refresh bank data',

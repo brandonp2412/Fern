@@ -22,6 +22,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final List<Transaction> _txns = [];
   String? _cursor;
   bool _loading = true;
+  bool _refreshing = false;
   bool _loadingMore = false;
   String? _error;
   String _query = '';
@@ -54,10 +55,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       isoDay(DateTime.now().subtract(Duration(days: _days)));
 
   Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (_txns.isEmpty) {
+      final cached = await widget.state.loadCachedTransactions(limit: 200);
+      if (mounted && _txns.isEmpty && cached.isNotEmpty) {
+        setState(() {
+          _txns.addAll(cached);
+          _loading = false;
+        });
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _refreshing = true;
+        _error = null;
+      });
+    }
     try {
       final page =
           await widget.state.api.getTransactions(start: _start);
@@ -68,13 +80,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ..addAll(page.items);
           _cursor = page.nextCursor;
           _loading = false;
+          _refreshing = false;
         });
+        widget.state.cacheTransactions(page.items);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _refreshing = false;
           _loading = false;
+          if (_txns.isEmpty) _error = e.toString();
         });
       }
     }
@@ -129,7 +144,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Activity')),
+      appBar: AppBar(
+        title: const Text('Activity'),
+        actions: [
+          if (_refreshing) const AppBarSpinner(),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -201,7 +221,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _body() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return ErrorState(error: _error!, onRetry: _load);
+    if (_error != null && _txns.isEmpty) return ErrorState(error: _error!, onRetry: _load);
     final grouped = _grouped;
     if (grouped.isEmpty) {
       return const EmptyState(

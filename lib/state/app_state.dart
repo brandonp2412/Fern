@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
   User? user;
   List<Account> accounts = [];
   bool loading = true;
+  bool refreshing = false;
   bool offline = false;
   String? error;
 
@@ -50,36 +51,49 @@ class AppState extends ChangeNotifier {
     loading = true;
     error = null;
     notifyListeners();
-    try {
-      final results = await Future.wait([api.getMe(), api.getAccounts()]);
-      user = results[0] as User;
-      accounts = results[1] as List<Account>;
-      loading = false;
-      offline = false;
-      unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
-    } catch (e) {
+
+    if (accounts.isEmpty) {
       final cached = await db.loadAccountsJson();
       if (cached.isNotEmpty) {
         accounts = cached
             .map((s) => Account.fromJson(json.decode(s) as Map<String, dynamic>))
             .toList();
-        offline = true;
-        error = null;
-      } else {
-        error = e.toString();
+        loading = false;
+        notifyListeners();
       }
+    }
+
+    refreshing = true;
+    notifyListeners();
+    try {
+      final results = await Future.wait([api.getMe(), api.getAccounts()]);
+      user = results[0] as User;
+      accounts = results[1] as List<Account>;
       loading = false;
+      refreshing = false;
+      offline = false;
+      unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
+    } catch (e) {
+      refreshing = false;
+      if (accounts.isEmpty) {
+        error = e.toString();
+        loading = false;
+      }
     }
     notifyListeners();
   }
 
   Future<void> reloadAccounts() async {
+    refreshing = true;
+    notifyListeners();
     try {
       accounts = await api.getAccounts();
       error = null;
+      refreshing = false;
       offline = false;
       unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
     } catch (e) {
+      refreshing = false;
       error = e.toString();
     }
     notifyListeners();
@@ -104,6 +118,13 @@ class AppState extends ChangeNotifier {
       for (final t in transactions)
         (id: t.id, accountId: t.account, json: json.encode(t.toJson())),
     ]));
+  }
+
+  Future<List<Transaction>> loadCachedTransactions({String? accountId, int limit = 200}) async {
+    final rows = await db.loadTransactionsJson(accountId: accountId, limit: limit);
+    return rows
+        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
+        .toList();
   }
 
   /// The category name to display for a transaction, applying any manual

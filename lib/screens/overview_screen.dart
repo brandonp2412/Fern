@@ -19,6 +19,7 @@ class OverviewScreen extends StatefulWidget {
 
 class _OverviewScreenState extends State<OverviewScreen> {
   List<Transaction>? _txns;
+  bool _refreshing = false;
 
   @override
   void initState() {
@@ -38,16 +39,31 @@ class _OverviewScreenState extends State<OverviewScreen> {
   }
 
   Future<void> _load() async {
+    if (_txns == null) {
+      final cached = await widget.state.loadCachedTransactions(limit: 30);
+      if (mounted && _txns == null) {
+        setState(() => _txns = cached);
+      }
+    }
+    if (mounted) setState(() => _refreshing = true);
     try {
       final page = await widget.state.api.getTransactions();
-      if (mounted) setState(() => _txns = page.items);
+      if (mounted) {
+        setState(() {
+          _txns = page.items;
+          _refreshing = false;
+        });
+        widget.state.cacheTransactions(page.items);
+      }
     } catch (_) {
-      if (mounted) setState(() => _txns = []);
+      if (mounted) {
+        setState(() => _refreshing = false);
+        if (_txns == null) setState(() => _txns = []);
+      }
     }
   }
 
   Future<void> _refresh() async {
-    setState(() => _txns = null);
     await Future.wait([widget.state.reloadAccounts(), _load()]);
   }
 
@@ -154,7 +170,14 @@ class _OverviewScreenState extends State<OverviewScreen> {
               color: fern.mist,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.eco_outlined, color: fern.green),
+            child: (state.refreshing || _refreshing)
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: fern.green),
+                  )
+                : Icon(Icons.eco_outlined, color: fern.green),
           ),
         ],
       ),

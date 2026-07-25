@@ -80,6 +80,17 @@ class LogoAvatar extends StatelessWidget {
       );
 }
 
+class AppBarSpinner extends StatelessWidget {
+  const AppBarSpinner({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+            width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+}
+
 class StatusChip extends StatelessWidget {
   final String label;
   final Color color;

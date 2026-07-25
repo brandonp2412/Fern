@@ -26,6 +26,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   List<PendingTransaction> _pending = [];
   String? _cursor;
   bool _loading = true;
+  bool _refreshing = false;
   bool _loadingMore = false;
   String? _error;
 
@@ -50,10 +51,22 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (_txns.isEmpty) {
+      final cached = await widget.state.loadCachedTransactions(
+          accountId: widget.account.id, limit: 200);
+      if (mounted && _txns.isEmpty && cached.isNotEmpty) {
+        setState(() {
+          _txns.addAll(cached);
+          _loading = false;
+        });
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _refreshing = true;
+        _error = null;
+      });
+    }
     try {
       final api = widget.state.api;
       final results = await Future.wait([
@@ -61,21 +74,25 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         api.getAccountPendingTransactions(widget.account.id),
       ]);
       if (mounted) {
+        final page = results[0] as dynamic;
+        final items = page.items as List<Transaction>;
         setState(() {
-          final page = results[0] as dynamic;
           _txns
             ..clear()
-            ..addAll(page.items as List<Transaction>);
+            ..addAll(items);
           _cursor = page.nextCursor as String?;
           _pending = results[1] as List<PendingTransaction>;
           _loading = false;
+          _refreshing = false;
         });
+        widget.state.cacheTransactions(items);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _refreshing = false;
           _loading = false;
+          if (_txns.isEmpty) _error = e.toString();
         });
       }
     }
@@ -193,6 +210,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       appBar: AppBar(
         title: Text(a.name),
         actions: [
+          if (_refreshing) const AppBarSpinner(),
           IconButton(
             tooltip: 'Refresh this account',
             icon: const Icon(Icons.sync),
@@ -208,7 +226,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : _error != null && _txns.isEmpty
               ? ErrorState(error: _error!, onRetry: _load)
               : RefreshIndicator(
                   onRefresh: _load,
