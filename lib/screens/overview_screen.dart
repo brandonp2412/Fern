@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import '../widgets/txn_tile.dart';
+import 'recategorize_screen.dart';
 import 'txn_detail.dart';
 
 class OverviewScreen extends StatefulWidget {
@@ -49,7 +50,21 @@ class _OverviewScreenState extends State<OverviewScreen> {
                   const SectionHeader('Accounts'),
                   _accountStrip(state.visibleAccounts, masked),
                   if (txns.isNotEmpty) ...[
-                    const SectionHeader('Spending this month'),
+                    SectionHeader(
+                      'Spending this month',
+                      trailing: IconButton(
+                        icon: Icon(Icons.settings_outlined,
+                            size: 18, color: context.fern.slate),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                RecategorizeScreen(state: state),
+                          ),
+                        ),
+                      ),
+                    ),
                     _spendCard(context, state.spendByGroup),
                     const SectionHeader('Recent activity'),
                     Card(

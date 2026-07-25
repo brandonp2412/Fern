@@ -38,8 +38,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     super.initState();
     _scroll.addListener(() {
       final state = widget.state;
-      if (_scroll.position.pixels >
-              _scroll.position.maxScrollExtent - 300 &&
+      if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 300 &&
           state.txnCursor != null) {
         state.loadOlder();
       }
@@ -116,9 +115,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Activity'),
-        actions: [
-          if (widget.state.refreshing) const AppBarSpinner(),
-        ],
+        actions: [if (widget.state.refreshing) const AppBarSpinner()],
       ),
       body: Column(
         children: [
@@ -149,17 +146,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                _chip('All', _direction == 'all',
-                    () => setState(() => _direction = 'all')),
-                _chip('Money in', _direction == 'in',
-                    () => setState(() => _direction = 'in')),
-                _chip('Money out', _direction == 'out',
-                    () => setState(() => _direction = 'out')),
+                _chip(
+                  'All',
+                  _direction == 'all',
+                  () => setState(() => _direction = 'all'),
+                ),
+                _chip(
+                  'Money in',
+                  _direction == 'in',
+                  () => setState(() => _direction = 'in'),
+                ),
+                _chip(
+                  'Money out',
+                  _direction == 'out',
+                  () => setState(() => _direction = 'out'),
+                ),
                 const SizedBox(width: 8),
-                _chip('30 days', _days == 30,
-                    () => setState(() => _days = 30)),
-                _chip('90 days', _days == 90,
-                    () => setState(() => _days = 90)),
+                _chip('30 days', _days == 30, () => setState(() => _days = 30)),
+                _chip('90 days', _days == 90, () => setState(() => _days = 90)),
               ],
             ),
           ),
@@ -191,7 +195,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final state = widget.state;
     final cold = state.accounts.isEmpty && state.transactions.isEmpty;
     if (cold) {
-      if (state.error != null) return ErrorState(error: state.error!, onRetry: () => state.load());
+      if (state.error != null)
+        return ErrorState(error: state.error!, onRetry: () => state.load());
       return const Center(child: CircularProgressIndicator());
     }
     final grouped = _grouped;
@@ -242,9 +247,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     Text(
                       relativeDate(key),
                       style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: fern.slate),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: fern.slate,
+                      ),
                     ),
                     const Spacer(),
                     Text(

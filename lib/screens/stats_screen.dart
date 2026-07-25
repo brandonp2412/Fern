@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
+import 'recategorize_screen.dart';
 
 const _kCategoryColors = [
   Color(0xFF2A78D6),
@@ -104,7 +105,20 @@ class _StatsScreenState extends State<StatsScreen> {
             child: SizedBox(height: 160, child: _trendChart(context, weekly)),
           ),
         ),
-        const SectionHeader('Spending by category'),
+        SectionHeader(
+          'Spending by category',
+          trailing: IconButton(
+            icon: Icon(Icons.settings_outlined,
+                size: 18, color: context.fern.slate),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => RecategorizeScreen(state: state),
+              ),
+            ),
+          ),
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),

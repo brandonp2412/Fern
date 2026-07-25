@@ -206,6 +206,33 @@ class AutoCategorizer {
     ),
   ];
 
+  static String? lookupGroup(String categoryName) {
+    for (final rule in _rules) {
+      if (rule.result.name == categoryName) return rule.result.group;
+    }
+    return null;
+  }
+
+  static Set<String> get allCategoryNames {
+    final names = <String>{};
+    for (final rule in _rules) {
+      names.add(rule.result.name);
+    }
+    return names;
+  }
+
+  static Map<String, List<String>> get categoriesByGroup {
+    final map = <String, List<String>>{};
+    for (final rule in _rules) {
+      map.putIfAbsent(rule.result.group, () => []).add(rule.result.name);
+    }
+    final result = <String, List<String>>{};
+    for (final e in map.entries) {
+      result[e.key] = e.value.toSet().toList()..sort();
+    }
+    return result;
+  }
+
   static AutoCategory? categorize(Transaction tx) {
     final haystack =
         '${tx.description} ${tx.merchant?.name ?? ''}'.toUpperCase();

@@ -78,6 +78,8 @@ class AppState extends ChangeNotifier {
 
   Future<void> _loadCategoryOverrides() async {
     _categoryOverrides = await db.loadCategoryOverrides();
+    _recomputeSpendByGroup();
+    _recomputeStats();
     notifyListeners();
   }
 
@@ -347,7 +349,10 @@ class AppState extends ChangeNotifier {
       _catCache[t.id]?.name;
 
   String? categoryGroupFor(Transaction t) {
-    if (_categoryOverrides.containsKey(t.id)) return null;
+    final override = _categoryOverrides[t.id];
+    if (override != null) {
+      return AutoCategorizer.lookupGroup(override.categoryName);
+    }
     return t.category?.groupName ?? _catCache[t.id]?.group;
   }
 
@@ -357,6 +362,11 @@ class AppState extends ChangeNotifier {
       _catCache[t.id] != null;
 
   bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
+
+  Future<void> saveCategoryOverride(String txnId, String catName) async {
+    await db.saveCategoryOverride(txnId, catName);
+    await _loadCategoryOverrides();
+  }
 
   Future<void> clearCategoryOverride(String transactionId) async {
     await db.clearCategoryOverride(transactionId);
