@@ -54,3 +54,12 @@ chromedriver.zip
 chromedriver-win64/
 
 coverage/
+
+# Build output committed by accident
+/web/drift_worker.dart.js
+/web/drift_worker.dart.js.map
+/web/drift_worker.dart.js.deps
+
+# AI tool debug/session artifacts
+.playwright-mcp/
+android/.artifacts/
