@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import 'connection/connection.dart';
 
 part 'app_database.g.dart';
 
@@ -43,7 +40,7 @@ class CategoryOverrides extends Table {
 
 @DriftDatabase(tables: [CachedAccounts, CachedTransactions, CategoryOverrides])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
@@ -87,8 +84,12 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<List<String>> loadTransactionsJson({int limit = 200}) async {
-    final query = select(cachedTransactions)
+  Future<List<String>> loadTransactionsJson({String? accountId, int limit = 200}) async {
+    final query = select(cachedTransactions);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    query
       ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
       ..limit(limit);
     final rows = await query.get();
@@ -124,12 +125,4 @@ class AppDatabase extends _$AppDatabase {
       batch.deleteAll(cachedTransactions);
     });
   }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'fern_cache.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }
