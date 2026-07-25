@@ -177,6 +177,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
+        checkmarkColor: selected ? Colors.white : context.fern.ink,
         labelStyle: TextStyle(
           color: selected ? Colors.white : context.fern.ink,
           fontSize: 12.5,
