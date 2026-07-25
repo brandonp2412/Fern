@@ -1,3 +1,4 @@
+import 'package:fern/screens/account_detail_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
@@ -96,51 +97,51 @@ class _OverviewScreenState extends State<OverviewScreen> {
         child: state.loading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null && state.accounts.isEmpty
-                ? ErrorState(
-                    error: state.error!, onRetry: () => state.bootstrap())
-                : RefreshIndicator(
-                    onRefresh: _refresh,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        _header(context, state),
-                        const SizedBox(height: 20),
-                        _balanceCard(context, state),
-                        const SectionHeader('Accounts'),
-                        _accountStrip(state.visibleAccounts, masked),
-                        if (_txns != null && _txns!.isNotEmpty) ...[
-                          const SectionHeader('Spending this month'),
-                          _spendCard(context, _spendByGroup(_txns!)),
-                          const SectionHeader('Recent activity'),
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                children: [
-                                  for (final tx in _txns!.take(8))
-                                    TxnTile(
-                                      tx: tx,
-                                      accountName: state
-                                          .accountById(tx.account)
-                                          ?.name,
-                                      categoryGroupOverride:
-                                          state.categoryGroupFor(tx),
-                                      masked: masked,
-                                      onTap: () => showTxnDetail(
-                                          context, widget.state, tx),
-                                    ),
-                                ],
-                              ),
-                            ),
+            ? ErrorState(error: state.error!, onRetry: () => state.bootstrap())
+            : RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    _header(context, state),
+                    const SizedBox(height: 20),
+                    _balanceCard(context, state),
+                    const SectionHeader('Accounts'),
+                    _accountStrip(state.visibleAccounts, masked),
+                    if (_txns != null && _txns!.isNotEmpty) ...[
+                      const SectionHeader('Spending this month'),
+                      _spendCard(context, _spendByGroup(_txns!)),
+                      const SectionHeader('Recent activity'),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: [
+                              for (final tx in _txns!.take(8))
+                                TxnTile(
+                                  tx: tx,
+                                  accountName: state
+                                      .accountById(tx.account)
+                                      ?.name,
+                                  categoryGroupOverride: state.categoryGroupFor(
+                                    tx,
+                                  ),
+                                  masked: masked,
+                                  onTap: () =>
+                                      showTxnDetail(context, widget.state, tx),
+                                ),
+                            ],
                           ),
-                        ] else if (_txns == null)
-                          const Padding(
-                            padding: EdgeInsets.all(40),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                      ],
-                    ),
-                  ),
+                        ),
+                      ),
+                    ] else if (_txns == null)
+                      const Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -148,8 +149,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
   Widget _header(BuildContext context, AppState state) {
     final fern = context.fern;
     final hour = DateTime.now().hour;
-    final greeting =
-        hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Row(
@@ -158,8 +162,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(greeting,
-                    style: TextStyle(color: fern.slate, fontSize: 13)),
+                Text(
+                  greeting,
+                  style: TextStyle(color: fern.slate, fontSize: 13),
+                ),
                 const SizedBox(height: 2),
                 const Text(
                   'Fern',
@@ -174,16 +180,15 @@ class _OverviewScreenState extends State<OverviewScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: fern.mist,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: fern.mist, shape: BoxShape.circle),
             child: (state.refreshing || _refreshing)
                 ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: fern.green),
+                      strokeWidth: 2,
+                      color: fern.green,
+                    ),
                   )
                 : Icon(Icons.eco_outlined, color: fern.green),
           ),
@@ -235,8 +240,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
               _miniStat('Assets', assets, fern.sprout, masked),
               const SizedBox(width: 24),
               if (state.settings.showDebt)
-                _miniStat(
-                    'Debt', debt.abs(), const Color(0xFFF2B8A0), masked),
+                _miniStat('Debt', debt.abs(), const Color(0xFFF2B8A0), masked),
               const Spacer(),
               Text(
                 '${visible.length} accounts',
@@ -253,13 +257,17 @@ class _OverviewScreenState extends State<OverviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                color: color.withValues(alpha: 0.8), fontSize: 11.5)),
+        Text(
+          label,
+          style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 11.5),
+        ),
         Text(
           masked ? '••••' : money(value),
           style: TextStyle(
-              color: color, fontSize: 15, fontWeight: FontWeight.w700),
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -275,46 +283,56 @@ class _OverviewScreenState extends State<OverviewScreen> {
         itemBuilder: (context, i) {
           final fern = context.fern;
           final a = accounts[i];
-          return Container(
+          return SizedBox(
             width: 190,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE4EBE0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    LogoAvatar(
-                      url: a.connection?.logo,
-                      fallback: accountTypeIcon(a.type),
-                      size: 30,
-                    ),
-                    const Spacer(),
-                    if (!a.isActive) StatusChip('Inactive', fern.clay),
-                  ],
+            child: Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AccountDetailScreen(state: widget.state, account: a),
+                  ),
                 ),
-                const Spacer(),
-                Text(
-                  a.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      color: fern.slate,
-                      fontWeight: FontWeight.w500),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          LogoAvatar(
+                            url: a.connection?.logo,
+                            fallback: accountTypeIcon(a.type),
+                            size: 45,
+                          ),
+                          const Spacer(),
+                          if (!a.isActive) StatusChip('Inactive', fern.clay),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        a.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: fern.slate,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      MoneyText(
+                        a.displayBalance,
+                        currency: a.balance?.currency ?? 'NZD',
+                        size: 18,
+                        masked: masked,
+                        color: (a.displayBalance ?? 0) < 0 ? fern.clay : null,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 2),
-                MoneyText(
-                  a.displayBalance,
-                  currency: a.balance?.currency ?? 'NZD',
-                  size: 18,
-                  masked: masked,
-                ),
-              ],
+              ),
             ),
           );
         },
@@ -328,8 +346,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Text('No spending this month',
-              style: TextStyle(color: fern.slate)),
+          child: Text(
+            'No spending this month',
+            style: TextStyle(color: fern.slate),
+          ),
         ),
       );
     }
@@ -351,7 +371,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w600),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -372,7 +394,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         money(e.value),
                         textAlign: TextAlign.right,
                         style: const TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w700),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
