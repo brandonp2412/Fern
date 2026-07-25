@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
-import 'accounts_screen.dart';
 import 'overview_screen.dart';
 import 'profile_screen.dart';
 import 'transactions_screen.dart';
@@ -46,7 +45,6 @@ class _HomeShellState extends State<HomeShell> {
     final state = widget.state;
     final screens = [
       OverviewScreen(state: state),
-      AccountsScreen(state: state),
       TransactionsScreen(state: state),
       ProfileScreen(state: state),
     ];
@@ -63,21 +61,20 @@ class _HomeShellState extends State<HomeShell> {
         onDestinationSelected: _selectTab,
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Overview'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Overview',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.account_balance_outlined),
-              selectedIcon: Icon(Icons.account_balance),
-              label: 'Accounts'),
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Activity',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long),
-              label: 'Activity'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile'),
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );
