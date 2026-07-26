@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/transaction.dart';
@@ -17,6 +19,10 @@ class RecategorizeScreen extends StatefulWidget {
 }
 
 class _RecategorizeScreenState extends State<RecategorizeScreen> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +31,8 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
     widget.state.removeListener(_onChange);
     super.dispose();
   }
@@ -33,10 +41,31 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
     if (mounted) setState(() {});
   }
 
+  void _setQuery(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      setState(() => _query = v.trim());
+    });
+  }
+
+  bool _txMatches(Transaction tx) {
+    if (_query.isEmpty) return true;
+    final q = _query.toLowerCase();
+    final hay = [
+      tx.title,
+      tx.description,
+      tx.category?.name ?? '',
+      tx.category?.groupName ?? '',
+    ].join(' ').toLowerCase();
+    return hay.contains(q);
+  }
+
   Map<String, List<Transaction>> _groupTxns() {
     final groups = <String, List<Transaction>>{};
     for (final tx in widget.state.transactions) {
       if (tx.amount >= 0) continue;
+      if (!_txMatches(tx)) continue;
       final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
       groups.putIfAbsent(group, () => []).add(tx);
     }
@@ -52,21 +81,56 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
   @override
   Widget build(BuildContext context) {
     final grouped = _groupTxns();
+    final txCount = widget.state.transactions.where((tx) => tx.amount < 0).length;
+    final hasTxns = txCount > 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Categorize spending')),
-      body: grouped.isEmpty
+      body: !hasTxns
           ? const EmptyState(
               icon: Icons.category_outlined,
               title: 'Nothing to categorize',
               message: 'No spending transactions yet.',
             )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          : Column(
               children: [
-                for (final e in grouped.entries) ...[
-                  _groupSection(e.key, e.value),
-                ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: _setQuery,
+                    decoration: InputDecoration(
+                      hintText: 'Search merchants, categories…',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _query.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _debounce?.cancel();
+                                setState(() => _query = '');
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: grouped.isEmpty
+                      ? const EmptyState(
+                          icon: Icons.search_off,
+                          title: 'No matches',
+                          message: 'Try a different search.',
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          children: [
+                            for (final e in grouped.entries) ...[
+                              _groupSection(e.key, e.value),
+                            ],
+                          ],
+                        ),
+                ),
               ],
             ),
     );
@@ -181,7 +245,7 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => _CategoryPicker(
+      builder: (ctx) => CategoryPicker(
         known: known,
         extra: akahuCats,
         current: currentName,
@@ -198,149 +262,3 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
   }
 }
 
-class _CategoryPicker extends StatefulWidget {
-  final Map<String, List<String>> known;
-  final List<String> extra;
-  final String? current;
-  final ValueChanged<String> onPick;
-
-  const _CategoryPicker({
-    required this.known,
-    required this.extra,
-    required this.current,
-    required this.onPick,
-  });
-
-  @override
-  State<_CategoryPicker> createState() => _CategoryPickerState();
-}
-
-class _CategoryPickerState extends State<_CategoryPicker> {
-  final _searchCtrl = TextEditingController();
-  String _q = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchCtrl.addListener(() => setState(() => _q = _searchCtrl.text.toLowerCase()));
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  bool _matches(String cat) => _q.isEmpty || cat.toLowerCase().contains(_q);
-
-  @override
-  Widget build(BuildContext context) {
-    final fern = context.fern;
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (context, scroll) => Column(
-        children: [
-          const SizedBox(height: 8),
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: fern.slate.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: 'Search categories...',
-                prefixIcon: Icon(Icons.search, size: 20, color: fern.slate),
-                filled: true,
-                fillColor: fern.mist,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              controller: scroll,
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-              children: [
-                if (_matches('Uncategorised'))
-                  _catOption('Uncategorised', null, context),
-                for (final e in widget.known.entries) ...[
-                  if (e.value.any(_matches)) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
-                      child: Text(
-                        e.key,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: fern.slate,
-                        ),
-                      ),
-                    ),
-                    for (final cat in e.value)
-                      if (_matches(cat)) _catOption(cat, e.key, context),
-                  ],
-                ],
-                if (widget.extra.any(_matches)) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
-                    child: Text(
-                      'From bank',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: fern.slate,
-                      ),
-                    ),
-                  ),
-                  for (final cat in widget.extra)
-                    if (_matches(cat)) _catOption(cat, null, context),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _catOption(String name, String? group, BuildContext context) {
-    final fern = context.fern;
-    final selected = widget.current == name;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        tileColor: selected ? fern.green.withValues(alpha: 0.08) : null,
-        title: Text(
-          name,
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? fern.green : null,
-          ),
-        ),
-        trailing: selected
-            ? Icon(Icons.check, size: 18, color: fern.green)
-            : null,
-        onTap: () => widget.onPick(name),
-      ),
-    );
-  }
-}

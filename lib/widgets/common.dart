@@ -252,3 +252,151 @@ class AmountText extends StatelessWidget {
     );
   }
 }
+
+class CategoryPicker extends StatefulWidget {
+  final Map<String, List<String>> known;
+  final List<String> extra;
+  final String? current;
+  final ValueChanged<String> onPick;
+
+  const CategoryPicker({
+    super.key,
+    required this.known,
+    required this.extra,
+    required this.current,
+    required this.onPick,
+  });
+
+  @override
+  State<CategoryPicker> createState() => _CategoryPickerState();
+}
+
+class _CategoryPickerState extends State<CategoryPicker> {
+  final _searchCtrl = TextEditingController();
+  String _q = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(() => setState(() => _q = _searchCtrl.text.toLowerCase()));
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matches(String cat) => _q.isEmpty || cat.toLowerCase().contains(_q);
+
+  @override
+  Widget build(BuildContext context) {
+    final fern = context.fern;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, scroll) => Column(
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: fern.slate.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: 'Search categories...',
+                prefixIcon: Icon(Icons.search, size: 20, color: fern.slate),
+                filled: true,
+                fillColor: fern.mist,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                if (_matches('Uncategorised'))
+                  _catOption('Uncategorised', null, context),
+                for (final e in widget.known.entries) ...[
+                  if (e.value.any(_matches)) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
+                      child: Text(
+                        e.key,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: fern.slate,
+                        ),
+                      ),
+                    ),
+                    for (final cat in e.value)
+                      if (_matches(cat)) _catOption(cat, e.key, context),
+                  ],
+                ],
+                if (widget.extra.any(_matches)) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
+                    child: Text(
+                      'From bank',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: fern.slate,
+                      ),
+                    ),
+                  ),
+                  for (final cat in widget.extra)
+                    if (_matches(cat)) _catOption(cat, null, context),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _catOption(String name, String? group, BuildContext context) {
+    final fern = context.fern;
+    final selected = widget.current == name;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        tileColor: selected ? fern.green.withValues(alpha: 0.08) : null,
+        title: Text(
+          name,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? fern.green : null,
+          ),
+        ),
+        trailing: selected
+            ? Icon(Icons.check, size: 18, color: fern.green)
+            : null,
+        onTap: () => widget.onPick(name),
+      ),
+    );
+  }
+}
