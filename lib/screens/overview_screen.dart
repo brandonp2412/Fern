@@ -35,7 +35,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
               final cold = state.accounts.isEmpty && txns.isEmpty;
 
               if (cold && state.error != null) {
-                return ErrorState(error: state.error!, onRetry: () => state.load());
+                return ErrorState(
+                  error: state.error!,
+                  onRetry: () => state.load(),
+                );
               }
 
               return ListView(
@@ -50,14 +53,16 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     SectionHeader(
                       'Spending this month',
                       trailing: IconButton(
-                        icon: Icon(Icons.settings_outlined,
-                            size: 18, color: context.fern.slate),
+                        icon: Icon(
+                          Icons.settings_outlined,
+                          size: 18,
+                          color: context.fern.slate,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                RecategorizeScreen(state: state),
+                            builder: (_) => RecategorizeScreen(state: state),
                           ),
                         ),
                       ),
@@ -72,8 +77,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
                             for (final tx in txns.take(8))
                               TxnTile(
                                 tx: tx,
-                                accountName: state.accountById(tx.account)?.name,
-                                categoryGroupOverride: state.categoryGroupFor(tx),
+                                categoryGroupOverride: state.categoryGroupFor(
+                                  tx,
+                                ),
                                 masked: masked,
                                 onTap: () => showTxnDetail(context, state, tx),
                               ),
@@ -101,8 +107,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Row(

@@ -7,7 +7,6 @@ import 'common.dart';
 class TxnTile extends StatelessWidget {
   final Transaction tx;
   final VoidCallback? onTap;
-  final String? accountName;
   final String? categoryGroupOverride;
   final bool masked;
 
@@ -15,7 +14,6 @@ class TxnTile extends StatelessWidget {
     super.key,
     required this.tx,
     this.onTap,
-    this.accountName,
     this.categoryGroupOverride,
     this.masked = false,
   });
@@ -24,11 +22,7 @@ class TxnTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final fern = context.fern;
     final group = categoryGroupOverride ?? tx.category?.groupName;
-    final subtitle = <String>[
-      if (accountName != null) accountName!,
-      relativeDate(tx.date),
-      if (group != null) group,
-    ].join(' · ');
+    final subtitle = <String>[relativeDate(tx.date), ?group].join(' · ');
 
     return InkWell(
       onTap: onTap,
@@ -76,18 +70,18 @@ class TxnTile extends StatelessWidget {
   }
 
   static IconData _iconFor(String type) => switch (type) {
-        'EFTPOS' => Icons.credit_card,
-        'TRANSFER' => Icons.swap_horiz,
-        'PAYMENT' => Icons.payments_outlined,
-        'DIRECT DEBIT' => Icons.repeat,
-        'DIRECT CREDIT' => Icons.call_received,
-        'ATM' => Icons.local_atm,
-        'INTEREST' => Icons.percent,
-        'FEE' => Icons.receipt_outlined,
-        'TAX' => Icons.account_balance,
-        'LOAN' => Icons.home_outlined,
-        'CREDIT CARD' => Icons.credit_card,
-        'STANDING ORDER' => Icons.event_repeat,
-        _ => Icons.shopping_bag_outlined,
-      };
+    'EFTPOS' => Icons.credit_card,
+    'TRANSFER' => Icons.swap_horiz,
+    'PAYMENT' => Icons.payments_outlined,
+    'DIRECT DEBIT' => Icons.repeat,
+    'DIRECT CREDIT' => Icons.call_received,
+    'ATM' => Icons.local_atm,
+    'INTEREST' => Icons.percent,
+    'FEE' => Icons.receipt_outlined,
+    'TAX' => Icons.account_balance,
+    'LOAN' => Icons.home_outlined,
+    'CREDIT CARD' => Icons.credit_card,
+    'STANDING ORDER' => Icons.event_repeat,
+    _ => Icons.shopping_bag_outlined,
+  };
 }

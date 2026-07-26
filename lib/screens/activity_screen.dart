@@ -257,7 +257,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       for (final tx in dayTxns)
                         TxnTile(
                           tx: tx,
-                          accountName: state.accountById(tx.account)?.name,
                           categoryGroupOverride: state.categoryGroupFor(tx),
                           masked: masked,
                           onTap: () => showTxnDetail(context, state, tx),
