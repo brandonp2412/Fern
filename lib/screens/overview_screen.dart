@@ -23,15 +23,6 @@ class _OverviewScreenState extends State<OverviewScreen> {
   Widget build(BuildContext context) {
     final state = widget.state;
     final masked = state.settings.hideBalances;
-    final cold = state.accounts.isEmpty && state.transactions.isEmpty;
-
-    if (cold && state.error != null) {
-      return Scaffold(
-        body: SafeArea(
-          child: ErrorState(error: state.error!, onRetry: () => state.load()),
-        ),
-      );
-    }
 
     return Scaffold(
       body: SafeArea(
@@ -41,6 +32,12 @@ class _OverviewScreenState extends State<OverviewScreen> {
             listenable: state,
             builder: (context, _) {
               final txns = state.transactions;
+              final cold = state.accounts.isEmpty && txns.isEmpty;
+
+              if (cold && state.error != null) {
+                return ErrorState(error: state.error!, onRetry: () => state.load());
+              }
+
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [

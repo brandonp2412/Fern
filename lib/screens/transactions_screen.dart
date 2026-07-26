@@ -192,18 +192,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _body() {
-    final state = widget.state;
-    final cold = state.accounts.isEmpty && state.transactions.isEmpty;
-    if (cold) {
-      if (state.error != null)
-        return ErrorState(error: state.error!, onRetry: () => state.load());
-      return const Center(child: CircularProgressIndicator());
-    }
-    final grouped = _grouped;
-    if (grouped.isEmpty) {
-      return ListenableBuilder(
-        listenable: state,
-        builder: (context, _) {
+    return ListenableBuilder(
+      listenable: widget.state,
+      builder: (context, _) {
+        final state = widget.state;
+        final cold = state.accounts.isEmpty && state.transactions.isEmpty;
+        if (cold) {
+          if (state.error != null) {
+            return ErrorState(error: state.error!, onRetry: () => state.load());
+          }
+          return const Center(child: CircularProgressIndicator());
+        }
+        final grouped = _grouped;
+        if (grouped.isEmpty) {
           final txns = state.transactions;
           if (txns.isEmpty && state.refreshing) {
             return const Center(child: CircularProgressIndicator());
@@ -213,78 +214,78 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             title: 'No transactions',
             message: 'Try widening your filters or date range.',
           );
-        },
-      );
-    }
-    final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    return RefreshIndicator(
-      onRefresh: () => state.load(force: true),
-      child: ListView.builder(
-        controller: _scroll,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        itemCount: keys.length + 1,
-        itemBuilder: (context, i) {
-          if (i == keys.length) {
-            return state.txnCursor != null
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : const SizedBox(height: 40);
-          }
-          final fern = context.fern;
-          final key = keys[i];
-          final dayTxns = grouped[key]!;
-          final net = dayTxns.fold<num>(0, (s, t) => s + t.amount);
-          final masked = state.settings.hideBalances;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
-                child: Row(
-                  children: [
-                    Text(
-                      relativeDate(key),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: fern.slate,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      masked ? '••••' : money(net, sign: true),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: net >= 0 ? fern.green : fern.slate,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      for (final tx in dayTxns)
-                        TxnTile(
-                          tx: tx,
-                          accountName: state.accountById(tx.account)?.name,
-                          categoryGroupOverride: state.categoryGroupFor(tx),
-                          masked: masked,
-                          onTap: () => showTxnDetail(context, state, tx),
+        }
+        final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+        return RefreshIndicator(
+          onRefresh: () => state.load(force: true),
+          child: ListView.builder(
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            itemCount: keys.length + 1,
+            itemBuilder: (context, i) {
+              if (i == keys.length) {
+                return state.txnCursor != null
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : const SizedBox(height: 40);
+              }
+              final fern = context.fern;
+              final key = keys[i];
+              final dayTxns = grouped[key]!;
+              final net = dayTxns.fold<num>(0, (s, t) => s + t.amount);
+              final masked = state.settings.hideBalances;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
+                    child: Row(
+                      children: [
+                        Text(
+                          relativeDate(key),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: fern.slate,
+                          ),
                         ),
-                    ],
+                        const Spacer(),
+                        Text(
+                          masked ? '••••' : money(net, sign: true),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: net >= 0 ? fern.green : fern.slate,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          for (final tx in dayTxns)
+                            TxnTile(
+                              tx: tx,
+                              accountName: state.accountById(tx.account)?.name,
+                              categoryGroupOverride: state.categoryGroupFor(tx),
+                              masked: masked,
+                              onTap: () => showTxnDetail(context, state, tx),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

@@ -129,24 +129,35 @@ class AppState extends ChangeNotifier {
     refreshing = true;
     notifyListeners();
     try {
-      final results = await Future.wait([api.getMe(), api.getAccounts(), _fetchTransactions()]);
+      final results = await Future.wait([api.getMe(), api.getAccounts()]);
       user = results[0] as User;
       accounts = results[1] as List<Account>;
-      _setTransactions(results[2] as List<Transaction>);
       loading = false;
       refreshing = false;
       offline = false;
       error = null;
       lastSync = DateTime.now();
       unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
-      cacheTransactions(transactions);
+      notifyListeners();
     } catch (e) {
       refreshing = false;
       offline = true;
-      if (accounts.isEmpty && transactions.isEmpty) {
+      loading = false;
+      if (transactions.isEmpty) {
         error = e.toString();
-        loading = false;
       }
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final txns = await _fetchTransactions();
+      _setTransactions(txns);
+      cacheTransactions(transactions);
+    } catch (e) {
+      debugPrint('AppState.load: transaction fetch failed: $e');
+      offline = true;
+      if (transactions.isEmpty) error = e.toString();
     }
     notifyListeners();
   }
@@ -160,7 +171,8 @@ class AppState extends ChangeNotifier {
       final page = await api.getTransactions(start: start, cursor: cursor);
       all.addAll(page.items);
       cursor = page.nextCursor;
-      if (i == 0) notifyListeners();
+      _setTransactions([...all]);
+      notifyListeners();
       if (cursor == null) break;
     }
     txnCursor = cursor;
@@ -179,7 +191,8 @@ class AppState extends ChangeNotifier {
       _recomputeAll();
       cacheTransactions(page.items);
       txnCursor = page.nextCursor;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AppState.loadOlder: failed: $e');
     } finally {
       _loadingOlder = false;
       notifyListeners();
