@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../services/akahu_api.dart';
+import '../services/auto_categorizer.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -43,6 +44,38 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
 
   Future<void> _clearOverride() async {
     await widget.state.clearCategoryOverride(widget.tx.id);
+  }
+
+  void _pickCategory() {
+    final known = AutoCategorizer.categoriesByGroup;
+    final currentName = widget.state.categoryNameFor(widget.tx);
+
+    final akahuCats = <String>[];
+    for (final t in widget.state.transactions) {
+      if (t.category?.name != null &&
+          !known.values.any((list) => list.contains(t.category!.name)) &&
+          !akahuCats.contains(t.category!.name)) {
+        akahuCats.add(t.category!.name);
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => CategoryPicker(
+        known: known,
+        extra: akahuCats,
+        current: currentName,
+        onPick: (cat) {
+          if (cat == 'Uncategorised') {
+            widget.state.clearCategoryOverride(widget.tx.id);
+          } else {
+            widget.state.saveCategoryOverride(widget.tx.id, cat);
+          }
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
   }
 
   Future<void> _report(BuildContext context) async {
@@ -146,8 +179,32 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                 if (tx.merchant?.website != null)
                   _row(Icons.language, 'Website', tx.merchant!.website!),
                 if (categoryName != null)
-                  _row(Icons.category_outlined, 'Category',
-                      '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden ? ' (edited)' : autoGuess ? ' (auto)' : ''}'),
+                  InkWell(
+                    onTap: _pickCategory,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.category_outlined, size: 18, color: fern.moss),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 118,
+                            child: Text('Category',
+                                style: TextStyle(color: fern.slate, fontSize: 13)),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden ? ' (edited)' : autoGuess ? ' (auto)' : ''}',
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Icon(Icons.edit_outlined, size: 16, color: fern.slate),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (meta?.particulars != null)
                   _row(Icons.tag, 'Particulars', meta!.particulars!),
                 if (meta?.code != null)
