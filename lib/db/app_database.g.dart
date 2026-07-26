@@ -1278,6 +1278,17 @@ class $TransactionsTable extends Transactions
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _metaLogoMeta = const VerificationMeta(
+    'metaLogo',
+  );
+  @override
+  late final GeneratedColumn<String> metaLogo = GeneratedColumn<String>(
+    'meta_logo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -1304,6 +1315,7 @@ class $TransactionsTable extends Transactions
     categoryGroup,
     autoCategoryName,
     autoCategoryGroup,
+    metaLogo,
     updatedAt,
   ];
   @override
@@ -1428,6 +1440,12 @@ class $TransactionsTable extends Transactions
         ),
       );
     }
+    if (data.containsKey('meta_logo')) {
+      context.handle(
+        _metaLogoMeta,
+        metaLogo.isAcceptableOrUnknown(data['meta_logo']!, _metaLogoMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -1497,6 +1515,10 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}auto_category_group'],
       ),
+      metaLogo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meta_logo'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -1524,6 +1546,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
   final String? categoryGroup;
   final String? autoCategoryName;
   final String? autoCategoryGroup;
+  final String? metaLogo;
   final DateTime updatedAt;
   const TransactionRow({
     required this.id,
@@ -1539,6 +1562,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     this.categoryGroup,
     this.autoCategoryName,
     this.autoCategoryGroup,
+    this.metaLogo,
     required this.updatedAt,
   });
   @override
@@ -1568,6 +1592,9 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     }
     if (!nullToAbsent || autoCategoryGroup != null) {
       map['auto_category_group'] = Variable<String>(autoCategoryGroup);
+    }
+    if (!nullToAbsent || metaLogo != null) {
+      map['meta_logo'] = Variable<String>(metaLogo);
     }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1600,6 +1627,9 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       autoCategoryGroup: autoCategoryGroup == null && nullToAbsent
           ? const Value.absent()
           : Value(autoCategoryGroup),
+      metaLogo: metaLogo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metaLogo),
       updatedAt: Value(updatedAt),
     );
   }
@@ -1625,6 +1655,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       autoCategoryGroup: serializer.fromJson<String?>(
         json['autoCategoryGroup'],
       ),
+      metaLogo: serializer.fromJson<String?>(json['metaLogo']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -1645,6 +1676,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       'categoryGroup': serializer.toJson<String?>(categoryGroup),
       'autoCategoryName': serializer.toJson<String?>(autoCategoryName),
       'autoCategoryGroup': serializer.toJson<String?>(autoCategoryGroup),
+      'metaLogo': serializer.toJson<String?>(metaLogo),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -1663,6 +1695,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     Value<String?> categoryGroup = const Value.absent(),
     Value<String?> autoCategoryName = const Value.absent(),
     Value<String?> autoCategoryGroup = const Value.absent(),
+    Value<String?> metaLogo = const Value.absent(),
     DateTime? updatedAt,
   }) => TransactionRow(
     id: id ?? this.id,
@@ -1684,6 +1717,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     autoCategoryGroup: autoCategoryGroup.present
         ? autoCategoryGroup.value
         : this.autoCategoryGroup,
+    metaLogo: metaLogo.present ? metaLogo.value : this.metaLogo,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   TransactionRow copyWithCompanion(TransactionsCompanion data) {
@@ -1715,6 +1749,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       autoCategoryGroup: data.autoCategoryGroup.present
           ? data.autoCategoryGroup.value
           : this.autoCategoryGroup,
+      metaLogo: data.metaLogo.present ? data.metaLogo.value : this.metaLogo,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -1735,6 +1770,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
           ..write('categoryGroup: $categoryGroup, ')
           ..write('autoCategoryName: $autoCategoryName, ')
           ..write('autoCategoryGroup: $autoCategoryGroup, ')
+          ..write('metaLogo: $metaLogo, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1755,6 +1791,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     categoryGroup,
     autoCategoryName,
     autoCategoryGroup,
+    metaLogo,
     updatedAt,
   );
   @override
@@ -1774,6 +1811,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
           other.categoryGroup == this.categoryGroup &&
           other.autoCategoryName == this.autoCategoryName &&
           other.autoCategoryGroup == this.autoCategoryGroup &&
+          other.metaLogo == this.metaLogo &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -1791,6 +1829,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
   final Value<String?> categoryGroup;
   final Value<String?> autoCategoryName;
   final Value<String?> autoCategoryGroup;
+  final Value<String?> metaLogo;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const TransactionsCompanion({
@@ -1807,6 +1846,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     this.categoryGroup = const Value.absent(),
     this.autoCategoryName = const Value.absent(),
     this.autoCategoryGroup = const Value.absent(),
+    this.metaLogo = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1824,6 +1864,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     this.categoryGroup = const Value.absent(),
     this.autoCategoryName = const Value.absent(),
     this.autoCategoryGroup = const Value.absent(),
+    this.metaLogo = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1848,6 +1889,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     Expression<String>? categoryGroup,
     Expression<String>? autoCategoryName,
     Expression<String>? autoCategoryGroup,
+    Expression<String>? metaLogo,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -1865,6 +1907,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
       if (categoryGroup != null) 'category_group': categoryGroup,
       if (autoCategoryName != null) 'auto_category_name': autoCategoryName,
       if (autoCategoryGroup != null) 'auto_category_group': autoCategoryGroup,
+      if (metaLogo != null) 'meta_logo': metaLogo,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1884,6 +1927,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     Value<String?>? categoryGroup,
     Value<String?>? autoCategoryName,
     Value<String?>? autoCategoryGroup,
+    Value<String?>? metaLogo,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -1901,6 +1945,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
       categoryGroup: categoryGroup ?? this.categoryGroup,
       autoCategoryName: autoCategoryName ?? this.autoCategoryName,
       autoCategoryGroup: autoCategoryGroup ?? this.autoCategoryGroup,
+      metaLogo: metaLogo ?? this.metaLogo,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1948,6 +1993,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     if (autoCategoryGroup.present) {
       map['auto_category_group'] = Variable<String>(autoCategoryGroup.value);
     }
+    if (metaLogo.present) {
+      map['meta_logo'] = Variable<String>(metaLogo.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -1973,6 +2021,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
           ..write('categoryGroup: $categoryGroup, ')
           ..write('autoCategoryName: $autoCategoryName, ')
           ..write('autoCategoryGroup: $autoCategoryGroup, ')
+          ..write('metaLogo: $metaLogo, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2842,6 +2891,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String?> categoryGroup,
       Value<String?> autoCategoryName,
       Value<String?> autoCategoryGroup,
+      Value<String?> metaLogo,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -2860,6 +2910,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String?> categoryGroup,
       Value<String?> autoCategoryName,
       Value<String?> autoCategoryGroup,
+      Value<String?> metaLogo,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -2935,6 +2986,11 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<String> get autoCategoryGroup => $composableBuilder(
     column: $table.autoCategoryGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metaLogo => $composableBuilder(
+    column: $table.metaLogo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3018,6 +3074,11 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get metaLogo => $composableBuilder(
+    column: $table.metaLogo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -3086,6 +3147,9 @@ class $$TransactionsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get metaLogo =>
+      $composableBuilder(column: $table.metaLogo, builder: (column) => column);
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -3134,6 +3198,7 @@ class $$TransactionsTableTableManager
                 Value<String?> categoryGroup = const Value.absent(),
                 Value<String?> autoCategoryName = const Value.absent(),
                 Value<String?> autoCategoryGroup = const Value.absent(),
+                Value<String?> metaLogo = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
@@ -3150,6 +3215,7 @@ class $$TransactionsTableTableManager
                 categoryGroup: categoryGroup,
                 autoCategoryName: autoCategoryName,
                 autoCategoryGroup: autoCategoryGroup,
+                metaLogo: metaLogo,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -3168,6 +3234,7 @@ class $$TransactionsTableTableManager
                 Value<String?> categoryGroup = const Value.absent(),
                 Value<String?> autoCategoryName = const Value.absent(),
                 Value<String?> autoCategoryGroup = const Value.absent(),
+                Value<String?> metaLogo = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
@@ -3184,6 +3251,7 @@ class $$TransactionsTableTableManager
                 categoryGroup: categoryGroup,
                 autoCategoryName: autoCategoryName,
                 autoCategoryGroup: autoCategoryGroup,
+                metaLogo: metaLogo,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),

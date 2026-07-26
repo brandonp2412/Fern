@@ -49,8 +49,9 @@ class Transactions extends Table {
   TextColumn get categoryName => text().nullable()();
   TextColumn get categoryGroup => text().nullable()();
   TextColumn get autoCategoryName => text().nullable()();
-  TextColumn get autoCategoryGroup => text().nullable()();
-  DateTimeColumn get updatedAt => dateTime()();
+	TextColumn get autoCategoryGroup => text().nullable()();
+	TextColumn get metaLogo => text().nullable()();
+	DateTimeColumn get updatedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -72,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,6 +85,9 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(transactions);
             await m.addColumn(
                 categoryOverrides, categoryOverrides.categoryGroup);
+          }
+          if (from <= 2) {
+            await m.addColumn(transactions, transactions.metaLogo);
           }
         },
       );
@@ -188,6 +192,7 @@ class AppDatabase extends _$AppDatabase {
                 categoryGroup: Value(t.category?.groupName),
                 autoCategoryName: Value(autoName),
                 autoCategoryGroup: Value(autoGroup),
+                metaLogo: Value(t.meta?.logo),
                 updatedAt: now,
               );
             })
@@ -227,6 +232,7 @@ class AppDatabase extends _$AppDatabase {
                       : {},
                 )
               : null,
+          meta: r.metaLogo != null ? TransactionMeta(logo: r.metaLogo) : null,
           autoCategoryName: r.autoCategoryName,
           autoCategoryGroup: r.autoCategoryGroup,
         );
@@ -371,13 +377,25 @@ class AppDatabase extends _$AppDatabase {
     return parts.join(' AND ');
   }
 
-  Stream<Map<String, (double, double)>> queryMonthlyTotals({DateTime? start, DateTime? end}) {
+  String _categoryWhere({Set<String>? categoryFilter}) {
+    if (categoryFilter == null || categoryFilter.isEmpty) return '';
+    final list = categoryFilter
+        .map((c) => '\'${c.replaceAll("'", "''")}\'')
+        .join(',');
+    return ' AND t.id IN ('
+        'SELECT tt.id FROM transactions tt'
+        ' LEFT JOIN category_overrides oo ON oo.transaction_id = tt.id'
+        ' WHERE COALESCE(oo.category_group, oo.category_name, tt.category_group, tt.auto_category_group, \'Uncategorised\') IN ($list)'
+        ')';
+  }
+
+  Stream<Map<String, (double, double)>> queryMonthlyTotals({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
     return _watchStat(
       'SELECT substr(t.date, 1, 7) AS k,'
           ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
           ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
           ' FROM transactions t'
-          ' WHERE ${_dateWhere(start: start, end: end)}'
+          ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}'
           ' GROUP BY k ORDER BY k',
       readsFrom: {transactions},
     ).map((rows) {
@@ -389,16 +407,17 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Stream<Map<String, double>> queryCategoryTotals({DateTime? start, DateTime? end}) {
+  Stream<Map<String, double>> queryCategoryTotals({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
     final where = start != null || end != null
         ? 'AND ${_dateWhere(start: start, end: end)}'
         : '';
+    final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
           ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
           ' FROM transactions t'
           ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-          ' WHERE t.amount < 0 $where'
+          ' WHERE t.amount < 0 $where$catWhere'
           ' GROUP BY k'
           ' ORDER BY total DESC',
       readsFrom: {transactions, categoryOverrides},
@@ -407,13 +426,14 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Stream<Map<String, double>> queryWeeklyTrend({DateTime? start, DateTime? end}) {
+  Stream<Map<String, double>> queryWeeklyTrend({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
     final where = _dateWhere(start: start, end: end);
+    final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT date(substr(t.date, 1, 10), \'-\' || ((strftime(\'%w\', substr(t.date, 1, 10)) + 6) % 7) || \' days\') AS k,'
           ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
           ' FROM transactions t'
-          ' WHERE t.amount < 0 AND $where'
+          ' WHERE t.amount < 0 AND $where$catWhere'
           ' GROUP BY k'
           ' ORDER BY k',
       readsFrom: {transactions},
@@ -422,13 +442,14 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Stream<Map<String, double>> queryTopMerchants({int count = 5, DateTime? start, DateTime? end}) {
+  Stream<Map<String, double>> queryTopMerchants({int count = 5, DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
     final where = _dateWhere(start: start, end: end);
+    final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT COALESCE(t.merchant_name, t.description) AS k,'
           ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
           ' FROM transactions t'
-          ' WHERE t.amount < 0 AND $where'
+          ' WHERE t.amount < 0 AND $where$catWhere'
           ' AND COALESCE(t.merchant_name, t.description) != \'\''
           ' GROUP BY k'
           ' ORDER BY total DESC'
