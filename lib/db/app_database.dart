@@ -379,7 +379,12 @@ class AppDatabase extends _$AppDatabase {
 
   String _categoryWhere({Set<String>? categoryFilter}) {
     if (categoryFilter == null || categoryFilter.isEmpty) return '';
-    final list = categoryFilter
+    final expanded = <String>{...categoryFilter};
+    for (final cat in categoryFilter) {
+      final names = AutoCategorizer.categoriesByGroup[cat];
+      if (names != null) expanded.addAll(names);
+    }
+    final list = expanded
         .map((c) => '\'${c.replaceAll("'", "''")}\'')
         .join(',');
     return ' AND t.id IN ('
@@ -397,7 +402,7 @@ class AppDatabase extends _$AppDatabase {
           ' FROM transactions t'
           ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}'
           ' GROUP BY k ORDER BY k',
-      readsFrom: {transactions},
+      readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       final map = <String, (double, double)>{};
       for (final r in rows) {
@@ -436,7 +441,7 @@ class AppDatabase extends _$AppDatabase {
           ' WHERE t.amount < 0 AND $where$catWhere'
           ' GROUP BY k'
           ' ORDER BY k',
-      readsFrom: {transactions},
+      readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
     });
@@ -454,7 +459,7 @@ class AppDatabase extends _$AppDatabase {
           ' GROUP BY k'
           ' ORDER BY total DESC'
           ' LIMIT $count',
-      readsFrom: {transactions},
+      readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
     });

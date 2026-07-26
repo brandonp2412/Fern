@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../db/app_database.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -54,6 +53,7 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   _StatsRange _range = _StatsRange.d30;
   DateTimeRange? _customRange;
+  Set<String> _catFilter = {};
 
   Map<String, (double, double)> _monthly = {};
   Map<String, double> _categoryTotals = {};
@@ -75,17 +75,18 @@ class _StatsScreenState extends State<StatsScreen> {
     _unsubscribe();
     final db = widget.state.db;
     final (start, end) = _rangeBounds();
+    final cats = _catFilter.isNotEmpty ? _catFilter : null;
     _monthlySub = db
-        .queryMonthlyTotals(start: start, end: end)
+        .queryMonthlyTotals(start: start, end: end, categoryFilter: cats)
         .listen((d) => setState(() => _monthly = d));
     _catSub = db
-        .queryCategoryTotals(start: start, end: end)
+        .queryCategoryTotals(start: start, end: end, categoryFilter: cats)
         .listen((d) => setState(() => _categoryTotals = d));
     _weeklySub = db
-        .queryWeeklyTrend(start: start, end: end)
+        .queryWeeklyTrend(start: start, end: end, categoryFilter: cats)
         .listen((d) => setState(() => _weekly = d));
     _merchantsSub = db
-        .queryTopMerchants(start: start, end: end)
+        .queryTopMerchants(start: start, end: end, categoryFilter: cats)
         .listen((d) => setState(() => _merchants = d));
   }
 
@@ -141,6 +142,14 @@ class _StatsScreenState extends State<StatsScreen> {
   void _setRange(_StatsRange option) {
     setState(() => _range = option);
     _subscribe();
+  }
+
+  Set<String> get _availableCategories {
+    final cats = <String>{};
+    for (final tx in widget.state.transactions) {
+      cats.add(widget.state.categoryGroupFor(tx) ?? 'Uncategorised');
+    }
+    return cats;
   }
 
   List<MonthTotal> _buildMonthlyList() {
@@ -248,6 +257,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ? 'Custom'
           : '${DateFormat('d MMM').format(_customRange!.start)} – ${DateFormat('d MMM').format(_customRange!.end)}',
     };
+    final cnt = _catFilter.length;
     return SizedBox(
       height: 40,
       child: ListView(
@@ -259,26 +269,143 @@ class _StatsScreenState extends State<StatsScreen> {
             _StatsRange.all,
             _StatsRange.custom,
           ])
-            ChoiceChip(
-              label: Text(labelFor[option]!),
-              selected: _range == option,
-              checkmarkColor:
-                  _range == option ? Colors.white : context.fern.ink,
-              onSelected: (_) {
-                if (option == _StatsRange.custom) {
-                  _pickCustomRange(context);
-                } else {
-                  _setRange(option);
-                }
-              },
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(labelFor[option]!),
+                selected: _range == option,
+                checkmarkColor:
+                    _range == option ? Colors.white : context.fern.ink,
+                onSelected: (_) {
+                  if (option == _StatsRange.custom) {
+                    _pickCustomRange(context);
+                  } else {
+                    _setRange(option);
+                  }
+                },
+                labelStyle: TextStyle(
+                  color: _range == option ? Colors.white : context.fern.ink,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(cnt == 0 ? 'Categories' : 'Categories ($cnt)'),
+              selected: cnt > 0,
+              avatar: const Icon(Icons.filter_list, size: 16),
+              onSelected: (_) => _openCatModal(),
+              checkmarkColor: cnt > 0 ? Colors.white : context.fern.ink,
               labelStyle: TextStyle(
-                color: _range == option ? Colors.white : context.fern.ink,
+                color: cnt > 0 ? Colors.white : context.fern.ink,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  void _openCatModal() {
+    final cats = _availableCategories.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorised') return 1;
+        if (b == 'Uncategorised') return -1;
+        return a.compareTo(b);
+      });
+    var pending = {..._catFilter};
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Categories',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (pending.isNotEmpty)
+                          TextButton(
+                            onPressed: () => setModalState(() => pending = {}),
+                            child: const Text('Clear'),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (cats.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('No categories yet'),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final cat in cats)
+                            FilterChip(
+                              label: Text(cat),
+                              selected: pending.contains(cat),
+                              checkmarkColor: pending.contains(cat)
+                                  ? Colors.white
+                                  : context.fern.ink,
+                              labelStyle: TextStyle(
+                                color: pending.contains(cat)
+                                    ? Colors.white
+                                    : context.fern.ink,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              onSelected: (val) {
+                                setModalState(() {
+                                  if (val) {
+                                    pending = {...pending, cat};
+                                  } else {
+                                    pending = {...pending}..remove(cat);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() => _catFilter = pending);
+                          _subscribe();
+                          Navigator.of(ctx).pop();
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -354,11 +481,20 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => RecategorizeScreen(state: widget.state),
-                ),
-              ),
+              onPressed: () {
+                final (start, end) = _rangeBounds();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RecategorizeScreen(
+                      state: widget.state,
+                      start: start,
+                      end: end,
+                      catFilter:
+                          _catFilter.isNotEmpty ? _catFilter : null,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           Card(

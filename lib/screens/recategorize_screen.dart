@@ -11,8 +11,17 @@ import '../widgets/common.dart';
 
 class RecategorizeScreen extends StatefulWidget {
   final AppState state;
+  final DateTime? start;
+  final DateTime? end;
+  final Set<String>? catFilter;
 
-  const RecategorizeScreen({super.key, required this.state});
+  const RecategorizeScreen({
+    super.key,
+    required this.state,
+    this.start,
+    this.end,
+    this.catFilter,
+  });
 
   @override
   State<RecategorizeScreen> createState() => _RecategorizeScreenState();
@@ -61,12 +70,23 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
     return hay.contains(q);
   }
 
+  bool _inDateRange(Transaction tx) {
+    if (widget.start == null && widget.end == null) return true;
+    final d = DateTime.tryParse(tx.date.substring(0, 10));
+    if (d == null) return true;
+    if (widget.start != null && d.isBefore(widget.start!)) return false;
+    if (widget.end != null && d.isAfter(widget.end!)) return false;
+    return true;
+  }
+
   Map<String, List<Transaction>> _groupTxns() {
     final groups = <String, List<Transaction>>{};
     for (final tx in widget.state.transactions) {
       if (tx.amount >= 0) continue;
       if (!_txMatches(tx)) continue;
+      if (!_inDateRange(tx)) continue;
       final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
+      if (widget.catFilter != null && !widget.catFilter!.contains(group)) continue;
       groups.putIfAbsent(group, () => []).add(tx);
     }
     final sorted = groups.entries.toList()
