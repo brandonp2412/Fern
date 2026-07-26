@@ -9,16 +9,16 @@ import '../widgets/common.dart';
 import '../widgets/txn_tile.dart';
 import 'txn_detail.dart';
 
-class TransactionsScreen extends StatefulWidget {
+class ActivityScreen extends StatefulWidget {
   final AppState state;
 
-  const TransactionsScreen({super.key, required this.state});
+  const ActivityScreen({super.key, required this.state});
 
   @override
-  State<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _TransactionsScreenState extends State<TransactionsScreen> {
+class _ActivityScreenState extends State<ActivityScreen> {
   final _scroll = ScrollController();
   final _searchCtrl = TextEditingController();
   String _query = '';

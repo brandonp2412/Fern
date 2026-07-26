@@ -3,7 +3,7 @@ import '../state/app_state.dart';
 import 'overview_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
-import 'transactions_screen.dart';
+import 'activity_screen.dart';
 
 class HomeShell extends StatefulWidget {
   final AppState state;
@@ -27,7 +27,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     final state = widget.state;
     _screens = [
       OverviewScreen(key: const ValueKey('overview'), state: state),
-      TransactionsScreen(key: const ValueKey('activity'), state: state),
+      ActivityScreen(key: const ValueKey('activity'), state: state),
       StatsScreen(key: const ValueKey('stats'), state: state),
       SettingsScreen(key: const ValueKey('settings'), state: state),
     ];
