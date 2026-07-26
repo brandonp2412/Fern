@@ -269,6 +269,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             FilterChip(
                               label: Text(cat),
                               selected: pending.contains(cat),
+                              checkmarkColor: pending.contains(cat)
+                                  ? Colors.white
+                                  : context.fern.ink,
+                              labelStyle: TextStyle(
+                                color: pending.contains(cat)
+                                    ? Colors.white
+                                    : context.fern.ink,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                               onSelected: (val) {
                                 setModalState(() {
                                   if (val) {
