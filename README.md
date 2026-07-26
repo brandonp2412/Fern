@@ -3,7 +3,7 @@
 A beautiful personal-finance app for New Zealand banks, built on the
 [Akahu Enduring API](https://www.akahu.nz). Fern connects to your bank
 accounts through Akahu and gives you a full dashboard: balances, net
-position, spending breakdowns, searchable transaction history, webhooks,
+position, spending breakdowns, searchable transaction history,
 and more.
 
 ## The Akahu API spec
@@ -118,7 +118,7 @@ Personal App:
 - `DELETE /token` — revoke the user access token (Fern's "disconnect")
 
 The spec documents further endpoints (parties, verification tokens, name
-verification, categories, connections, identity, keys, webhooks, OAuth
+verification, categories, connections, identity, keys, OAuth
 token exchange) but they either require app-auth (unavailable to Personal
 Apps) or return 403 for personal accounts even with valid user-token auth,
 so they've been removed from the app.
