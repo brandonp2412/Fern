@@ -212,9 +212,12 @@ class AppState extends ChangeNotifier {
   }
 
   void _recomputeSpendByGroup() {
+    final now = DateTime.now();
     final totals = <String, double>{};
     for (final tx in transactions) {
       if (tx.amount >= 0) continue;
+      final d = parseDate(tx.date);
+      if (d == null || d.year != now.year || d.month != now.month) continue;
       final group = categoryGroupFor(tx) ?? 'Uncategorised';
       totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
     }

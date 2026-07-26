@@ -167,11 +167,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 const SizedBox(width: 8),
                 _chip('30 days', _days == 30, () => setState(() => _days = 30)),
                 _chip('90 days', _days == 90, () => setState(() => _days = 90)),
+                _categoryButton(),
               ],
             ),
           ),
-          const SizedBox(height: 4),
-          _categoryChips(),
           const SizedBox(height: 8),
           Expanded(child: _body()),
         ],
@@ -196,39 +195,110 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _categoryChips() {
+  Widget _categoryButton() {
+    final count = _selectedCategories.length;
+    final label = count == 0 ? 'Categories' : 'Categories ($count)';
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: count > 0,
+        avatar: const Icon(Icons.filter_list, size: 16),
+        onSelected: (_) => _openCategoryModal(),
+        checkmarkColor: count > 0 ? Colors.white : context.fern.ink,
+        labelStyle: TextStyle(
+          color: count > 0 ? Colors.white : context.fern.ink,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  void _openCategoryModal() {
     final cats = _availableCategories.toList()
       ..sort((a, b) {
         if (a == 'Uncategorised') return 1;
         if (b == 'Uncategorised') return -1;
         return a.compareTo(b);
       });
-    if (cats.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          for (final cat in cats)
-            FilterChip(
-              label: Text(cat),
-              labelStyle: const TextStyle(fontSize: 12),
-              selected: _selectedCategories.contains(cat),
-              onSelected: (val) {
-                setState(() {
-                  if (val) {
-                    _selectedCategories = {..._selectedCategories, cat};
-                  } else {
-                    _selectedCategories = {..._selectedCategories}..remove(cat);
-                  }
-                });
-              },
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-        ],
-      ),
+    var pending = {..._selectedCategories};
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Categories',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (pending.isNotEmpty)
+                          TextButton(
+                            onPressed: () => setModalState(() => pending = {}),
+                            child: const Text('Clear'),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (cats.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('No categories yet'),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final cat in cats)
+                            FilterChip(
+                              label: Text(cat),
+                              selected: pending.contains(cat),
+                              onSelected: (val) {
+                                setModalState(() {
+                                  if (val) {
+                                    pending = {...pending, cat};
+                                  } else {
+                                    pending = {...pending}..remove(cat);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() => _selectedCategories = pending);
+                          Navigator.of(ctx).pop();
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -237,7 +307,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (state.loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (state.accounts.isEmpty && state.transactions.isEmpty && state.error != null) {
+    if (state.accounts.isEmpty &&
+        state.transactions.isEmpty &&
+        state.error != null) {
       return ErrorState(error: state.error!, onRetry: () => state.load());
     }
     final grouped = _grouped;

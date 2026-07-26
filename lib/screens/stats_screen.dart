@@ -1,11 +1,129 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../models/transaction.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import 'recategorize_screen.dart';
+
+enum _StatsRange { d30, d90, custom, all }
+
+class _MonthBucket {
+  final String key;
+  final String label;
+  const _MonthBucket(this.key, this.label);
+}
+
+List<_MonthBucket> _monthsBetween(DateTime start, DateTime end) {
+  final result = <_MonthBucket>[];
+  var cursor = DateTime(start.year, start.month, 1);
+  final last = DateTime(end.year, end.month, 1);
+  while (!cursor.isAfter(last) && result.length < 24) {
+    final key =
+        '${cursor.year.toString().padLeft(4, '0')}-${cursor.month.toString().padLeft(2, '0')}';
+    result.add(_MonthBucket(key, DateFormat('MMM').format(cursor)));
+    cursor = DateTime(cursor.year, cursor.month + 1, 1);
+  }
+  return result;
+}
+
+List<MonthTotal> _computeMonthlyTotals(
+  List<Transaction> txns,
+  DateTime? start,
+  DateTime? end,
+) {
+  final now = DateTime.now();
+  final rangeEnd = end ?? now;
+  DateTime rangeStart;
+  if (start != null) {
+    rangeStart = start;
+  } else if (txns.isNotEmpty) {
+    final dates = txns.map((t) => parseDate(t.date)).whereType<DateTime>();
+    rangeStart = dates.isEmpty
+        ? rangeEnd
+        : dates.reduce((a, b) => a.isBefore(b) ? a : b);
+  } else {
+    rangeStart = rangeEnd;
+  }
+  if (rangeStart.isAfter(rangeEnd)) rangeStart = rangeEnd;
+  if (rangeEnd.difference(rangeStart).inDays > 365 * 2) {
+    rangeStart = DateTime(rangeEnd.year - 2, rangeEnd.month, 1);
+  }
+  final months = _monthsBetween(rangeStart, rangeEnd);
+  final byKey = {for (final m in months) m.key: (income: 0.0, expense: 0.0)};
+  for (final tx in txns) {
+    final d = parseDate(tx.date);
+    if (d == null) continue;
+    final key =
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
+    final cur = byKey[key];
+    if (cur == null) continue;
+    if (tx.amount >= 0) {
+      byKey[key] = (income: cur.income + tx.amount, expense: cur.expense);
+    } else {
+      byKey[key] = (income: cur.income, expense: cur.expense + tx.amount.abs());
+    }
+  }
+  return [
+    for (final m in months)
+      MonthTotal(
+        label: m.label,
+        income: byKey[m.key]!.income,
+        expense: byKey[m.key]!.expense,
+      ),
+  ];
+}
+
+List<CategoryTotal> _computeCategoryTotals(
+  AppState state,
+  List<Transaction> txns,
+) {
+  final totals = <String, double>{};
+  for (final tx in txns) {
+    if (tx.amount >= 0) continue;
+    final group = state.categoryGroupFor(tx) ?? 'Uncategorised';
+    totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
+  }
+  final entries = totals.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
+}
+
+List<WeekTotal> _computeWeeklyTrend(List<Transaction> txns) {
+  final byWeek = <DateTime, double>{};
+  for (final tx in txns) {
+    if (tx.amount >= 0) continue;
+    final d = parseDate(tx.date);
+    if (d == null) continue;
+    final day = DateTime(d.year, d.month, d.day);
+    final weekStart = day.subtract(Duration(days: day.weekday - 1));
+    byWeek[weekStart] = (byWeek[weekStart] ?? 0) + tx.amount.abs().toDouble();
+  }
+  final keys = byWeek.keys.toList()..sort();
+  return [
+    for (final k in keys)
+      WeekTotal(label: DateFormat('d MMM').format(k), total: byWeek[k]!),
+  ];
+}
+
+List<MerchantTotal> _computeTopMerchants(List<Transaction> txns, int count) {
+  final totals = <String, double>{};
+  for (final tx in txns) {
+    if (tx.amount >= 0) continue;
+    final name = tx.merchant?.name ?? tx.description;
+    if (name.isEmpty) continue;
+    totals[name] = (totals[name] ?? 0) + tx.amount.abs().toDouble();
+  }
+  final entries = totals.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return [
+    for (final e in entries.take(count))
+      MerchantTotal(name: e.key, amount: e.value),
+  ];
+}
 
 const _kCategoryColors = [
   Color(0xFF2A78D6),
@@ -27,6 +145,9 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  _StatsRange _range = _StatsRange.d30;
+  DateTimeRange? _customRange;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,13 +166,17 @@ class _StatsScreenState extends State<StatsScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (state.accounts.isEmpty && txns.isEmpty && state.error != null) {
-              return ErrorState(error: state.error!, onRetry: () => state.load());
+              return ErrorState(
+                error: state.error!,
+                onRetry: () => state.load(),
+              );
             }
             if (txns.isEmpty) {
               return const EmptyState(
                 icon: Icons.bar_chart_outlined,
                 title: 'Nothing to show yet',
-                message: 'Once you have some transaction history, your spending trends will appear here.',
+                message:
+                    'Once you have some transaction history, your spending trends will appear here.',
               );
             }
             return RefreshIndicator(
@@ -64,22 +189,123 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
+  (DateTime?, DateTime?) _rangeBounds() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    switch (_range) {
+      case _StatsRange.d30:
+        return (today.subtract(const Duration(days: 30)), null);
+      case _StatsRange.d90:
+        return (today.subtract(const Duration(days: 90)), null);
+      case _StatsRange.custom:
+        return (_customRange?.start, _customRange?.end);
+      case _StatsRange.all:
+        return (null, null);
+    }
+  }
+
+  List<Transaction> _filterTxns(
+    List<Transaction> txns,
+    DateTime? start,
+    DateTime? end,
+  ) {
+    if (start == null && end == null) return txns;
+    return txns.where((t) {
+      final d = parseDate(t.date);
+      if (d == null) return false;
+      final day = DateTime(d.year, d.month, d.day);
+      if (start != null && day.isBefore(start)) return false;
+      if (end != null && day.isAfter(end)) return false;
+      return true;
+    }).toList();
+  }
+
+  Future<void> _pickCustomRange(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      initialDateRange:
+          _customRange ??
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 30)),
+            end: now,
+          ),
+    );
+    if (picked == null) return;
+    setState(() {
+      _range = _StatsRange.custom;
+      _customRange = picked;
+    });
+  }
+
+  Widget _rangeSelector(BuildContext context) {
+    final labelFor = {
+      _StatsRange.d30: '30 days',
+      _StatsRange.d90: '90 days',
+      _StatsRange.all: 'All time',
+      _StatsRange.custom: _customRange == null
+          ? 'Custom'
+          : '${DateFormat('d MMM').format(_customRange!.start)} – ${DateFormat('d MMM').format(_customRange!.end)}',
+    };
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final option in [
+            _StatsRange.d30,
+            _StatsRange.d90,
+            _StatsRange.all,
+            _StatsRange.custom,
+          ])
+            ChoiceChip(
+              label: Text(labelFor[option]!),
+              selected: _range == option,
+              checkmarkColor: _range == option
+                  ? Colors.white
+                  : context.fern.ink,
+              onSelected: (_) {
+                if (option == _StatsRange.custom) {
+                  _pickCustomRange(context);
+                } else {
+                  setState(() => _range = option);
+                }
+              },
+              labelStyle: TextStyle(
+                color: _range == option ? Colors.white : context.fern.ink,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _body(BuildContext context, AppState state) {
-    final monthly = state.aggMonthly;
-    final categories = state.aggCategories;
-    final weekly = state.aggWeekly;
-    final merchants = state.aggMerchants;
+    final (start, end) = _rangeBounds();
+    final txns = _filterTxns(state.transactions, start, end);
+
+    final monthly = _computeMonthlyTotals(txns, start, end);
+    final categories = _computeCategoryTotals(state, txns);
+    final weekly = _computeWeeklyTrend(txns);
+    final merchants = _computeTopMerchants(txns, 5);
 
     final avgIncome = monthly.isEmpty
         ? 0.0
         : monthly.map((m) => m.income).reduce((a, b) => a + b) / monthly.length;
     final avgExpense = monthly.isEmpty
         ? 0.0
-        : monthly.map((m) => m.expense).reduce((a, b) => a + b) / monthly.length;
+        : monthly.map((m) => m.expense).reduce((a, b) => a + b) /
+              monthly.length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
+        _rangeSelector(context),
+        const SizedBox(height: 16),
         _summaryRow(context, avgIncome, avgExpense),
         const SectionHeader('Income vs spending'),
         Card(
@@ -107,8 +333,11 @@ class _StatsScreenState extends State<StatsScreen> {
         SectionHeader(
           'Spending by category',
           trailing: IconButton(
-            icon: Icon(Icons.settings_outlined,
-                size: 18, color: context.fern.slate),
+            icon: Icon(
+              Icons.settings_outlined,
+              size: 18,
+              color: context.fern.slate,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => Navigator.of(context).push(
@@ -122,10 +351,16 @@ class _StatsScreenState extends State<StatsScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: categories.isEmpty
-                ? Text('No spending in this period', style: TextStyle(color: context.fern.slate))
+                ? Text(
+                    'No spending in this period',
+                    style: TextStyle(color: context.fern.slate),
+                  )
                 : Column(
                     children: [
-                      SizedBox(height: 190, child: _categoryChart(context, categories)),
+                      SizedBox(
+                        height: 190,
+                        child: _categoryChart(context, categories),
+                      ),
                       const SizedBox(height: 16),
                       _categoryLegend(context, categories),
                     ],
@@ -145,22 +380,41 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _summaryRow(BuildContext context, double avgIncome, double avgExpense) {
+  Widget _summaryRow(
+    BuildContext context,
+    double avgIncome,
+    double avgExpense,
+  ) {
     final fern = context.fern;
     return Row(
       children: [
         Expanded(
-          child: _statTile(context, 'Avg monthly income', avgIncome, fern.green),
+          child: _statTile(
+            context,
+            'Avg monthly income',
+            avgIncome,
+            fern.green,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _statTile(context, 'Avg monthly spending', avgExpense, fern.clay),
+          child: _statTile(
+            context,
+            'Avg monthly spending',
+            avgExpense,
+            fern.clay,
+          ),
         ),
       ],
     );
   }
 
-  Widget _statTile(BuildContext context, String label, double value, Color color) {
+  Widget _statTile(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+  ) {
     final fern = context.fern;
     final masked = widget.state.settings.hideBalances;
     return Card(
@@ -173,7 +427,11 @@ class _StatsScreenState extends State<StatsScreen> {
             const SizedBox(height: 6),
             Text(
               masked ? '••••' : money(value),
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: color),
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -196,7 +454,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 12.5, color: context.fern.slate)),
+              Text(
+                label,
+                style: TextStyle(fontSize: 12.5, color: context.fern.slate),
+              ),
             ],
           ),
       ],
@@ -217,16 +478,27 @@ class _StatsScreenState extends State<StatsScreen> {
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-              money(rod.toY),
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
-            ),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                BarTooltipItem(
+                  money(rod.toY),
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -253,13 +525,17 @@ class _StatsScreenState extends State<StatsScreen> {
                   toY: months[i].income,
                   color: fern.green,
                   width: 10,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(4),
+                  ),
                 ),
                 BarChartRodData(
                   toY: months[i].expense,
                   color: fern.clay,
                   width: 10,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(4),
+                  ),
                 ),
               ],
               barsSpace: 4,
@@ -272,9 +548,16 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _trendChart(BuildContext context, List<WeekTotal> weeks) {
     final fern = context.fern;
     if (weeks.isEmpty) {
-      return Center(child: Text('No spending in this period', style: TextStyle(color: fern.slate)));
+      return Center(
+        child: Text(
+          'No spending in this period',
+          style: TextStyle(color: fern.slate),
+        ),
+      );
     }
-    final maxY = weeks.map((w) => w.total).fold<double>(0, (a, b) => b > a ? b : a);
+    final maxY = weeks
+        .map((w) => w.total)
+        .fold<double>(0, (a, b) => b > a ? b : a);
     return LineChart(
       duration: Duration.zero,
       LineChartData(
@@ -284,23 +567,36 @@ class _StatsScreenState extends State<StatsScreen> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: maxY == 0 ? 1 : maxY / 3,
-          getDrawingHorizontalLine: (_) => FlLine(color: fern.mist, strokeWidth: 1),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: fern.mist, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
             getTooltipItems: (spots) => spots
-                .map((s) => LineTooltipItem(
-                      money(s.y),
-                      const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
-                    ))
+                .map(
+                  (s) => LineTooltipItem(
+                    money(s.y),
+                    const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -310,7 +606,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 if (i < 0 || i >= weeks.length) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(weeks[i].label, style: TextStyle(fontSize: 11, color: fern.slate)),
+                  child: Text(
+                    weeks[i].label,
+                    style: TextStyle(fontSize: 11, color: fern.slate),
+                  ),
                 );
               },
             ),
@@ -318,13 +617,19 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: [for (var i = 0; i < weeks.length; i++) FlSpot(i.toDouble(), weeks[i].total)],
+            spots: [
+              for (var i = 0; i < weeks.length; i++)
+                FlSpot(i.toDouble(), weeks[i].total),
+            ],
             isCurved: true,
             curveSmoothness: 0.2,
             color: fern.green,
             barWidth: 2,
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: fern.green.withValues(alpha: 0.12)),
+            belowBarData: BarAreaData(
+              show: true,
+              color: fern.green.withValues(alpha: 0.12),
+            ),
           ),
         ],
       ),
@@ -337,10 +642,16 @@ class _StatsScreenState extends State<StatsScreen> {
     final otherTotal = rest.fold<double>(0, (s, c) => s + c.amount);
     final result = [
       for (var i = 0; i < top.length; i++)
-        _CatEntry(name: top[i].name, amount: top[i].amount, color: _kCategoryColors[i]),
+        _CatEntry(
+          name: top[i].name,
+          amount: top[i].amount,
+          color: _kCategoryColors[i],
+        ),
     ];
     if (otherTotal > 0) {
-      result.add(_CatEntry(name: 'Other', amount: otherTotal, color: context.fern.slate));
+      result.add(
+        _CatEntry(name: 'Other', amount: otherTotal, color: context.fern.slate),
+      );
     }
     return result;
   }
@@ -360,7 +671,9 @@ class _StatsScreenState extends State<StatsScreen> {
               color: entries[i].color,
               radius: 46,
               showTitle: total > 0 && (entries[i].amount / total) >= 0.08,
-              title: total == 0 ? '' : '${(entries[i].amount / total * 100).round()}%',
+              title: total == 0
+                  ? ''
+                  : '${(entries[i].amount / total * 100).round()}%',
               titleStyle: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -386,7 +699,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: BoxDecoration(color: c.color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: c.color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -394,12 +710,19 @@ class _StatsScreenState extends State<StatsScreen> {
                     c.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Text(
                   masked ? '••••' : money(c.amount),
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: fern.slate),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: fern.slate,
+                  ),
                 ),
               ],
             ),
@@ -425,7 +748,10 @@ class _StatsScreenState extends State<StatsScreen> {
                     m.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -445,7 +771,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: Text(
                     masked ? '••••' : money(m.amount),
                     textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -460,5 +789,9 @@ class _CatEntry {
   final String name;
   final double amount;
   final Color color;
-  const _CatEntry({required this.name, required this.amount, required this.color});
+  const _CatEntry({
+    required this.name,
+    required this.amount,
+    required this.color,
+  });
 }
