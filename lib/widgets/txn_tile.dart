@@ -21,8 +21,9 @@ class TxnTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
-    final group = categoryGroupOverride ?? tx.category?.groupName;
-    final subtitle = <String>[relativeDate(tx.date), ?group].join(' · ');
+    final group =
+        categoryGroupOverride ?? tx.category?.groupName ?? 'Uncategorised';
+    final subtitle = <String>[relativeDate(tx.date), group].join(' · ');
 
     return InkWell(
       onTap: onTap,
