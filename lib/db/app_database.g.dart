@@ -3,12 +3,12 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $CachedAccountsTable extends CachedAccounts
-    with TableInfo<$CachedAccountsTable, CachedAccount> {
+class $AccountsTable extends Accounts
+    with TableInfo<$AccountsTable, AccountRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $CachedAccountsTable(this.attachedDatabase, [this._alias]);
+  $AccountsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -18,15 +18,189 @@ class $CachedAccountsTable extends CachedAccounts
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
-  late final GeneratedColumn<String> json = GeneratedColumn<String>(
-    'json',
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attributesMeta = const VerificationMeta(
+    'attributes',
+  );
+  @override
+  late final GeneratedColumn<String> attributes = GeneratedColumn<String>(
+    'attributes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formattedAccountMeta = const VerificationMeta(
+    'formattedAccount',
+  );
+  @override
+  late final GeneratedColumn<String> formattedAccount = GeneratedColumn<String>(
+    'formatted_account',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _connectionIdMeta = const VerificationMeta(
+    'connectionId',
+  );
+  @override
+  late final GeneratedColumn<String> connectionId = GeneratedColumn<String>(
+    'connection_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _connectionNameMeta = const VerificationMeta(
+    'connectionName',
+  );
+  @override
+  late final GeneratedColumn<String> connectionName = GeneratedColumn<String>(
+    'connection_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _connectionLogoMeta = const VerificationMeta(
+    'connectionLogo',
+  );
+  @override
+  late final GeneratedColumn<String> connectionLogo = GeneratedColumn<String>(
+    'connection_logo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _connectionTypeMeta = const VerificationMeta(
+    'connectionType',
+  );
+  @override
+  late final GeneratedColumn<String> connectionType = GeneratedColumn<String>(
+    'connection_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _balanceCurrentMeta = const VerificationMeta(
+    'balanceCurrent',
+  );
+  @override
+  late final GeneratedColumn<double> balanceCurrent = GeneratedColumn<double>(
+    'balance_current',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _balanceAvailableMeta = const VerificationMeta(
+    'balanceAvailable',
+  );
+  @override
+  late final GeneratedColumn<double> balanceAvailable = GeneratedColumn<double>(
+    'balance_available',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _balanceLimitMeta = const VerificationMeta(
+    'balanceLimit',
+  );
+  @override
+  late final GeneratedColumn<double> balanceLimit = GeneratedColumn<double>(
+    'balance_limit',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _balanceOverdrawnMeta = const VerificationMeta(
+    'balanceOverdrawn',
+  );
+  @override
+  late final GeneratedColumn<bool> balanceOverdrawn = GeneratedColumn<bool>(
+    'balance_overdrawn',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("balance_overdrawn" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _holderMeta = const VerificationMeta('holder');
+  @override
+  late final GeneratedColumn<String> holder = GeneratedColumn<String>(
+    'holder',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _refreshedBalanceMeta = const VerificationMeta(
+    'refreshedBalance',
+  );
+  @override
+  late final GeneratedColumn<String> refreshedBalance = GeneratedColumn<String>(
+    'refreshed_balance',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _refreshedMetaMeta = const VerificationMeta(
+    'refreshedMeta',
+  );
+  @override
+  late final GeneratedColumn<String> refreshedMeta = GeneratedColumn<String>(
+    'refreshed_meta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _refreshedTransactionsMeta =
+      const VerificationMeta('refreshedTransactions');
+  @override
+  late final GeneratedColumn<String> refreshedTransactions =
+      GeneratedColumn<String>(
+        'refreshed_transactions',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -39,15 +213,35 @@ class $CachedAccountsTable extends CachedAccounts
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, json, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    status,
+    type,
+    attributes,
+    formattedAccount,
+    connectionId,
+    connectionName,
+    connectionLogo,
+    connectionType,
+    balanceCurrent,
+    balanceAvailable,
+    balanceLimit,
+    balanceOverdrawn,
+    holder,
+    refreshedBalance,
+    refreshedMeta,
+    refreshedTransactions,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'cached_accounts';
+  static const String $name = 'accounts';
   @override
   VerificationContext validateIntegrity(
-    Insertable<CachedAccount> instance, {
+    Insertable<AccountRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -57,13 +251,151 @@ class $CachedAccountsTable extends CachedAccounts
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('json')) {
+    if (data.containsKey('name')) {
       context.handle(
-        _jsonMeta,
-        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
       );
     } else if (isInserting) {
-      context.missing(_jsonMeta);
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('attributes')) {
+      context.handle(
+        _attributesMeta,
+        attributes.isAcceptableOrUnknown(data['attributes']!, _attributesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attributesMeta);
+    }
+    if (data.containsKey('formatted_account')) {
+      context.handle(
+        _formattedAccountMeta,
+        formattedAccount.isAcceptableOrUnknown(
+          data['formatted_account']!,
+          _formattedAccountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connection_id')) {
+      context.handle(
+        _connectionIdMeta,
+        connectionId.isAcceptableOrUnknown(
+          data['connection_id']!,
+          _connectionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connection_name')) {
+      context.handle(
+        _connectionNameMeta,
+        connectionName.isAcceptableOrUnknown(
+          data['connection_name']!,
+          _connectionNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connection_logo')) {
+      context.handle(
+        _connectionLogoMeta,
+        connectionLogo.isAcceptableOrUnknown(
+          data['connection_logo']!,
+          _connectionLogoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connection_type')) {
+      context.handle(
+        _connectionTypeMeta,
+        connectionType.isAcceptableOrUnknown(
+          data['connection_type']!,
+          _connectionTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('balance_current')) {
+      context.handle(
+        _balanceCurrentMeta,
+        balanceCurrent.isAcceptableOrUnknown(
+          data['balance_current']!,
+          _balanceCurrentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('balance_available')) {
+      context.handle(
+        _balanceAvailableMeta,
+        balanceAvailable.isAcceptableOrUnknown(
+          data['balance_available']!,
+          _balanceAvailableMeta,
+        ),
+      );
+    }
+    if (data.containsKey('balance_limit')) {
+      context.handle(
+        _balanceLimitMeta,
+        balanceLimit.isAcceptableOrUnknown(
+          data['balance_limit']!,
+          _balanceLimitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('balance_overdrawn')) {
+      context.handle(
+        _balanceOverdrawnMeta,
+        balanceOverdrawn.isAcceptableOrUnknown(
+          data['balance_overdrawn']!,
+          _balanceOverdrawnMeta,
+        ),
+      );
+    }
+    if (data.containsKey('holder')) {
+      context.handle(
+        _holderMeta,
+        holder.isAcceptableOrUnknown(data['holder']!, _holderMeta),
+      );
+    }
+    if (data.containsKey('refreshed_balance')) {
+      context.handle(
+        _refreshedBalanceMeta,
+        refreshedBalance.isAcceptableOrUnknown(
+          data['refreshed_balance']!,
+          _refreshedBalanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('refreshed_meta')) {
+      context.handle(
+        _refreshedMetaMeta,
+        refreshedMeta.isAcceptableOrUnknown(
+          data['refreshed_meta']!,
+          _refreshedMetaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('refreshed_transactions')) {
+      context.handle(
+        _refreshedTransactionsMeta,
+        refreshedTransactions.isAcceptableOrUnknown(
+          data['refreshed_transactions']!,
+          _refreshedTransactionsMeta,
+        ),
+      );
     }
     if (data.containsKey('updated_at')) {
       context.handle(
@@ -79,17 +411,81 @@ class $CachedAccountsTable extends CachedAccounts
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  CachedAccount map(Map<String, dynamic> data, {String? tablePrefix}) {
+  AccountRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return CachedAccount(
+    return AccountRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      json: attachedDatabase.typeMapping.read(
+      name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}json'],
+        data['${effectivePrefix}name'],
       )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      attributes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attributes'],
+      )!,
+      formattedAccount: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}formatted_account'],
+      ),
+      connectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connection_id'],
+      ),
+      connectionName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connection_name'],
+      ),
+      connectionLogo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connection_logo'],
+      ),
+      connectionType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connection_type'],
+      ),
+      balanceCurrent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}balance_current'],
+      ),
+      balanceAvailable: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}balance_available'],
+      ),
+      balanceLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}balance_limit'],
+      ),
+      balanceOverdrawn: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}balance_overdrawn'],
+      )!,
+      holder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}holder'],
+      ),
+      refreshedBalance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refreshed_balance'],
+      ),
+      refreshedMeta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refreshed_meta'],
+      ),
+      refreshedTransactions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refreshed_transactions'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -98,45 +494,175 @@ class $CachedAccountsTable extends CachedAccounts
   }
 
   @override
-  $CachedAccountsTable createAlias(String alias) {
-    return $CachedAccountsTable(attachedDatabase, alias);
+  $AccountsTable createAlias(String alias) {
+    return $AccountsTable(attachedDatabase, alias);
   }
 }
 
-class CachedAccount extends DataClass implements Insertable<CachedAccount> {
+class AccountRow extends DataClass implements Insertable<AccountRow> {
   final String id;
-  final String json;
+  final String name;
+  final String status;
+  final String type;
+  final String attributes;
+  final String? formattedAccount;
+  final String? connectionId;
+  final String? connectionName;
+  final String? connectionLogo;
+  final String? connectionType;
+  final double? balanceCurrent;
+  final double? balanceAvailable;
+  final double? balanceLimit;
+  final bool balanceOverdrawn;
+  final String? holder;
+  final String? refreshedBalance;
+  final String? refreshedMeta;
+  final String? refreshedTransactions;
   final DateTime updatedAt;
-  const CachedAccount({
+  const AccountRow({
     required this.id,
-    required this.json,
+    required this.name,
+    required this.status,
+    required this.type,
+    required this.attributes,
+    this.formattedAccount,
+    this.connectionId,
+    this.connectionName,
+    this.connectionLogo,
+    this.connectionType,
+    this.balanceCurrent,
+    this.balanceAvailable,
+    this.balanceLimit,
+    required this.balanceOverdrawn,
+    this.holder,
+    this.refreshedBalance,
+    this.refreshedMeta,
+    this.refreshedTransactions,
     required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['json'] = Variable<String>(json);
+    map['name'] = Variable<String>(name);
+    map['status'] = Variable<String>(status);
+    map['type'] = Variable<String>(type);
+    map['attributes'] = Variable<String>(attributes);
+    if (!nullToAbsent || formattedAccount != null) {
+      map['formatted_account'] = Variable<String>(formattedAccount);
+    }
+    if (!nullToAbsent || connectionId != null) {
+      map['connection_id'] = Variable<String>(connectionId);
+    }
+    if (!nullToAbsent || connectionName != null) {
+      map['connection_name'] = Variable<String>(connectionName);
+    }
+    if (!nullToAbsent || connectionLogo != null) {
+      map['connection_logo'] = Variable<String>(connectionLogo);
+    }
+    if (!nullToAbsent || connectionType != null) {
+      map['connection_type'] = Variable<String>(connectionType);
+    }
+    if (!nullToAbsent || balanceCurrent != null) {
+      map['balance_current'] = Variable<double>(balanceCurrent);
+    }
+    if (!nullToAbsent || balanceAvailable != null) {
+      map['balance_available'] = Variable<double>(balanceAvailable);
+    }
+    if (!nullToAbsent || balanceLimit != null) {
+      map['balance_limit'] = Variable<double>(balanceLimit);
+    }
+    map['balance_overdrawn'] = Variable<bool>(balanceOverdrawn);
+    if (!nullToAbsent || holder != null) {
+      map['holder'] = Variable<String>(holder);
+    }
+    if (!nullToAbsent || refreshedBalance != null) {
+      map['refreshed_balance'] = Variable<String>(refreshedBalance);
+    }
+    if (!nullToAbsent || refreshedMeta != null) {
+      map['refreshed_meta'] = Variable<String>(refreshedMeta);
+    }
+    if (!nullToAbsent || refreshedTransactions != null) {
+      map['refreshed_transactions'] = Variable<String>(refreshedTransactions);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
-  CachedAccountsCompanion toCompanion(bool nullToAbsent) {
-    return CachedAccountsCompanion(
+  AccountsCompanion toCompanion(bool nullToAbsent) {
+    return AccountsCompanion(
       id: Value(id),
-      json: Value(json),
+      name: Value(name),
+      status: Value(status),
+      type: Value(type),
+      attributes: Value(attributes),
+      formattedAccount: formattedAccount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formattedAccount),
+      connectionId: connectionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(connectionId),
+      connectionName: connectionName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(connectionName),
+      connectionLogo: connectionLogo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(connectionLogo),
+      connectionType: connectionType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(connectionType),
+      balanceCurrent: balanceCurrent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(balanceCurrent),
+      balanceAvailable: balanceAvailable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(balanceAvailable),
+      balanceLimit: balanceLimit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(balanceLimit),
+      balanceOverdrawn: Value(balanceOverdrawn),
+      holder: holder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(holder),
+      refreshedBalance: refreshedBalance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refreshedBalance),
+      refreshedMeta: refreshedMeta == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refreshedMeta),
+      refreshedTransactions: refreshedTransactions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refreshedTransactions),
       updatedAt: Value(updatedAt),
     );
   }
 
-  factory CachedAccount.fromJson(
+  factory AccountRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return CachedAccount(
+    return AccountRow(
       id: serializer.fromJson<String>(json['id']),
-      json: serializer.fromJson<String>(json['json']),
+      name: serializer.fromJson<String>(json['name']),
+      status: serializer.fromJson<String>(json['status']),
+      type: serializer.fromJson<String>(json['type']),
+      attributes: serializer.fromJson<String>(json['attributes']),
+      formattedAccount: serializer.fromJson<String?>(json['formattedAccount']),
+      connectionId: serializer.fromJson<String?>(json['connectionId']),
+      connectionName: serializer.fromJson<String?>(json['connectionName']),
+      connectionLogo: serializer.fromJson<String?>(json['connectionLogo']),
+      connectionType: serializer.fromJson<String?>(json['connectionType']),
+      balanceCurrent: serializer.fromJson<double?>(json['balanceCurrent']),
+      balanceAvailable: serializer.fromJson<double?>(json['balanceAvailable']),
+      balanceLimit: serializer.fromJson<double?>(json['balanceLimit']),
+      balanceOverdrawn: serializer.fromJson<bool>(json['balanceOverdrawn']),
+      holder: serializer.fromJson<String?>(json['holder']),
+      refreshedBalance: serializer.fromJson<String?>(json['refreshedBalance']),
+      refreshedMeta: serializer.fromJson<String?>(json['refreshedMeta']),
+      refreshedTransactions: serializer.fromJson<String?>(
+        json['refreshedTransactions'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -145,88 +671,370 @@ class CachedAccount extends DataClass implements Insertable<CachedAccount> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'json': serializer.toJson<String>(json),
+      'name': serializer.toJson<String>(name),
+      'status': serializer.toJson<String>(status),
+      'type': serializer.toJson<String>(type),
+      'attributes': serializer.toJson<String>(attributes),
+      'formattedAccount': serializer.toJson<String?>(formattedAccount),
+      'connectionId': serializer.toJson<String?>(connectionId),
+      'connectionName': serializer.toJson<String?>(connectionName),
+      'connectionLogo': serializer.toJson<String?>(connectionLogo),
+      'connectionType': serializer.toJson<String?>(connectionType),
+      'balanceCurrent': serializer.toJson<double?>(balanceCurrent),
+      'balanceAvailable': serializer.toJson<double?>(balanceAvailable),
+      'balanceLimit': serializer.toJson<double?>(balanceLimit),
+      'balanceOverdrawn': serializer.toJson<bool>(balanceOverdrawn),
+      'holder': serializer.toJson<String?>(holder),
+      'refreshedBalance': serializer.toJson<String?>(refreshedBalance),
+      'refreshedMeta': serializer.toJson<String?>(refreshedMeta),
+      'refreshedTransactions': serializer.toJson<String?>(
+        refreshedTransactions,
+      ),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
-  CachedAccount copyWith({String? id, String? json, DateTime? updatedAt}) =>
-      CachedAccount(
-        id: id ?? this.id,
-        json: json ?? this.json,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
-  CachedAccount copyWithCompanion(CachedAccountsCompanion data) {
-    return CachedAccount(
+  AccountRow copyWith({
+    String? id,
+    String? name,
+    String? status,
+    String? type,
+    String? attributes,
+    Value<String?> formattedAccount = const Value.absent(),
+    Value<String?> connectionId = const Value.absent(),
+    Value<String?> connectionName = const Value.absent(),
+    Value<String?> connectionLogo = const Value.absent(),
+    Value<String?> connectionType = const Value.absent(),
+    Value<double?> balanceCurrent = const Value.absent(),
+    Value<double?> balanceAvailable = const Value.absent(),
+    Value<double?> balanceLimit = const Value.absent(),
+    bool? balanceOverdrawn,
+    Value<String?> holder = const Value.absent(),
+    Value<String?> refreshedBalance = const Value.absent(),
+    Value<String?> refreshedMeta = const Value.absent(),
+    Value<String?> refreshedTransactions = const Value.absent(),
+    DateTime? updatedAt,
+  }) => AccountRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    status: status ?? this.status,
+    type: type ?? this.type,
+    attributes: attributes ?? this.attributes,
+    formattedAccount: formattedAccount.present
+        ? formattedAccount.value
+        : this.formattedAccount,
+    connectionId: connectionId.present ? connectionId.value : this.connectionId,
+    connectionName: connectionName.present
+        ? connectionName.value
+        : this.connectionName,
+    connectionLogo: connectionLogo.present
+        ? connectionLogo.value
+        : this.connectionLogo,
+    connectionType: connectionType.present
+        ? connectionType.value
+        : this.connectionType,
+    balanceCurrent: balanceCurrent.present
+        ? balanceCurrent.value
+        : this.balanceCurrent,
+    balanceAvailable: balanceAvailable.present
+        ? balanceAvailable.value
+        : this.balanceAvailable,
+    balanceLimit: balanceLimit.present ? balanceLimit.value : this.balanceLimit,
+    balanceOverdrawn: balanceOverdrawn ?? this.balanceOverdrawn,
+    holder: holder.present ? holder.value : this.holder,
+    refreshedBalance: refreshedBalance.present
+        ? refreshedBalance.value
+        : this.refreshedBalance,
+    refreshedMeta: refreshedMeta.present
+        ? refreshedMeta.value
+        : this.refreshedMeta,
+    refreshedTransactions: refreshedTransactions.present
+        ? refreshedTransactions.value
+        : this.refreshedTransactions,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  AccountRow copyWithCompanion(AccountsCompanion data) {
+    return AccountRow(
       id: data.id.present ? data.id.value : this.id,
-      json: data.json.present ? data.json.value : this.json,
+      name: data.name.present ? data.name.value : this.name,
+      status: data.status.present ? data.status.value : this.status,
+      type: data.type.present ? data.type.value : this.type,
+      attributes: data.attributes.present
+          ? data.attributes.value
+          : this.attributes,
+      formattedAccount: data.formattedAccount.present
+          ? data.formattedAccount.value
+          : this.formattedAccount,
+      connectionId: data.connectionId.present
+          ? data.connectionId.value
+          : this.connectionId,
+      connectionName: data.connectionName.present
+          ? data.connectionName.value
+          : this.connectionName,
+      connectionLogo: data.connectionLogo.present
+          ? data.connectionLogo.value
+          : this.connectionLogo,
+      connectionType: data.connectionType.present
+          ? data.connectionType.value
+          : this.connectionType,
+      balanceCurrent: data.balanceCurrent.present
+          ? data.balanceCurrent.value
+          : this.balanceCurrent,
+      balanceAvailable: data.balanceAvailable.present
+          ? data.balanceAvailable.value
+          : this.balanceAvailable,
+      balanceLimit: data.balanceLimit.present
+          ? data.balanceLimit.value
+          : this.balanceLimit,
+      balanceOverdrawn: data.balanceOverdrawn.present
+          ? data.balanceOverdrawn.value
+          : this.balanceOverdrawn,
+      holder: data.holder.present ? data.holder.value : this.holder,
+      refreshedBalance: data.refreshedBalance.present
+          ? data.refreshedBalance.value
+          : this.refreshedBalance,
+      refreshedMeta: data.refreshedMeta.present
+          ? data.refreshedMeta.value
+          : this.refreshedMeta,
+      refreshedTransactions: data.refreshedTransactions.present
+          ? data.refreshedTransactions.value
+          : this.refreshedTransactions,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('CachedAccount(')
+    return (StringBuffer('AccountRow(')
           ..write('id: $id, ')
-          ..write('json: $json, ')
+          ..write('name: $name, ')
+          ..write('status: $status, ')
+          ..write('type: $type, ')
+          ..write('attributes: $attributes, ')
+          ..write('formattedAccount: $formattedAccount, ')
+          ..write('connectionId: $connectionId, ')
+          ..write('connectionName: $connectionName, ')
+          ..write('connectionLogo: $connectionLogo, ')
+          ..write('connectionType: $connectionType, ')
+          ..write('balanceCurrent: $balanceCurrent, ')
+          ..write('balanceAvailable: $balanceAvailable, ')
+          ..write('balanceLimit: $balanceLimit, ')
+          ..write('balanceOverdrawn: $balanceOverdrawn, ')
+          ..write('holder: $holder, ')
+          ..write('refreshedBalance: $refreshedBalance, ')
+          ..write('refreshedMeta: $refreshedMeta, ')
+          ..write('refreshedTransactions: $refreshedTransactions, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, json, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    status,
+    type,
+    attributes,
+    formattedAccount,
+    connectionId,
+    connectionName,
+    connectionLogo,
+    connectionType,
+    balanceCurrent,
+    balanceAvailable,
+    balanceLimit,
+    balanceOverdrawn,
+    holder,
+    refreshedBalance,
+    refreshedMeta,
+    refreshedTransactions,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CachedAccount &&
+      (other is AccountRow &&
           other.id == this.id &&
-          other.json == this.json &&
+          other.name == this.name &&
+          other.status == this.status &&
+          other.type == this.type &&
+          other.attributes == this.attributes &&
+          other.formattedAccount == this.formattedAccount &&
+          other.connectionId == this.connectionId &&
+          other.connectionName == this.connectionName &&
+          other.connectionLogo == this.connectionLogo &&
+          other.connectionType == this.connectionType &&
+          other.balanceCurrent == this.balanceCurrent &&
+          other.balanceAvailable == this.balanceAvailable &&
+          other.balanceLimit == this.balanceLimit &&
+          other.balanceOverdrawn == this.balanceOverdrawn &&
+          other.holder == this.holder &&
+          other.refreshedBalance == this.refreshedBalance &&
+          other.refreshedMeta == this.refreshedMeta &&
+          other.refreshedTransactions == this.refreshedTransactions &&
           other.updatedAt == this.updatedAt);
 }
 
-class CachedAccountsCompanion extends UpdateCompanion<CachedAccount> {
+class AccountsCompanion extends UpdateCompanion<AccountRow> {
   final Value<String> id;
-  final Value<String> json;
+  final Value<String> name;
+  final Value<String> status;
+  final Value<String> type;
+  final Value<String> attributes;
+  final Value<String?> formattedAccount;
+  final Value<String?> connectionId;
+  final Value<String?> connectionName;
+  final Value<String?> connectionLogo;
+  final Value<String?> connectionType;
+  final Value<double?> balanceCurrent;
+  final Value<double?> balanceAvailable;
+  final Value<double?> balanceLimit;
+  final Value<bool> balanceOverdrawn;
+  final Value<String?> holder;
+  final Value<String?> refreshedBalance;
+  final Value<String?> refreshedMeta;
+  final Value<String?> refreshedTransactions;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const CachedAccountsCompanion({
+  const AccountsCompanion({
     this.id = const Value.absent(),
-    this.json = const Value.absent(),
+    this.name = const Value.absent(),
+    this.status = const Value.absent(),
+    this.type = const Value.absent(),
+    this.attributes = const Value.absent(),
+    this.formattedAccount = const Value.absent(),
+    this.connectionId = const Value.absent(),
+    this.connectionName = const Value.absent(),
+    this.connectionLogo = const Value.absent(),
+    this.connectionType = const Value.absent(),
+    this.balanceCurrent = const Value.absent(),
+    this.balanceAvailable = const Value.absent(),
+    this.balanceLimit = const Value.absent(),
+    this.balanceOverdrawn = const Value.absent(),
+    this.holder = const Value.absent(),
+    this.refreshedBalance = const Value.absent(),
+    this.refreshedMeta = const Value.absent(),
+    this.refreshedTransactions = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  CachedAccountsCompanion.insert({
+  AccountsCompanion.insert({
     required String id,
-    required String json,
+    required String name,
+    required String status,
+    required String type,
+    required String attributes,
+    this.formattedAccount = const Value.absent(),
+    this.connectionId = const Value.absent(),
+    this.connectionName = const Value.absent(),
+    this.connectionLogo = const Value.absent(),
+    this.connectionType = const Value.absent(),
+    this.balanceCurrent = const Value.absent(),
+    this.balanceAvailable = const Value.absent(),
+    this.balanceLimit = const Value.absent(),
+    this.balanceOverdrawn = const Value.absent(),
+    this.holder = const Value.absent(),
+    this.refreshedBalance = const Value.absent(),
+    this.refreshedMeta = const Value.absent(),
+    this.refreshedTransactions = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       json = Value(json),
+       name = Value(name),
+       status = Value(status),
+       type = Value(type),
+       attributes = Value(attributes),
        updatedAt = Value(updatedAt);
-  static Insertable<CachedAccount> custom({
+  static Insertable<AccountRow> custom({
     Expression<String>? id,
-    Expression<String>? json,
+    Expression<String>? name,
+    Expression<String>? status,
+    Expression<String>? type,
+    Expression<String>? attributes,
+    Expression<String>? formattedAccount,
+    Expression<String>? connectionId,
+    Expression<String>? connectionName,
+    Expression<String>? connectionLogo,
+    Expression<String>? connectionType,
+    Expression<double>? balanceCurrent,
+    Expression<double>? balanceAvailable,
+    Expression<double>? balanceLimit,
+    Expression<bool>? balanceOverdrawn,
+    Expression<String>? holder,
+    Expression<String>? refreshedBalance,
+    Expression<String>? refreshedMeta,
+    Expression<String>? refreshedTransactions,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (json != null) 'json': json,
+      if (name != null) 'name': name,
+      if (status != null) 'status': status,
+      if (type != null) 'type': type,
+      if (attributes != null) 'attributes': attributes,
+      if (formattedAccount != null) 'formatted_account': formattedAccount,
+      if (connectionId != null) 'connection_id': connectionId,
+      if (connectionName != null) 'connection_name': connectionName,
+      if (connectionLogo != null) 'connection_logo': connectionLogo,
+      if (connectionType != null) 'connection_type': connectionType,
+      if (balanceCurrent != null) 'balance_current': balanceCurrent,
+      if (balanceAvailable != null) 'balance_available': balanceAvailable,
+      if (balanceLimit != null) 'balance_limit': balanceLimit,
+      if (balanceOverdrawn != null) 'balance_overdrawn': balanceOverdrawn,
+      if (holder != null) 'holder': holder,
+      if (refreshedBalance != null) 'refreshed_balance': refreshedBalance,
+      if (refreshedMeta != null) 'refreshed_meta': refreshedMeta,
+      if (refreshedTransactions != null)
+        'refreshed_transactions': refreshedTransactions,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  CachedAccountsCompanion copyWith({
+  AccountsCompanion copyWith({
     Value<String>? id,
-    Value<String>? json,
+    Value<String>? name,
+    Value<String>? status,
+    Value<String>? type,
+    Value<String>? attributes,
+    Value<String?>? formattedAccount,
+    Value<String?>? connectionId,
+    Value<String?>? connectionName,
+    Value<String?>? connectionLogo,
+    Value<String?>? connectionType,
+    Value<double?>? balanceCurrent,
+    Value<double?>? balanceAvailable,
+    Value<double?>? balanceLimit,
+    Value<bool>? balanceOverdrawn,
+    Value<String?>? holder,
+    Value<String?>? refreshedBalance,
+    Value<String?>? refreshedMeta,
+    Value<String?>? refreshedTransactions,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return CachedAccountsCompanion(
+    return AccountsCompanion(
       id: id ?? this.id,
-      json: json ?? this.json,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      type: type ?? this.type,
+      attributes: attributes ?? this.attributes,
+      formattedAccount: formattedAccount ?? this.formattedAccount,
+      connectionId: connectionId ?? this.connectionId,
+      connectionName: connectionName ?? this.connectionName,
+      connectionLogo: connectionLogo ?? this.connectionLogo,
+      connectionType: connectionType ?? this.connectionType,
+      balanceCurrent: balanceCurrent ?? this.balanceCurrent,
+      balanceAvailable: balanceAvailable ?? this.balanceAvailable,
+      balanceLimit: balanceLimit ?? this.balanceLimit,
+      balanceOverdrawn: balanceOverdrawn ?? this.balanceOverdrawn,
+      holder: holder ?? this.holder,
+      refreshedBalance: refreshedBalance ?? this.refreshedBalance,
+      refreshedMeta: refreshedMeta ?? this.refreshedMeta,
+      refreshedTransactions:
+          refreshedTransactions ?? this.refreshedTransactions,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -238,8 +1046,58 @@ class CachedAccountsCompanion extends UpdateCompanion<CachedAccount> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (json.present) {
-      map['json'] = Variable<String>(json.value);
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (attributes.present) {
+      map['attributes'] = Variable<String>(attributes.value);
+    }
+    if (formattedAccount.present) {
+      map['formatted_account'] = Variable<String>(formattedAccount.value);
+    }
+    if (connectionId.present) {
+      map['connection_id'] = Variable<String>(connectionId.value);
+    }
+    if (connectionName.present) {
+      map['connection_name'] = Variable<String>(connectionName.value);
+    }
+    if (connectionLogo.present) {
+      map['connection_logo'] = Variable<String>(connectionLogo.value);
+    }
+    if (connectionType.present) {
+      map['connection_type'] = Variable<String>(connectionType.value);
+    }
+    if (balanceCurrent.present) {
+      map['balance_current'] = Variable<double>(balanceCurrent.value);
+    }
+    if (balanceAvailable.present) {
+      map['balance_available'] = Variable<double>(balanceAvailable.value);
+    }
+    if (balanceLimit.present) {
+      map['balance_limit'] = Variable<double>(balanceLimit.value);
+    }
+    if (balanceOverdrawn.present) {
+      map['balance_overdrawn'] = Variable<bool>(balanceOverdrawn.value);
+    }
+    if (holder.present) {
+      map['holder'] = Variable<String>(holder.value);
+    }
+    if (refreshedBalance.present) {
+      map['refreshed_balance'] = Variable<String>(refreshedBalance.value);
+    }
+    if (refreshedMeta.present) {
+      map['refreshed_meta'] = Variable<String>(refreshedMeta.value);
+    }
+    if (refreshedTransactions.present) {
+      map['refreshed_transactions'] = Variable<String>(
+        refreshedTransactions.value,
+      );
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -252,9 +1110,25 @@ class CachedAccountsCompanion extends UpdateCompanion<CachedAccount> {
 
   @override
   String toString() {
-    return (StringBuffer('CachedAccountsCompanion(')
+    return (StringBuffer('AccountsCompanion(')
           ..write('id: $id, ')
-          ..write('json: $json, ')
+          ..write('name: $name, ')
+          ..write('status: $status, ')
+          ..write('type: $type, ')
+          ..write('attributes: $attributes, ')
+          ..write('formattedAccount: $formattedAccount, ')
+          ..write('connectionId: $connectionId, ')
+          ..write('connectionName: $connectionName, ')
+          ..write('connectionLogo: $connectionLogo, ')
+          ..write('connectionType: $connectionType, ')
+          ..write('balanceCurrent: $balanceCurrent, ')
+          ..write('balanceAvailable: $balanceAvailable, ')
+          ..write('balanceLimit: $balanceLimit, ')
+          ..write('balanceOverdrawn: $balanceOverdrawn, ')
+          ..write('holder: $holder, ')
+          ..write('refreshedBalance: $refreshedBalance, ')
+          ..write('refreshedMeta: $refreshedMeta, ')
+          ..write('refreshedTransactions: $refreshedTransactions, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -262,12 +1136,12 @@ class CachedAccountsCompanion extends UpdateCompanion<CachedAccount> {
   }
 }
 
-class $CachedTransactionsTable extends CachedTransactions
-    with TableInfo<$CachedTransactionsTable, CachedTransaction> {
+class $TransactionsTable extends Transactions
+    with TableInfo<$TransactionsTable, TransactionRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $CachedTransactionsTable(this.attachedDatabase, [this._alias]);
+  $TransactionsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -288,15 +1162,122 @@ class $CachedTransactionsTable extends CachedTransactions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
+  static const VerificationMeta _connectionIdMeta = const VerificationMeta(
+    'connectionId',
+  );
   @override
-  late final GeneratedColumn<String> json = GeneratedColumn<String>(
-    'json',
+  late final GeneratedColumn<String> connectionId = GeneratedColumn<String>(
+    'connection_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _balanceMeta = const VerificationMeta(
+    'balance',
+  );
+  @override
+  late final GeneratedColumn<double> balance = GeneratedColumn<double>(
+    'balance',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _merchantNameMeta = const VerificationMeta(
+    'merchantName',
+  );
+  @override
+  late final GeneratedColumn<String> merchantName = GeneratedColumn<String>(
+    'merchant_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryNameMeta = const VerificationMeta(
+    'categoryName',
+  );
+  @override
+  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
+    'category_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryGroupMeta = const VerificationMeta(
+    'categoryGroup',
+  );
+  @override
+  late final GeneratedColumn<String> categoryGroup = GeneratedColumn<String>(
+    'category_group',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _autoCategoryNameMeta = const VerificationMeta(
+    'autoCategoryName',
+  );
+  @override
+  late final GeneratedColumn<String> autoCategoryName = GeneratedColumn<String>(
+    'auto_category_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _autoCategoryGroupMeta = const VerificationMeta(
+    'autoCategoryGroup',
+  );
+  @override
+  late final GeneratedColumn<String> autoCategoryGroup =
+      GeneratedColumn<String>(
+        'auto_category_group',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -309,15 +1290,30 @@ class $CachedTransactionsTable extends CachedTransactions
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, accountId, json, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    accountId,
+    connectionId,
+    date,
+    description,
+    amount,
+    balance,
+    type,
+    merchantName,
+    categoryName,
+    categoryGroup,
+    autoCategoryName,
+    autoCategoryGroup,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'cached_transactions';
+  static const String $name = 'transactions';
   @override
   VerificationContext validateIntegrity(
-    Insertable<CachedTransaction> instance, {
+    Insertable<TransactionRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -335,13 +1331,102 @@ class $CachedTransactionsTable extends CachedTransactions
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
-    if (data.containsKey('json')) {
+    if (data.containsKey('connection_id')) {
       context.handle(
-        _jsonMeta,
-        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
+        _connectionIdMeta,
+        connectionId.isAcceptableOrUnknown(
+          data['connection_id']!,
+          _connectionIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_jsonMeta);
+      context.missing(_connectionIdMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('balance')) {
+      context.handle(
+        _balanceMeta,
+        balance.isAcceptableOrUnknown(data['balance']!, _balanceMeta),
+      );
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('merchant_name')) {
+      context.handle(
+        _merchantNameMeta,
+        merchantName.isAcceptableOrUnknown(
+          data['merchant_name']!,
+          _merchantNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('category_name')) {
+      context.handle(
+        _categoryNameMeta,
+        categoryName.isAcceptableOrUnknown(
+          data['category_name']!,
+          _categoryNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('category_group')) {
+      context.handle(
+        _categoryGroupMeta,
+        categoryGroup.isAcceptableOrUnknown(
+          data['category_group']!,
+          _categoryGroupMeta,
+        ),
+      );
+    }
+    if (data.containsKey('auto_category_name')) {
+      context.handle(
+        _autoCategoryNameMeta,
+        autoCategoryName.isAcceptableOrUnknown(
+          data['auto_category_name']!,
+          _autoCategoryNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('auto_category_group')) {
+      context.handle(
+        _autoCategoryGroupMeta,
+        autoCategoryGroup.isAcceptableOrUnknown(
+          data['auto_category_group']!,
+          _autoCategoryGroupMeta,
+        ),
+      );
     }
     if (data.containsKey('updated_at')) {
       context.handle(
@@ -357,9 +1442,9 @@ class $CachedTransactionsTable extends CachedTransactions
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  CachedTransaction map(Map<String, dynamic> data, {String? tablePrefix}) {
+  TransactionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return CachedTransaction(
+    return TransactionRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -368,10 +1453,50 @@ class $CachedTransactionsTable extends CachedTransactions
         DriftSqlType.string,
         data['${effectivePrefix}account_id'],
       )!,
-      json: attachedDatabase.typeMapping.read(
+      connectionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}json'],
+        data['${effectivePrefix}connection_id'],
       )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      )!,
+      balance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}balance'],
+      ),
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      merchantName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}merchant_name'],
+      ),
+      categoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_name'],
+      ),
+      categoryGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_group'],
+      ),
+      autoCategoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auto_category_name'],
+      ),
+      autoCategoryGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auto_category_group'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -380,21 +1505,40 @@ class $CachedTransactionsTable extends CachedTransactions
   }
 
   @override
-  $CachedTransactionsTable createAlias(String alias) {
-    return $CachedTransactionsTable(attachedDatabase, alias);
+  $TransactionsTable createAlias(String alias) {
+    return $TransactionsTable(attachedDatabase, alias);
   }
 }
 
-class CachedTransaction extends DataClass
-    implements Insertable<CachedTransaction> {
+class TransactionRow extends DataClass implements Insertable<TransactionRow> {
   final String id;
   final String accountId;
-  final String json;
+  final String connectionId;
+  final String date;
+  final String description;
+  final double amount;
+  final double? balance;
+  final String type;
+  final String? merchantName;
+  final String? categoryName;
+  final String? categoryGroup;
+  final String? autoCategoryName;
+  final String? autoCategoryGroup;
   final DateTime updatedAt;
-  const CachedTransaction({
+  const TransactionRow({
     required this.id,
     required this.accountId,
-    required this.json,
+    required this.connectionId,
+    required this.date,
+    required this.description,
+    required this.amount,
+    this.balance,
+    required this.type,
+    this.merchantName,
+    this.categoryName,
+    this.categoryGroup,
+    this.autoCategoryName,
+    this.autoCategoryGroup,
     required this.updatedAt,
   });
   @override
@@ -402,29 +1546,85 @@ class CachedTransaction extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['account_id'] = Variable<String>(accountId);
-    map['json'] = Variable<String>(json);
+    map['connection_id'] = Variable<String>(connectionId);
+    map['date'] = Variable<String>(date);
+    map['description'] = Variable<String>(description);
+    map['amount'] = Variable<double>(amount);
+    if (!nullToAbsent || balance != null) {
+      map['balance'] = Variable<double>(balance);
+    }
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || merchantName != null) {
+      map['merchant_name'] = Variable<String>(merchantName);
+    }
+    if (!nullToAbsent || categoryName != null) {
+      map['category_name'] = Variable<String>(categoryName);
+    }
+    if (!nullToAbsent || categoryGroup != null) {
+      map['category_group'] = Variable<String>(categoryGroup);
+    }
+    if (!nullToAbsent || autoCategoryName != null) {
+      map['auto_category_name'] = Variable<String>(autoCategoryName);
+    }
+    if (!nullToAbsent || autoCategoryGroup != null) {
+      map['auto_category_group'] = Variable<String>(autoCategoryGroup);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
-  CachedTransactionsCompanion toCompanion(bool nullToAbsent) {
-    return CachedTransactionsCompanion(
+  TransactionsCompanion toCompanion(bool nullToAbsent) {
+    return TransactionsCompanion(
       id: Value(id),
       accountId: Value(accountId),
-      json: Value(json),
+      connectionId: Value(connectionId),
+      date: Value(date),
+      description: Value(description),
+      amount: Value(amount),
+      balance: balance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(balance),
+      type: Value(type),
+      merchantName: merchantName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(merchantName),
+      categoryName: categoryName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryName),
+      categoryGroup: categoryGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryGroup),
+      autoCategoryName: autoCategoryName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(autoCategoryName),
+      autoCategoryGroup: autoCategoryGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(autoCategoryGroup),
       updatedAt: Value(updatedAt),
     );
   }
 
-  factory CachedTransaction.fromJson(
+  factory TransactionRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return CachedTransaction(
+    return TransactionRow(
       id: serializer.fromJson<String>(json['id']),
       accountId: serializer.fromJson<String>(json['accountId']),
-      json: serializer.fromJson<String>(json['json']),
+      connectionId: serializer.fromJson<String>(json['connectionId']),
+      date: serializer.fromJson<String>(json['date']),
+      description: serializer.fromJson<String>(json['description']),
+      amount: serializer.fromJson<double>(json['amount']),
+      balance: serializer.fromJson<double?>(json['balance']),
+      type: serializer.fromJson<String>(json['type']),
+      merchantName: serializer.fromJson<String?>(json['merchantName']),
+      categoryName: serializer.fromJson<String?>(json['categoryName']),
+      categoryGroup: serializer.fromJson<String?>(json['categoryGroup']),
+      autoCategoryName: serializer.fromJson<String?>(json['autoCategoryName']),
+      autoCategoryGroup: serializer.fromJson<String?>(
+        json['autoCategoryGroup'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -434,104 +1634,273 @@ class CachedTransaction extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'accountId': serializer.toJson<String>(accountId),
-      'json': serializer.toJson<String>(json),
+      'connectionId': serializer.toJson<String>(connectionId),
+      'date': serializer.toJson<String>(date),
+      'description': serializer.toJson<String>(description),
+      'amount': serializer.toJson<double>(amount),
+      'balance': serializer.toJson<double?>(balance),
+      'type': serializer.toJson<String>(type),
+      'merchantName': serializer.toJson<String?>(merchantName),
+      'categoryName': serializer.toJson<String?>(categoryName),
+      'categoryGroup': serializer.toJson<String?>(categoryGroup),
+      'autoCategoryName': serializer.toJson<String?>(autoCategoryName),
+      'autoCategoryGroup': serializer.toJson<String?>(autoCategoryGroup),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
-  CachedTransaction copyWith({
+  TransactionRow copyWith({
     String? id,
     String? accountId,
-    String? json,
+    String? connectionId,
+    String? date,
+    String? description,
+    double? amount,
+    Value<double?> balance = const Value.absent(),
+    String? type,
+    Value<String?> merchantName = const Value.absent(),
+    Value<String?> categoryName = const Value.absent(),
+    Value<String?> categoryGroup = const Value.absent(),
+    Value<String?> autoCategoryName = const Value.absent(),
+    Value<String?> autoCategoryGroup = const Value.absent(),
     DateTime? updatedAt,
-  }) => CachedTransaction(
+  }) => TransactionRow(
     id: id ?? this.id,
     accountId: accountId ?? this.accountId,
-    json: json ?? this.json,
+    connectionId: connectionId ?? this.connectionId,
+    date: date ?? this.date,
+    description: description ?? this.description,
+    amount: amount ?? this.amount,
+    balance: balance.present ? balance.value : this.balance,
+    type: type ?? this.type,
+    merchantName: merchantName.present ? merchantName.value : this.merchantName,
+    categoryName: categoryName.present ? categoryName.value : this.categoryName,
+    categoryGroup: categoryGroup.present
+        ? categoryGroup.value
+        : this.categoryGroup,
+    autoCategoryName: autoCategoryName.present
+        ? autoCategoryName.value
+        : this.autoCategoryName,
+    autoCategoryGroup: autoCategoryGroup.present
+        ? autoCategoryGroup.value
+        : this.autoCategoryGroup,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  CachedTransaction copyWithCompanion(CachedTransactionsCompanion data) {
-    return CachedTransaction(
+  TransactionRow copyWithCompanion(TransactionsCompanion data) {
+    return TransactionRow(
       id: data.id.present ? data.id.value : this.id,
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
-      json: data.json.present ? data.json.value : this.json,
+      connectionId: data.connectionId.present
+          ? data.connectionId.value
+          : this.connectionId,
+      date: data.date.present ? data.date.value : this.date,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      balance: data.balance.present ? data.balance.value : this.balance,
+      type: data.type.present ? data.type.value : this.type,
+      merchantName: data.merchantName.present
+          ? data.merchantName.value
+          : this.merchantName,
+      categoryName: data.categoryName.present
+          ? data.categoryName.value
+          : this.categoryName,
+      categoryGroup: data.categoryGroup.present
+          ? data.categoryGroup.value
+          : this.categoryGroup,
+      autoCategoryName: data.autoCategoryName.present
+          ? data.autoCategoryName.value
+          : this.autoCategoryName,
+      autoCategoryGroup: data.autoCategoryGroup.present
+          ? data.autoCategoryGroup.value
+          : this.autoCategoryGroup,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('CachedTransaction(')
+    return (StringBuffer('TransactionRow(')
           ..write('id: $id, ')
           ..write('accountId: $accountId, ')
-          ..write('json: $json, ')
+          ..write('connectionId: $connectionId, ')
+          ..write('date: $date, ')
+          ..write('description: $description, ')
+          ..write('amount: $amount, ')
+          ..write('balance: $balance, ')
+          ..write('type: $type, ')
+          ..write('merchantName: $merchantName, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
+          ..write('autoCategoryName: $autoCategoryName, ')
+          ..write('autoCategoryGroup: $autoCategoryGroup, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, accountId, json, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    accountId,
+    connectionId,
+    date,
+    description,
+    amount,
+    balance,
+    type,
+    merchantName,
+    categoryName,
+    categoryGroup,
+    autoCategoryName,
+    autoCategoryGroup,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CachedTransaction &&
+      (other is TransactionRow &&
           other.id == this.id &&
           other.accountId == this.accountId &&
-          other.json == this.json &&
+          other.connectionId == this.connectionId &&
+          other.date == this.date &&
+          other.description == this.description &&
+          other.amount == this.amount &&
+          other.balance == this.balance &&
+          other.type == this.type &&
+          other.merchantName == this.merchantName &&
+          other.categoryName == this.categoryName &&
+          other.categoryGroup == this.categoryGroup &&
+          other.autoCategoryName == this.autoCategoryName &&
+          other.autoCategoryGroup == this.autoCategoryGroup &&
           other.updatedAt == this.updatedAt);
 }
 
-class CachedTransactionsCompanion extends UpdateCompanion<CachedTransaction> {
+class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
   final Value<String> id;
   final Value<String> accountId;
-  final Value<String> json;
+  final Value<String> connectionId;
+  final Value<String> date;
+  final Value<String> description;
+  final Value<double> amount;
+  final Value<double?> balance;
+  final Value<String> type;
+  final Value<String?> merchantName;
+  final Value<String?> categoryName;
+  final Value<String?> categoryGroup;
+  final Value<String?> autoCategoryName;
+  final Value<String?> autoCategoryGroup;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const CachedTransactionsCompanion({
+  const TransactionsCompanion({
     this.id = const Value.absent(),
     this.accountId = const Value.absent(),
-    this.json = const Value.absent(),
+    this.connectionId = const Value.absent(),
+    this.date = const Value.absent(),
+    this.description = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.balance = const Value.absent(),
+    this.type = const Value.absent(),
+    this.merchantName = const Value.absent(),
+    this.categoryName = const Value.absent(),
+    this.categoryGroup = const Value.absent(),
+    this.autoCategoryName = const Value.absent(),
+    this.autoCategoryGroup = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  CachedTransactionsCompanion.insert({
+  TransactionsCompanion.insert({
     required String id,
     required String accountId,
-    required String json,
+    required String connectionId,
+    required String date,
+    required String description,
+    required double amount,
+    this.balance = const Value.absent(),
+    required String type,
+    this.merchantName = const Value.absent(),
+    this.categoryName = const Value.absent(),
+    this.categoryGroup = const Value.absent(),
+    this.autoCategoryName = const Value.absent(),
+    this.autoCategoryGroup = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        accountId = Value(accountId),
-       json = Value(json),
+       connectionId = Value(connectionId),
+       date = Value(date),
+       description = Value(description),
+       amount = Value(amount),
+       type = Value(type),
        updatedAt = Value(updatedAt);
-  static Insertable<CachedTransaction> custom({
+  static Insertable<TransactionRow> custom({
     Expression<String>? id,
     Expression<String>? accountId,
-    Expression<String>? json,
+    Expression<String>? connectionId,
+    Expression<String>? date,
+    Expression<String>? description,
+    Expression<double>? amount,
+    Expression<double>? balance,
+    Expression<String>? type,
+    Expression<String>? merchantName,
+    Expression<String>? categoryName,
+    Expression<String>? categoryGroup,
+    Expression<String>? autoCategoryName,
+    Expression<String>? autoCategoryGroup,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (accountId != null) 'account_id': accountId,
-      if (json != null) 'json': json,
+      if (connectionId != null) 'connection_id': connectionId,
+      if (date != null) 'date': date,
+      if (description != null) 'description': description,
+      if (amount != null) 'amount': amount,
+      if (balance != null) 'balance': balance,
+      if (type != null) 'type': type,
+      if (merchantName != null) 'merchant_name': merchantName,
+      if (categoryName != null) 'category_name': categoryName,
+      if (categoryGroup != null) 'category_group': categoryGroup,
+      if (autoCategoryName != null) 'auto_category_name': autoCategoryName,
+      if (autoCategoryGroup != null) 'auto_category_group': autoCategoryGroup,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  CachedTransactionsCompanion copyWith({
+  TransactionsCompanion copyWith({
     Value<String>? id,
     Value<String>? accountId,
-    Value<String>? json,
+    Value<String>? connectionId,
+    Value<String>? date,
+    Value<String>? description,
+    Value<double>? amount,
+    Value<double?>? balance,
+    Value<String>? type,
+    Value<String?>? merchantName,
+    Value<String?>? categoryName,
+    Value<String?>? categoryGroup,
+    Value<String?>? autoCategoryName,
+    Value<String?>? autoCategoryGroup,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return CachedTransactionsCompanion(
+    return TransactionsCompanion(
       id: id ?? this.id,
       accountId: accountId ?? this.accountId,
-      json: json ?? this.json,
+      connectionId: connectionId ?? this.connectionId,
+      date: date ?? this.date,
+      description: description ?? this.description,
+      amount: amount ?? this.amount,
+      balance: balance ?? this.balance,
+      type: type ?? this.type,
+      merchantName: merchantName ?? this.merchantName,
+      categoryName: categoryName ?? this.categoryName,
+      categoryGroup: categoryGroup ?? this.categoryGroup,
+      autoCategoryName: autoCategoryName ?? this.autoCategoryName,
+      autoCategoryGroup: autoCategoryGroup ?? this.autoCategoryGroup,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -546,8 +1915,38 @@ class CachedTransactionsCompanion extends UpdateCompanion<CachedTransaction> {
     if (accountId.present) {
       map['account_id'] = Variable<String>(accountId.value);
     }
-    if (json.present) {
-      map['json'] = Variable<String>(json.value);
+    if (connectionId.present) {
+      map['connection_id'] = Variable<String>(connectionId.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (balance.present) {
+      map['balance'] = Variable<double>(balance.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (merchantName.present) {
+      map['merchant_name'] = Variable<String>(merchantName.value);
+    }
+    if (categoryName.present) {
+      map['category_name'] = Variable<String>(categoryName.value);
+    }
+    if (categoryGroup.present) {
+      map['category_group'] = Variable<String>(categoryGroup.value);
+    }
+    if (autoCategoryName.present) {
+      map['auto_category_name'] = Variable<String>(autoCategoryName.value);
+    }
+    if (autoCategoryGroup.present) {
+      map['auto_category_group'] = Variable<String>(autoCategoryGroup.value);
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -560,10 +1959,20 @@ class CachedTransactionsCompanion extends UpdateCompanion<CachedTransaction> {
 
   @override
   String toString() {
-    return (StringBuffer('CachedTransactionsCompanion(')
+    return (StringBuffer('TransactionsCompanion(')
           ..write('id: $id, ')
           ..write('accountId: $accountId, ')
-          ..write('json: $json, ')
+          ..write('connectionId: $connectionId, ')
+          ..write('date: $date, ')
+          ..write('description: $description, ')
+          ..write('amount: $amount, ')
+          ..write('balance: $balance, ')
+          ..write('type: $type, ')
+          ..write('merchantName: $merchantName, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
+          ..write('autoCategoryName: $autoCategoryName, ')
+          ..write('autoCategoryGroup: $autoCategoryGroup, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -588,17 +1997,6 @@ class $CategoryOverridesTable extends CategoryOverrides
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
-    'categoryId',
-  );
-  @override
-  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
-    'category_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _categoryNameMeta = const VerificationMeta(
     'categoryName',
   );
@@ -609,6 +2007,17 @@ class $CategoryOverridesTable extends CategoryOverrides
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryGroupMeta = const VerificationMeta(
+    'categoryGroup',
+  );
+  @override
+  late final GeneratedColumn<String> categoryGroup = GeneratedColumn<String>(
+    'category_group',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -624,8 +2033,8 @@ class $CategoryOverridesTable extends CategoryOverrides
   @override
   List<GeneratedColumn> get $columns => [
     transactionId,
-    categoryId,
     categoryName,
+    categoryGroup,
     updatedAt,
   ];
   @override
@@ -651,14 +2060,6 @@ class $CategoryOverridesTable extends CategoryOverrides
     } else if (isInserting) {
       context.missing(_transactionIdMeta);
     }
-    if (data.containsKey('category_id')) {
-      context.handle(
-        _categoryIdMeta,
-        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_categoryIdMeta);
-    }
     if (data.containsKey('category_name')) {
       context.handle(
         _categoryNameMeta,
@@ -669,6 +2070,15 @@ class $CategoryOverridesTable extends CategoryOverrides
       );
     } else if (isInserting) {
       context.missing(_categoryNameMeta);
+    }
+    if (data.containsKey('category_group')) {
+      context.handle(
+        _categoryGroupMeta,
+        categoryGroup.isAcceptableOrUnknown(
+          data['category_group']!,
+          _categoryGroupMeta,
+        ),
+      );
     }
     if (data.containsKey('updated_at')) {
       context.handle(
@@ -691,14 +2101,14 @@ class $CategoryOverridesTable extends CategoryOverrides
         DriftSqlType.string,
         data['${effectivePrefix}transaction_id'],
       )!,
-      categoryId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}category_id'],
-      )!,
       categoryName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}category_name'],
       )!,
+      categoryGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_group'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -715,21 +2125,23 @@ class $CategoryOverridesTable extends CategoryOverrides
 class CategoryOverride extends DataClass
     implements Insertable<CategoryOverride> {
   final String transactionId;
-  final String categoryId;
   final String categoryName;
+  final String? categoryGroup;
   final DateTime updatedAt;
   const CategoryOverride({
     required this.transactionId,
-    required this.categoryId,
     required this.categoryName,
+    this.categoryGroup,
     required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['transaction_id'] = Variable<String>(transactionId);
-    map['category_id'] = Variable<String>(categoryId);
     map['category_name'] = Variable<String>(categoryName);
+    if (!nullToAbsent || categoryGroup != null) {
+      map['category_group'] = Variable<String>(categoryGroup);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -737,8 +2149,10 @@ class CategoryOverride extends DataClass
   CategoryOverridesCompanion toCompanion(bool nullToAbsent) {
     return CategoryOverridesCompanion(
       transactionId: Value(transactionId),
-      categoryId: Value(categoryId),
       categoryName: Value(categoryName),
+      categoryGroup: categoryGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryGroup),
       updatedAt: Value(updatedAt),
     );
   }
@@ -750,8 +2164,8 @@ class CategoryOverride extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CategoryOverride(
       transactionId: serializer.fromJson<String>(json['transactionId']),
-      categoryId: serializer.fromJson<String>(json['categoryId']),
       categoryName: serializer.fromJson<String>(json['categoryName']),
+      categoryGroup: serializer.fromJson<String?>(json['categoryGroup']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -760,21 +2174,23 @@ class CategoryOverride extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'transactionId': serializer.toJson<String>(transactionId),
-      'categoryId': serializer.toJson<String>(categoryId),
       'categoryName': serializer.toJson<String>(categoryName),
+      'categoryGroup': serializer.toJson<String?>(categoryGroup),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
   CategoryOverride copyWith({
     String? transactionId,
-    String? categoryId,
     String? categoryName,
+    Value<String?> categoryGroup = const Value.absent(),
     DateTime? updatedAt,
   }) => CategoryOverride(
     transactionId: transactionId ?? this.transactionId,
-    categoryId: categoryId ?? this.categoryId,
     categoryName: categoryName ?? this.categoryName,
+    categoryGroup: categoryGroup.present
+        ? categoryGroup.value
+        : this.categoryGroup,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   CategoryOverride copyWithCompanion(CategoryOverridesCompanion data) {
@@ -782,12 +2198,12 @@ class CategoryOverride extends DataClass
       transactionId: data.transactionId.present
           ? data.transactionId.value
           : this.transactionId,
-      categoryId: data.categoryId.present
-          ? data.categoryId.value
-          : this.categoryId,
       categoryName: data.categoryName.present
           ? data.categoryName.value
           : this.categoryName,
+      categoryGroup: data.categoryGroup.present
+          ? data.categoryGroup.value
+          : this.categoryGroup,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -796,8 +2212,8 @@ class CategoryOverride extends DataClass
   String toString() {
     return (StringBuffer('CategoryOverride(')
           ..write('transactionId: $transactionId, ')
-          ..write('categoryId: $categoryId, ')
           ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -805,51 +2221,50 @@ class CategoryOverride extends DataClass
 
   @override
   int get hashCode =>
-      Object.hash(transactionId, categoryId, categoryName, updatedAt);
+      Object.hash(transactionId, categoryName, categoryGroup, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CategoryOverride &&
           other.transactionId == this.transactionId &&
-          other.categoryId == this.categoryId &&
           other.categoryName == this.categoryName &&
+          other.categoryGroup == this.categoryGroup &&
           other.updatedAt == this.updatedAt);
 }
 
 class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
   final Value<String> transactionId;
-  final Value<String> categoryId;
   final Value<String> categoryName;
+  final Value<String?> categoryGroup;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const CategoryOverridesCompanion({
     this.transactionId = const Value.absent(),
-    this.categoryId = const Value.absent(),
     this.categoryName = const Value.absent(),
+    this.categoryGroup = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoryOverridesCompanion.insert({
     required String transactionId,
-    required String categoryId,
     required String categoryName,
+    this.categoryGroup = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : transactionId = Value(transactionId),
-       categoryId = Value(categoryId),
        categoryName = Value(categoryName),
        updatedAt = Value(updatedAt);
   static Insertable<CategoryOverride> custom({
     Expression<String>? transactionId,
-    Expression<String>? categoryId,
     Expression<String>? categoryName,
+    Expression<String>? categoryGroup,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (transactionId != null) 'transaction_id': transactionId,
-      if (categoryId != null) 'category_id': categoryId,
       if (categoryName != null) 'category_name': categoryName,
+      if (categoryGroup != null) 'category_group': categoryGroup,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -857,15 +2272,15 @@ class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
 
   CategoryOverridesCompanion copyWith({
     Value<String>? transactionId,
-    Value<String>? categoryId,
     Value<String>? categoryName,
+    Value<String?>? categoryGroup,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
     return CategoryOverridesCompanion(
       transactionId: transactionId ?? this.transactionId,
-      categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
+      categoryGroup: categoryGroup ?? this.categoryGroup,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -877,11 +2292,11 @@ class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
     if (transactionId.present) {
       map['transaction_id'] = Variable<String>(transactionId.value);
     }
-    if (categoryId.present) {
-      map['category_id'] = Variable<String>(categoryId.value);
-    }
     if (categoryName.present) {
       map['category_name'] = Variable<String>(categoryName.value);
+    }
+    if (categoryGroup.present) {
+      map['category_group'] = Variable<String>(categoryGroup.value);
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -896,8 +2311,8 @@ class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
   String toString() {
     return (StringBuffer('CategoryOverridesCompanion(')
           ..write('transactionId: $transactionId, ')
-          ..write('categoryId: $categoryId, ')
           ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -908,9 +2323,8 @@ class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $CachedAccountsTable cachedAccounts = $CachedAccountsTable(this);
-  late final $CachedTransactionsTable cachedTransactions =
-      $CachedTransactionsTable(this);
+  late final $AccountsTable accounts = $AccountsTable(this);
+  late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $CategoryOverridesTable categoryOverrides =
       $CategoryOverridesTable(this);
   @override
@@ -918,30 +2332,62 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    cachedAccounts,
-    cachedTransactions,
+    accounts,
+    transactions,
     categoryOverrides,
   ];
 }
 
-typedef $$CachedAccountsTableCreateCompanionBuilder =
-    CachedAccountsCompanion Function({
+typedef $$AccountsTableCreateCompanionBuilder =
+    AccountsCompanion Function({
       required String id,
-      required String json,
+      required String name,
+      required String status,
+      required String type,
+      required String attributes,
+      Value<String?> formattedAccount,
+      Value<String?> connectionId,
+      Value<String?> connectionName,
+      Value<String?> connectionLogo,
+      Value<String?> connectionType,
+      Value<double?> balanceCurrent,
+      Value<double?> balanceAvailable,
+      Value<double?> balanceLimit,
+      Value<bool> balanceOverdrawn,
+      Value<String?> holder,
+      Value<String?> refreshedBalance,
+      Value<String?> refreshedMeta,
+      Value<String?> refreshedTransactions,
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$CachedAccountsTableUpdateCompanionBuilder =
-    CachedAccountsCompanion Function({
+typedef $$AccountsTableUpdateCompanionBuilder =
+    AccountsCompanion Function({
       Value<String> id,
-      Value<String> json,
+      Value<String> name,
+      Value<String> status,
+      Value<String> type,
+      Value<String> attributes,
+      Value<String?> formattedAccount,
+      Value<String?> connectionId,
+      Value<String?> connectionName,
+      Value<String?> connectionLogo,
+      Value<String?> connectionType,
+      Value<double?> balanceCurrent,
+      Value<double?> balanceAvailable,
+      Value<double?> balanceLimit,
+      Value<bool> balanceOverdrawn,
+      Value<String?> holder,
+      Value<String?> refreshedBalance,
+      Value<String?> refreshedMeta,
+      Value<String?> refreshedTransactions,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 
-class $$CachedAccountsTableFilterComposer
-    extends Composer<_$AppDatabase, $CachedAccountsTable> {
-  $$CachedAccountsTableFilterComposer({
+class $$AccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -953,8 +2399,88 @@ class $$CachedAccountsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get json => $composableBuilder(
-    column: $table.json,
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attributes => $composableBuilder(
+    column: $table.attributes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formattedAccount => $composableBuilder(
+    column: $table.formattedAccount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectionName => $composableBuilder(
+    column: $table.connectionName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectionLogo => $composableBuilder(
+    column: $table.connectionLogo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectionType => $composableBuilder(
+    column: $table.connectionType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get balanceCurrent => $composableBuilder(
+    column: $table.balanceCurrent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get balanceAvailable => $composableBuilder(
+    column: $table.balanceAvailable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get balanceLimit => $composableBuilder(
+    column: $table.balanceLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get balanceOverdrawn => $composableBuilder(
+    column: $table.balanceOverdrawn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get holder => $composableBuilder(
+    column: $table.holder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refreshedBalance => $composableBuilder(
+    column: $table.refreshedBalance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refreshedMeta => $composableBuilder(
+    column: $table.refreshedMeta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refreshedTransactions => $composableBuilder(
+    column: $table.refreshedTransactions,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -964,9 +2490,9 @@ class $$CachedAccountsTableFilterComposer
   );
 }
 
-class $$CachedAccountsTableOrderingComposer
-    extends Composer<_$AppDatabase, $CachedAccountsTable> {
-  $$CachedAccountsTableOrderingComposer({
+class $$AccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -978,8 +2504,88 @@ class $$CachedAccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get json => $composableBuilder(
-    column: $table.json,
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attributes => $composableBuilder(
+    column: $table.attributes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formattedAccount => $composableBuilder(
+    column: $table.formattedAccount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectionName => $composableBuilder(
+    column: $table.connectionName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectionLogo => $composableBuilder(
+    column: $table.connectionLogo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectionType => $composableBuilder(
+    column: $table.connectionType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get balanceCurrent => $composableBuilder(
+    column: $table.balanceCurrent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get balanceAvailable => $composableBuilder(
+    column: $table.balanceAvailable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get balanceLimit => $composableBuilder(
+    column: $table.balanceLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get balanceOverdrawn => $composableBuilder(
+    column: $table.balanceOverdrawn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get holder => $composableBuilder(
+    column: $table.holder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get refreshedBalance => $composableBuilder(
+    column: $table.refreshedBalance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get refreshedMeta => $composableBuilder(
+    column: $table.refreshedMeta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get refreshedTransactions => $composableBuilder(
+    column: $table.refreshedTransactions,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -989,9 +2595,9 @@ class $$CachedAccountsTableOrderingComposer
   );
 }
 
-class $$CachedAccountsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CachedAccountsTable> {
-  $$CachedAccountsTableAnnotationComposer({
+class $$AccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1001,65 +2607,201 @@ class $$CachedAccountsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get json =>
-      $composableBuilder(column: $table.json, builder: (column) => column);
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get attributes => $composableBuilder(
+    column: $table.attributes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formattedAccount => $composableBuilder(
+    column: $table.formattedAccount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectionName => $composableBuilder(
+    column: $table.connectionName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectionLogo => $composableBuilder(
+    column: $table.connectionLogo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectionType => $composableBuilder(
+    column: $table.connectionType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get balanceCurrent => $composableBuilder(
+    column: $table.balanceCurrent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get balanceAvailable => $composableBuilder(
+    column: $table.balanceAvailable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get balanceLimit => $composableBuilder(
+    column: $table.balanceLimit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get balanceOverdrawn => $composableBuilder(
+    column: $table.balanceOverdrawn,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get holder =>
+      $composableBuilder(column: $table.holder, builder: (column) => column);
+
+  GeneratedColumn<String> get refreshedBalance => $composableBuilder(
+    column: $table.refreshedBalance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get refreshedMeta => $composableBuilder(
+    column: $table.refreshedMeta,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get refreshedTransactions => $composableBuilder(
+    column: $table.refreshedTransactions,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$CachedAccountsTableTableManager
+class $$AccountsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $CachedAccountsTable,
-          CachedAccount,
-          $$CachedAccountsTableFilterComposer,
-          $$CachedAccountsTableOrderingComposer,
-          $$CachedAccountsTableAnnotationComposer,
-          $$CachedAccountsTableCreateCompanionBuilder,
-          $$CachedAccountsTableUpdateCompanionBuilder,
+          $AccountsTable,
+          AccountRow,
+          $$AccountsTableFilterComposer,
+          $$AccountsTableOrderingComposer,
+          $$AccountsTableAnnotationComposer,
+          $$AccountsTableCreateCompanionBuilder,
+          $$AccountsTableUpdateCompanionBuilder,
           (
-            CachedAccount,
-            BaseReferences<_$AppDatabase, $CachedAccountsTable, CachedAccount>,
+            AccountRow,
+            BaseReferences<_$AppDatabase, $AccountsTable, AccountRow>,
           ),
-          CachedAccount,
+          AccountRow,
           PrefetchHooks Function()
         > {
-  $$CachedAccountsTableTableManager(
-    _$AppDatabase db,
-    $CachedAccountsTable table,
-  ) : super(
+  $$AccountsTableTableManager(_$AppDatabase db, $AccountsTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$CachedAccountsTableFilterComposer($db: db, $table: table),
+              $$AccountsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$CachedAccountsTableOrderingComposer($db: db, $table: table),
+              $$AccountsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$CachedAccountsTableAnnotationComposer($db: db, $table: table),
+              $$AccountsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> json = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> attributes = const Value.absent(),
+                Value<String?> formattedAccount = const Value.absent(),
+                Value<String?> connectionId = const Value.absent(),
+                Value<String?> connectionName = const Value.absent(),
+                Value<String?> connectionLogo = const Value.absent(),
+                Value<String?> connectionType = const Value.absent(),
+                Value<double?> balanceCurrent = const Value.absent(),
+                Value<double?> balanceAvailable = const Value.absent(),
+                Value<double?> balanceLimit = const Value.absent(),
+                Value<bool> balanceOverdrawn = const Value.absent(),
+                Value<String?> holder = const Value.absent(),
+                Value<String?> refreshedBalance = const Value.absent(),
+                Value<String?> refreshedMeta = const Value.absent(),
+                Value<String?> refreshedTransactions = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => CachedAccountsCompanion(
+              }) => AccountsCompanion(
                 id: id,
-                json: json,
+                name: name,
+                status: status,
+                type: type,
+                attributes: attributes,
+                formattedAccount: formattedAccount,
+                connectionId: connectionId,
+                connectionName: connectionName,
+                connectionLogo: connectionLogo,
+                connectionType: connectionType,
+                balanceCurrent: balanceCurrent,
+                balanceAvailable: balanceAvailable,
+                balanceLimit: balanceLimit,
+                balanceOverdrawn: balanceOverdrawn,
+                holder: holder,
+                refreshedBalance: refreshedBalance,
+                refreshedMeta: refreshedMeta,
+                refreshedTransactions: refreshedTransactions,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
-                required String json,
+                required String name,
+                required String status,
+                required String type,
+                required String attributes,
+                Value<String?> formattedAccount = const Value.absent(),
+                Value<String?> connectionId = const Value.absent(),
+                Value<String?> connectionName = const Value.absent(),
+                Value<String?> connectionLogo = const Value.absent(),
+                Value<String?> connectionType = const Value.absent(),
+                Value<double?> balanceCurrent = const Value.absent(),
+                Value<double?> balanceAvailable = const Value.absent(),
+                Value<double?> balanceLimit = const Value.absent(),
+                Value<bool> balanceOverdrawn = const Value.absent(),
+                Value<String?> holder = const Value.absent(),
+                Value<String?> refreshedBalance = const Value.absent(),
+                Value<String?> refreshedMeta = const Value.absent(),
+                Value<String?> refreshedTransactions = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => CachedAccountsCompanion.insert(
+              }) => AccountsCompanion.insert(
                 id: id,
-                json: json,
+                name: name,
+                status: status,
+                type: type,
+                attributes: attributes,
+                formattedAccount: formattedAccount,
+                connectionId: connectionId,
+                connectionName: connectionName,
+                connectionLogo: connectionLogo,
+                connectionType: connectionType,
+                balanceCurrent: balanceCurrent,
+                balanceAvailable: balanceAvailable,
+                balanceLimit: balanceLimit,
+                balanceOverdrawn: balanceOverdrawn,
+                holder: holder,
+                refreshedBalance: refreshedBalance,
+                refreshedMeta: refreshedMeta,
+                refreshedTransactions: refreshedTransactions,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -1071,43 +2813,60 @@ class $$CachedAccountsTableTableManager
       );
 }
 
-typedef $$CachedAccountsTableProcessedTableManager =
+typedef $$AccountsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CachedAccountsTable,
-      CachedAccount,
-      $$CachedAccountsTableFilterComposer,
-      $$CachedAccountsTableOrderingComposer,
-      $$CachedAccountsTableAnnotationComposer,
-      $$CachedAccountsTableCreateCompanionBuilder,
-      $$CachedAccountsTableUpdateCompanionBuilder,
-      (
-        CachedAccount,
-        BaseReferences<_$AppDatabase, $CachedAccountsTable, CachedAccount>,
-      ),
-      CachedAccount,
+      $AccountsTable,
+      AccountRow,
+      $$AccountsTableFilterComposer,
+      $$AccountsTableOrderingComposer,
+      $$AccountsTableAnnotationComposer,
+      $$AccountsTableCreateCompanionBuilder,
+      $$AccountsTableUpdateCompanionBuilder,
+      (AccountRow, BaseReferences<_$AppDatabase, $AccountsTable, AccountRow>),
+      AccountRow,
       PrefetchHooks Function()
     >;
-typedef $$CachedTransactionsTableCreateCompanionBuilder =
-    CachedTransactionsCompanion Function({
+typedef $$TransactionsTableCreateCompanionBuilder =
+    TransactionsCompanion Function({
       required String id,
       required String accountId,
-      required String json,
+      required String connectionId,
+      required String date,
+      required String description,
+      required double amount,
+      Value<double?> balance,
+      required String type,
+      Value<String?> merchantName,
+      Value<String?> categoryName,
+      Value<String?> categoryGroup,
+      Value<String?> autoCategoryName,
+      Value<String?> autoCategoryGroup,
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$CachedTransactionsTableUpdateCompanionBuilder =
-    CachedTransactionsCompanion Function({
+typedef $$TransactionsTableUpdateCompanionBuilder =
+    TransactionsCompanion Function({
       Value<String> id,
       Value<String> accountId,
-      Value<String> json,
+      Value<String> connectionId,
+      Value<String> date,
+      Value<String> description,
+      Value<double> amount,
+      Value<double?> balance,
+      Value<String> type,
+      Value<String?> merchantName,
+      Value<String?> categoryName,
+      Value<String?> categoryGroup,
+      Value<String?> autoCategoryName,
+      Value<String?> autoCategoryGroup,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 
-class $$CachedTransactionsTableFilterComposer
-    extends Composer<_$AppDatabase, $CachedTransactionsTable> {
-  $$CachedTransactionsTableFilterComposer({
+class $$TransactionsTableFilterComposer
+    extends Composer<_$AppDatabase, $TransactionsTable> {
+  $$TransactionsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1124,8 +2883,58 @@ class $$CachedTransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get json => $composableBuilder(
-    column: $table.json,
+  ColumnFilters<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get merchantName => $composableBuilder(
+    column: $table.merchantName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autoCategoryName => $composableBuilder(
+    column: $table.autoCategoryName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autoCategoryGroup => $composableBuilder(
+    column: $table.autoCategoryGroup,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1135,9 +2944,9 @@ class $$CachedTransactionsTableFilterComposer
   );
 }
 
-class $$CachedTransactionsTableOrderingComposer
-    extends Composer<_$AppDatabase, $CachedTransactionsTable> {
-  $$CachedTransactionsTableOrderingComposer({
+class $$TransactionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TransactionsTable> {
+  $$TransactionsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1154,8 +2963,58 @@ class $$CachedTransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get json => $composableBuilder(
-    column: $table.json,
+  ColumnOrderings<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get merchantName => $composableBuilder(
+    column: $table.merchantName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autoCategoryName => $composableBuilder(
+    column: $table.autoCategoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autoCategoryGroup => $composableBuilder(
+    column: $table.autoCategoryGroup,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1165,9 +3024,9 @@ class $$CachedTransactionsTableOrderingComposer
   );
 }
 
-class $$CachedTransactionsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CachedTransactionsTable> {
-  $$CachedTransactionsTableAnnotationComposer({
+class $$TransactionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TransactionsTable> {
+  $$TransactionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1180,62 +3039,117 @@ class $$CachedTransactionsTableAnnotationComposer
   GeneratedColumn<String> get accountId =>
       $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get json =>
-      $composableBuilder(column: $table.json, builder: (column) => column);
+  GeneratedColumn<String> get connectionId => $composableBuilder(
+    column: $table.connectionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<double> get balance =>
+      $composableBuilder(column: $table.balance, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get merchantName => $composableBuilder(
+    column: $table.merchantName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get autoCategoryName => $composableBuilder(
+    column: $table.autoCategoryName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get autoCategoryGroup => $composableBuilder(
+    column: $table.autoCategoryGroup,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$CachedTransactionsTableTableManager
+class $$TransactionsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $CachedTransactionsTable,
-          CachedTransaction,
-          $$CachedTransactionsTableFilterComposer,
-          $$CachedTransactionsTableOrderingComposer,
-          $$CachedTransactionsTableAnnotationComposer,
-          $$CachedTransactionsTableCreateCompanionBuilder,
-          $$CachedTransactionsTableUpdateCompanionBuilder,
+          $TransactionsTable,
+          TransactionRow,
+          $$TransactionsTableFilterComposer,
+          $$TransactionsTableOrderingComposer,
+          $$TransactionsTableAnnotationComposer,
+          $$TransactionsTableCreateCompanionBuilder,
+          $$TransactionsTableUpdateCompanionBuilder,
           (
-            CachedTransaction,
-            BaseReferences<
-              _$AppDatabase,
-              $CachedTransactionsTable,
-              CachedTransaction
-            >,
+            TransactionRow,
+            BaseReferences<_$AppDatabase, $TransactionsTable, TransactionRow>,
           ),
-          CachedTransaction,
+          TransactionRow,
           PrefetchHooks Function()
         > {
-  $$CachedTransactionsTableTableManager(
-    _$AppDatabase db,
-    $CachedTransactionsTable table,
-  ) : super(
+  $$TransactionsTableTableManager(_$AppDatabase db, $TransactionsTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$CachedTransactionsTableFilterComposer($db: db, $table: table),
+              $$TransactionsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$CachedTransactionsTableOrderingComposer($db: db, $table: table),
+              $$TransactionsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$CachedTransactionsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
+              $$TransactionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> accountId = const Value.absent(),
-                Value<String> json = const Value.absent(),
+                Value<String> connectionId = const Value.absent(),
+                Value<String> date = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<double> amount = const Value.absent(),
+                Value<double?> balance = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> merchantName = const Value.absent(),
+                Value<String?> categoryName = const Value.absent(),
+                Value<String?> categoryGroup = const Value.absent(),
+                Value<String?> autoCategoryName = const Value.absent(),
+                Value<String?> autoCategoryGroup = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => CachedTransactionsCompanion(
+              }) => TransactionsCompanion(
                 id: id,
                 accountId: accountId,
-                json: json,
+                connectionId: connectionId,
+                date: date,
+                description: description,
+                amount: amount,
+                balance: balance,
+                type: type,
+                merchantName: merchantName,
+                categoryName: categoryName,
+                categoryGroup: categoryGroup,
+                autoCategoryName: autoCategoryName,
+                autoCategoryGroup: autoCategoryGroup,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -1243,13 +3157,33 @@ class $$CachedTransactionsTableTableManager
               ({
                 required String id,
                 required String accountId,
-                required String json,
+                required String connectionId,
+                required String date,
+                required String description,
+                required double amount,
+                Value<double?> balance = const Value.absent(),
+                required String type,
+                Value<String?> merchantName = const Value.absent(),
+                Value<String?> categoryName = const Value.absent(),
+                Value<String?> categoryGroup = const Value.absent(),
+                Value<String?> autoCategoryName = const Value.absent(),
+                Value<String?> autoCategoryGroup = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => CachedTransactionsCompanion.insert(
+              }) => TransactionsCompanion.insert(
                 id: id,
                 accountId: accountId,
-                json: json,
+                connectionId: connectionId,
+                date: date,
+                description: description,
+                amount: amount,
+                balance: balance,
+                type: type,
+                merchantName: merchantName,
+                categoryName: categoryName,
+                categoryGroup: categoryGroup,
+                autoCategoryName: autoCategoryName,
+                autoCategoryGroup: autoCategoryGroup,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -1261,40 +3195,36 @@ class $$CachedTransactionsTableTableManager
       );
 }
 
-typedef $$CachedTransactionsTableProcessedTableManager =
+typedef $$TransactionsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CachedTransactionsTable,
-      CachedTransaction,
-      $$CachedTransactionsTableFilterComposer,
-      $$CachedTransactionsTableOrderingComposer,
-      $$CachedTransactionsTableAnnotationComposer,
-      $$CachedTransactionsTableCreateCompanionBuilder,
-      $$CachedTransactionsTableUpdateCompanionBuilder,
+      $TransactionsTable,
+      TransactionRow,
+      $$TransactionsTableFilterComposer,
+      $$TransactionsTableOrderingComposer,
+      $$TransactionsTableAnnotationComposer,
+      $$TransactionsTableCreateCompanionBuilder,
+      $$TransactionsTableUpdateCompanionBuilder,
       (
-        CachedTransaction,
-        BaseReferences<
-          _$AppDatabase,
-          $CachedTransactionsTable,
-          CachedTransaction
-        >,
+        TransactionRow,
+        BaseReferences<_$AppDatabase, $TransactionsTable, TransactionRow>,
       ),
-      CachedTransaction,
+      TransactionRow,
       PrefetchHooks Function()
     >;
 typedef $$CategoryOverridesTableCreateCompanionBuilder =
     CategoryOverridesCompanion Function({
       required String transactionId,
-      required String categoryId,
       required String categoryName,
+      Value<String?> categoryGroup,
       required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$CategoryOverridesTableUpdateCompanionBuilder =
     CategoryOverridesCompanion Function({
       Value<String> transactionId,
-      Value<String> categoryId,
       Value<String> categoryName,
+      Value<String?> categoryGroup,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -1313,13 +3243,13 @@ class $$CategoryOverridesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
+  ColumnFilters<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get categoryName => $composableBuilder(
-    column: $table.categoryName,
+  ColumnFilters<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1343,13 +3273,13 @@ class $$CategoryOverridesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
+  ColumnOrderings<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get categoryName => $composableBuilder(
-    column: $table.categoryName,
+  ColumnOrderings<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1373,13 +3303,13 @@ class $$CategoryOverridesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
+  GeneratedColumn<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get categoryName => $composableBuilder(
-    column: $table.categoryName,
+  GeneratedColumn<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
     builder: (column) => column,
   );
 
@@ -1428,28 +3358,28 @@ class $$CategoryOverridesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> transactionId = const Value.absent(),
-                Value<String> categoryId = const Value.absent(),
                 Value<String> categoryName = const Value.absent(),
+                Value<String?> categoryGroup = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoryOverridesCompanion(
                 transactionId: transactionId,
-                categoryId: categoryId,
                 categoryName: categoryName,
+                categoryGroup: categoryGroup,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String transactionId,
-                required String categoryId,
                 required String categoryName,
+                Value<String?> categoryGroup = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => CategoryOverridesCompanion.insert(
                 transactionId: transactionId,
-                categoryId: categoryId,
                 categoryName: categoryName,
+                categoryGroup: categoryGroup,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -1486,10 +3416,10 @@ typedef $$CategoryOverridesTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$CachedAccountsTableTableManager get cachedAccounts =>
-      $$CachedAccountsTableTableManager(_db, _db.cachedAccounts);
-  $$CachedTransactionsTableTableManager get cachedTransactions =>
-      $$CachedTransactionsTableTableManager(_db, _db.cachedTransactions);
+  $$AccountsTableTableManager get accounts =>
+      $$AccountsTableTableManager(_db, _db.accounts);
+  $$TransactionsTableTableManager get transactions =>
+      $$TransactionsTableTableManager(_db, _db.transactions);
   $$CategoryOverridesTableTableManager get categoryOverrides =>
       $$CategoryOverridesTableTableManager(_db, _db.categoryOverrides);
 }

@@ -65,7 +65,7 @@ void main() {
       final now = DateTime.now();
       final thisMonth = DateTime(now.year, now.month, 15).toUtc().toIso8601String();
       final mcdonalds = mcdonaldsBurger(date: thisMonth);
-      await db.saveTransactions([(id: mcdonalds.id, accountId: mcdonalds.account, json: json.encode(mcdonalds.toJson()))]);
+      await db.saveTransactions([mcdonalds]);
       await Future.delayed(Duration.zero);
       await Future.delayed(Duration.zero);
 
@@ -115,8 +115,9 @@ void main() {
 
   group('categorisation', () {
     test('categoryNameFor/categoryGroupFor fall back to AutoCategorizer for an uncategorised McDonald\'s purchase', () async {
-      final tx = mcdonaldsBurger();
-      final state = await seededState(transactions: [tx]);
+      final fixtureTx = mcdonaldsBurger();
+      final state = await seededState(transactions: [fixtureTx]);
+      final tx = state.transactions.first;
 
       expect(state.categoryNameFor(tx), 'Fast food stores');
       expect(state.categoryGroupFor(tx), 'Lifestyle');
@@ -125,10 +126,11 @@ void main() {
     });
 
     test('saveCategoryOverride overrides the McDonald\'s category to "Cafes and restaurants"', () async {
-      final tx = mcdonaldsBurger();
-      final state = await seededState(transactions: [tx]);
+      final fixtureTx = mcdonaldsBurger();
+      final state = await seededState(transactions: [fixtureTx]);
 
-      await state.saveCategoryOverride(tx.id, 'Cafes and restaurants');
+      await state.saveCategoryOverride(fixtureTx.id, 'Cafes and restaurants');
+      final tx = state.transactions.first;
 
       expect(state.categoryNameFor(tx), 'Cafes and restaurants');
       expect(state.categoryGroupFor(tx), 'Lifestyle');
@@ -137,12 +139,13 @@ void main() {
     });
 
     test('clearCategoryOverride reverts back to the auto category', () async {
-      final tx = mcdonaldsBurger();
-      final state = await seededState(transactions: [tx]);
-      await state.saveCategoryOverride(tx.id, 'Cafes and restaurants');
+      final fixtureTx = mcdonaldsBurger();
+      final state = await seededState(transactions: [fixtureTx]);
+      await state.saveCategoryOverride(fixtureTx.id, 'Cafes and restaurants');
 
-      await state.clearCategoryOverride(tx.id);
+      await state.clearCategoryOverride(fixtureTx.id);
 
+      final tx = state.transactions.first;
       expect(state.hasOverride(tx.id), isFalse);
       expect(state.categoryNameFor(tx), 'Fast food stores');
     });
@@ -202,11 +205,6 @@ void main() {
     });
 
     test('loadOlder() fetches the next page using the cursor from a prior load()', () async {
-      // The initial load() keeps paging through /v1/transactions (up to 5
-      // pages) as long as a cursor keeps coming back, so the fake API returns
-      // a real McDonald's transaction with a non-null cursor for the first 5
-      // calls (exhausting _maxPages), then a real Uber trip with a null
-      // cursor on the 6th call, which loadOlder() triggers.
       var page = 0;
       final client = MockClient((req) async {
         if (req.url.path == '/v1/me') {

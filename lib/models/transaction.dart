@@ -117,6 +117,8 @@ class Transaction {
   final TransactionMerchant? merchant;
   final TransactionCategory? category;
   final TransactionMeta? meta;
+  final String? autoCategoryName;
+  final String? autoCategoryGroup;
 
   Transaction({
     required this.id,
@@ -132,6 +134,8 @@ class Transaction {
     this.merchant,
     this.category,
     this.meta,
+    this.autoCategoryName,
+    this.autoCategoryGroup,
   });
 
   String get title => merchant?.name ?? (description.isNotEmpty ? description : type);

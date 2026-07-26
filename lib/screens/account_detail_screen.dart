@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import '../models/account.dart';
@@ -31,13 +30,13 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   bool _refreshing = false;
   bool _loadingMore = false;
   String? _error;
-  StreamSubscription<List<String>>? _txnsSub;
+  StreamSubscription<List<Transaction>>? _txnsSub;
 
   @override
   void initState() {
     super.initState();
     _txnsSub = widget.state.db
-        .watchTransactionsJson(accountId: widget.account.id, limit: 500)
+        .watchTransactions(accountId: widget.account.id, limit: 500)
         .listen(_onTxnRows);
     _load();
     _scroll.addListener(() {
@@ -57,15 +56,10 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     super.dispose();
   }
 
-  void _onTxnRows(List<String> rows) {
-    final result = rows
-        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
-        .toList();
-    result.sort((a, b) =>
-        (parseDate(b.date) ?? DateTime(0)).compareTo(parseDate(a.date) ?? DateTime(0)));
+  void _onTxnRows(List<Transaction> rows) {
     if (!mounted) return;
     setState(() {
-      _txns = result;
+      _txns = rows;
       _loading = false;
     });
   }

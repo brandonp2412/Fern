@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart'
-    show DatabaseConnection, DriftRuntimeOptions, driftRuntimeOptions;
+    show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fern/db/app_database.dart';
 import 'package:fern/models/account.dart';
@@ -272,15 +271,10 @@ Future<AppState> seededState({
 }) async {
   final database = db ?? testDb();
   if (accounts.isNotEmpty) {
-    await database.saveAccounts({
-      for (final a in accounts) a.id: json.encode(a.toJson()),
-    });
+    await database.saveAccounts(accounts);
   }
   if (transactions.isNotEmpty) {
-    await database.saveTransactions([
-      for (final t in transactions)
-        (id: t.id, accountId: t.account, json: json.encode(t.toJson())),
-    ]);
+    await database.saveTransactions(transactions);
   }
   final state = AppState(
     api ?? fakeApi(),

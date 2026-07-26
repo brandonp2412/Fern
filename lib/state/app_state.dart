@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -56,8 +55,6 @@ class AppState extends ChangeNotifier {
   bool _loadingOlder = false;
   bool _accountsLoaded = false;
   bool _transactionsLoaded = false;
-  StreamSubscription<List<String>>? _accountsSub;
-  StreamSubscription<List<String>>? _txnsSub;
 
   static const _windowDays = 182;
   static const _maxPages = 5;
@@ -65,10 +62,15 @@ class AppState extends ChangeNotifier {
   static const _monthCount = 6;
 
   Map<String, CategoryOverride> _categoryOverrides = {};
-  Map<String, AutoCategory?> _catCache = {};
 
-  Map<String, double> _spendByGroupMemo = {};
-  List<Transaction>? _spendByGroupSrc;
+  Map<String, double> _spendByGroup = {};
+  StreamSubscription<List<Account>>? _accountsSub;
+  StreamSubscription<List<Transaction>>? _txnsSub;
+  StreamSubscription<Map<String, double>>? _spendByGroupSub;
+  StreamSubscription<Map<String, (double, double)>>? _monthlySub;
+  StreamSubscription<Map<String, double>>? _catSub;
+  StreamSubscription<Map<String, double>>? _weeklySub;
+  StreamSubscription<Map<String, double>>? _merchantsSub;
 
   List<MonthTotal> aggMonthly = [];
   List<CategoryTotal> aggCategories = [];
@@ -79,36 +81,86 @@ class AppState extends ChangeNotifier {
       : db = db ?? AppDatabase() {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
-    _accountsSub = this.db.watchAccountsJson().listen(_onAccountsRows);
-    _txnsSub = this.db.watchTransactionsJson(limit: 2000).listen(_onTransactionsRows);
+    _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
+    _txnsSub = this.db.watchTransactions(limit: 2000).listen(_onTransactionsRows);
+    _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(_onSpendByGroup);
+    _monthlySub = this.db.watchMonthlyTotals(_monthCount).listen(_onMonthly);
+    _catSub = this.db.watchCategoryTotals().listen(_onCategories);
+    _weeklySub = this.db.watchWeeklyTrend(_windowDays).listen(_onWeekly);
+    _merchantsSub = this.db.watchTopMerchants(5).listen(_onMerchants);
   }
 
   Future<void> _loadCategoryOverrides() async {
-    _categoryOverrides = await db.loadCategoryOverrides();
-    _recomputeSpendByGroup();
-    _recomputeStats();
+    final rows = await db.loadCategoryOverrides();
+    final map = <String, CategoryOverride>{};
+    for (final o in rows.values) {
+      if (o.categoryGroup == null) {
+        final group = AutoCategorizer.lookupGroup(o.categoryName) ?? o.categoryName;
+        map[o.transactionId] = CategoryOverride(
+          transactionId: o.transactionId,
+          categoryName: o.categoryName,
+          categoryGroup: group,
+          updatedAt: o.updatedAt,
+        );
+      } else {
+        map[o.transactionId] = o;
+      }
+    }
+    _categoryOverrides = map;
     notifyListeners();
   }
 
-  void _onAccountsRows(List<String> rows) {
-    accounts = rows
-        .map((s) => Account.fromJson(json.decode(s) as Map<String, dynamic>))
-        .toList();
+  void _onAccountsRows(List<Account> rows) {
+    accounts = rows;
     _accountsLoaded = true;
     if (_transactionsLoaded) loading = false;
     notifyListeners();
   }
 
-  void _onTransactionsRows(List<String> rows) {
-    final result = rows
-        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
-        .toList();
-    result.sort((a, b) =>
-        (parseDate(b.date) ?? DateTime(0)).compareTo(parseDate(a.date) ?? DateTime(0)));
-    transactions = result;
+  void _onTransactionsRows(List<Transaction> rows) {
+    transactions = rows;
     _recomputeAll();
     _transactionsLoaded = true;
     if (_accountsLoaded) loading = false;
+    notifyListeners();
+  }
+
+  void _onSpendByGroup(Map<String, double> data) {
+    _spendByGroup = data;
+    notifyListeners();
+  }
+
+  void _onMonthly(Map<String, (double, double)> data) {
+    final months = _lastMonths(_monthCount);
+    aggMonthly = months.map((m) {
+      final vals = data[m.key] ?? (0.0, 0.0);
+      return MonthTotal(label: m.label, income: vals.$1, expense: vals.$2);
+    }).toList();
+    notifyListeners();
+  }
+
+  void _onCategories(Map<String, double> data) {
+    final entries = data.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    aggCategories = [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
+    notifyListeners();
+  }
+
+  void _onWeekly(Map<String, double> data) {
+    final keys = data.keys.toList()..sort();
+    aggWeekly = [
+      for (final k in keys)
+        WeekTotal(label: DateFormat('d MMM').format(DateTime.parse(k)), total: data[k]!),
+    ];
+    notifyListeners();
+  }
+
+  void _onMerchants(Map<String, double> data) {
+    final entries = data.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    aggMerchants = [
+      for (final e in entries.take(5)) MerchantTotal(name: e.key, amount: e.value),
+    ];
     notifyListeners();
   }
 
@@ -148,8 +200,7 @@ class AppState extends ChangeNotifier {
       offline = false;
       error = null;
       lastSync = DateTime.now();
-      unawaited(
-          db.saveAccounts({for (final a in fetchedAccounts) a.id: json.encode(a.toJson())}));
+      unawaited(db.saveAccounts(fetchedAccounts));
     } catch (e) {
       refreshing = false;
       offline = true;
@@ -203,119 +254,15 @@ class AppState extends ChangeNotifier {
   }
 
   void _recomputeAll() {
-    _fillCatCache();
     _recomputeSpendByGroup();
-    _recomputeStats();
   }
 
-  void _fillCatCache() {
-    _catCache = {for (final t in transactions) t.id: AutoCategorizer.categorize(t)};
-  }
+  void _recomputeSpendByGroup() {}
 
-  void _recomputeSpendByGroup() {
-    final now = DateTime.now();
-    final totals = <String, double>{};
-    for (final tx in transactions) {
-      if (tx.amount >= 0) continue;
-      final d = parseDate(tx.date);
-      if (d == null || d.year != now.year || d.month != now.month) continue;
-      final group = categoryGroupFor(tx) ?? 'Uncategorised';
-      totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
-    }
-    final entries = totals.entries.toList()
-      ..sort((a, b) {
-        final byValue = b.value.compareTo(a.value);
-        return byValue != 0 ? byValue : a.key.compareTo(b.key);
-      });
-    _spendByGroupMemo = Map.fromEntries(entries.take(6));
-    _spendByGroupSrc = transactions;
-  }
+  Map<String, double> get spendByGroup => _spendByGroup;
 
-  Map<String, double> get spendByGroup {
-    if (!identical(_spendByGroupSrc, transactions)) _recomputeSpendByGroup();
-    return _spendByGroupMemo;
-  }
-
-  void _recomputeStats() {
-    final months = _lastMonths(_monthCount);
-    aggMonthly = _computeMonthlyTotals(transactions, months);
-    aggCategories = _computeCategoryTotals(transactions);
-    aggWeekly = _computeWeeklyTrend(transactions, _windowDays);
-    aggMerchants = _computeTopMerchants(transactions, 5);
-  }
-
-  List<_MonthKey> _lastMonths(int count) {
-    final now = DateTime.now();
-    return [
-      for (var i = count - 1; i >= 0; i--)
-        _MonthKey.from(DateTime(now.year, now.month - i, 1)),
-    ];
-  }
-
-  List<MonthTotal> _computeMonthlyTotals(List<Transaction> txns, List<_MonthKey> months) {
-    final byKey = {for (final m in months) m.key: (income: 0.0, expense: 0.0)};
-    for (final tx in txns) {
-      final d = parseDate(tx.date);
-      if (d == null) continue;
-      final key = _MonthKey.from(DateTime(d.year, d.month, 1)).key;
-      final cur = byKey[key];
-      if (cur == null) continue;
-      if (tx.amount >= 0) {
-        byKey[key] = (income: cur.income + tx.amount, expense: cur.expense);
-      } else {
-        byKey[key] = (income: cur.income, expense: cur.expense + tx.amount.abs());
-      }
-    }
-    return [
-      for (final m in months)
-        MonthTotal(label: m.label, income: byKey[m.key]!.income, expense: byKey[m.key]!.expense),
-    ];
-  }
-
-  List<CategoryTotal> _computeCategoryTotals(List<Transaction> txns) {
-    final totals = <String, double>{};
-    for (final tx in txns) {
-      if (tx.amount >= 0) continue;
-      final group = categoryGroupFor(tx) ?? 'Uncategorised';
-      totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
-    }
-    final entries = totals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
-  }
-
-  List<WeekTotal> _computeWeeklyTrend(List<Transaction> txns, int rangeDays) {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day).subtract(Duration(days: rangeDays));
-    final byWeek = <DateTime, double>{};
-    for (final tx in txns) {
-      if (tx.amount >= 0) continue;
-      final d = parseDate(tx.date);
-      if (d == null) continue;
-      final day = DateTime(d.year, d.month, d.day);
-      if (day.isBefore(start)) continue;
-      final weekStart = day.subtract(Duration(days: day.weekday - 1));
-      byWeek[weekStart] = (byWeek[weekStart] ?? 0) + tx.amount.abs().toDouble();
-    }
-    final keys = byWeek.keys.toList()..sort();
-    return [
-      for (final k in keys) WeekTotal(label: DateFormat('d MMM').format(k), total: byWeek[k]!),
-    ];
-  }
-
-  List<MerchantTotal> _computeTopMerchants(List<Transaction> txns, int count) {
-    final totals = <String, double>{};
-    for (final tx in txns) {
-      if (tx.amount >= 0) continue;
-      final name = tx.merchant?.name ?? tx.description;
-      if (name.isEmpty) continue;
-      totals[name] = (totals[name] ?? 0) + tx.amount.abs().toDouble();
-    }
-    final entries = totals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return [
-      for (final e in entries.take(count)) MerchantTotal(name: e.key, amount: e.value),
-    ];
+  void cacheTransactions(List<Transaction> txns) {
+    unawaited(db.saveTransactions(txns));
   }
 
   Account? accountById(String id) {
@@ -332,7 +279,7 @@ class AppState extends ChangeNotifier {
       final fetched = await api.getAccounts();
       error = null;
       offline = false;
-      unawaited(db.saveAccounts({for (final a in fetched) a.id: json.encode(a.toJson())}));
+      unawaited(db.saveAccounts(fetched));
     } catch (e) {
       error = e.toString();
     }
@@ -340,35 +287,31 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void cacheTransactions(List<Transaction> txns) {
-    unawaited(db.saveTransactions([
-      for (final t in txns)
-        (id: t.id, accountId: t.account, json: json.encode(t.toJson())),
-    ]));
-  }
-
   String? categoryNameFor(Transaction t) =>
       _categoryOverrides[t.id]?.categoryName ??
       t.category?.name ??
-      _catCache[t.id]?.name;
+      t.autoCategoryName;
 
   String? categoryGroupFor(Transaction t) {
     final override = _categoryOverrides[t.id];
     if (override != null) {
-      return AutoCategorizer.lookupGroup(override.categoryName);
+      return override.categoryGroup ??
+          AutoCategorizer.lookupGroup(override.categoryName) ??
+          override.categoryName;
     }
-    return t.category?.groupName ?? _catCache[t.id]?.group;
+    return t.category?.groupName ?? t.autoCategoryGroup;
   }
 
   bool isAutoCategory(Transaction t) =>
       !_categoryOverrides.containsKey(t.id) &&
       t.category == null &&
-      _catCache[t.id] != null;
+      t.autoCategoryName != null;
 
   bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
 
   Future<void> saveCategoryOverride(String txnId, String catName) async {
-    await db.saveCategoryOverride(txnId, catName);
+    final group = AutoCategorizer.lookupGroup(catName) ?? catName;
+    await db.saveCategoryOverride(txnId, catName, group);
     await _loadCategoryOverrides();
   }
 
@@ -377,11 +320,24 @@ class AppState extends ChangeNotifier {
     await _loadCategoryOverrides();
   }
 
+  List<_MonthKey> _lastMonths(int count) {
+    final now = DateTime.now();
+    return [
+      for (var i = count - 1; i >= 0; i--)
+        _MonthKey.from(DateTime(now.year, now.month - i, 1)),
+    ];
+  }
+
   @override
   void dispose() {
     settings.removeListener(notifyListeners);
     unawaited(_accountsSub?.cancel());
     unawaited(_txnsSub?.cancel());
+    unawaited(_spendByGroupSub?.cancel());
+    unawaited(_monthlySub?.cancel());
+    unawaited(_catSub?.cancel());
+    unawaited(_weeklySub?.cancel());
+    unawaited(_merchantsSub?.cancel());
     api.close();
     db.close();
     super.dispose();

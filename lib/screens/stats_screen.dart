@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/transaction.dart';
+import '../db/app_database.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -30,101 +32,6 @@ List<_MonthBucket> _monthsBetween(DateTime start, DateTime end) {
   return result;
 }
 
-List<MonthTotal> _computeMonthlyTotals(
-  List<Transaction> txns,
-  DateTime? start,
-  DateTime? end,
-) {
-  final now = DateTime.now();
-  final rangeEnd = end ?? now;
-  DateTime rangeStart;
-  if (start != null) {
-    rangeStart = start;
-  } else if (txns.isNotEmpty) {
-    final dates = txns.map((t) => parseDate(t.date)).whereType<DateTime>();
-    rangeStart = dates.isEmpty
-        ? rangeEnd
-        : dates.reduce((a, b) => a.isBefore(b) ? a : b);
-  } else {
-    rangeStart = rangeEnd;
-  }
-  if (rangeStart.isAfter(rangeEnd)) rangeStart = rangeEnd;
-  if (rangeEnd.difference(rangeStart).inDays > 365 * 2) {
-    rangeStart = DateTime(rangeEnd.year - 2, rangeEnd.month, 1);
-  }
-  final months = _monthsBetween(rangeStart, rangeEnd);
-  final byKey = {for (final m in months) m.key: (income: 0.0, expense: 0.0)};
-  for (final tx in txns) {
-    final d = parseDate(tx.date);
-    if (d == null) continue;
-    final key =
-        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
-    final cur = byKey[key];
-    if (cur == null) continue;
-    if (tx.amount >= 0) {
-      byKey[key] = (income: cur.income + tx.amount, expense: cur.expense);
-    } else {
-      byKey[key] = (income: cur.income, expense: cur.expense + tx.amount.abs());
-    }
-  }
-  return [
-    for (final m in months)
-      MonthTotal(
-        label: m.label,
-        income: byKey[m.key]!.income,
-        expense: byKey[m.key]!.expense,
-      ),
-  ];
-}
-
-List<CategoryTotal> _computeCategoryTotals(
-  AppState state,
-  List<Transaction> txns,
-) {
-  final totals = <String, double>{};
-  for (final tx in txns) {
-    if (tx.amount >= 0) continue;
-    final group = state.categoryGroupFor(tx) ?? 'Uncategorised';
-    totals[group] = (totals[group] ?? 0) + tx.amount.abs().toDouble();
-  }
-  final entries = totals.entries.toList()
-    ..sort((a, b) => b.value.compareTo(a.value));
-  return [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
-}
-
-List<WeekTotal> _computeWeeklyTrend(List<Transaction> txns) {
-  final byWeek = <DateTime, double>{};
-  for (final tx in txns) {
-    if (tx.amount >= 0) continue;
-    final d = parseDate(tx.date);
-    if (d == null) continue;
-    final day = DateTime(d.year, d.month, d.day);
-    final weekStart = day.subtract(Duration(days: day.weekday - 1));
-    byWeek[weekStart] = (byWeek[weekStart] ?? 0) + tx.amount.abs().toDouble();
-  }
-  final keys = byWeek.keys.toList()..sort();
-  return [
-    for (final k in keys)
-      WeekTotal(label: DateFormat('d MMM').format(k), total: byWeek[k]!),
-  ];
-}
-
-List<MerchantTotal> _computeTopMerchants(List<Transaction> txns, int count) {
-  final totals = <String, double>{};
-  for (final tx in txns) {
-    if (tx.amount >= 0) continue;
-    final name = tx.merchant?.name ?? tx.description;
-    if (name.isEmpty) continue;
-    totals[name] = (totals[name] ?? 0) + tx.amount.abs().toDouble();
-  }
-  final entries = totals.entries.toList()
-    ..sort((a, b) => b.value.compareTo(a.value));
-  return [
-    for (final e in entries.take(count))
-      MerchantTotal(name: e.key, amount: e.value),
-  ];
-}
-
 const _kCategoryColors = [
   Color(0xFF2A78D6),
   Color(0xFFEB6834),
@@ -148,45 +55,51 @@ class _StatsScreenState extends State<StatsScreen> {
   _StatsRange _range = _StatsRange.d30;
   DateTimeRange? _customRange;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Stats'),
-        actions: [if (widget.state.refreshing) const AppBarSpinner()],
-      ),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: widget.state,
-          builder: (context, _) {
-            final state = widget.state;
-            final txns = state.transactions;
+  Map<String, (double, double)> _monthly = {};
+  Map<String, double> _categoryTotals = {};
+  Map<String, double> _weekly = {};
+  Map<String, double> _merchants = {};
 
-            if (state.loading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state.accounts.isEmpty && txns.isEmpty && state.error != null) {
-              return ErrorState(
-                error: state.error!,
-                onRetry: () => state.load(),
-              );
-            }
-            if (txns.isEmpty) {
-              return const EmptyState(
-                icon: Icons.bar_chart_outlined,
-                title: 'Nothing to show yet',
-                message:
-                    'Once you have some transaction history, your spending trends will appear here.',
-              );
-            }
-            return RefreshIndicator(
-              onRefresh: () => state.load(force: true),
-              child: _body(context, state),
-            );
-          },
-        ),
-      ),
-    );
+  StreamSubscription<Map<String, (double, double)>>? _monthlySub;
+  StreamSubscription<Map<String, double>>? _catSub;
+  StreamSubscription<Map<String, double>>? _weeklySub;
+  StreamSubscription<Map<String, double>>? _merchantsSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribe();
+  }
+
+  void _subscribe() {
+    _unsubscribe();
+    final db = widget.state.db;
+    final (start, end) = _rangeBounds();
+    _monthlySub = db
+        .queryMonthlyTotals(start: start, end: end)
+        .listen((d) => setState(() => _monthly = d));
+    _catSub = db
+        .queryCategoryTotals(start: start, end: end)
+        .listen((d) => setState(() => _categoryTotals = d));
+    _weeklySub = db
+        .queryWeeklyTrend(start: start, end: end)
+        .listen((d) => setState(() => _weekly = d));
+    _merchantsSub = db
+        .queryTopMerchants(start: start, end: end)
+        .listen((d) => setState(() => _merchants = d));
+  }
+
+  void _unsubscribe() {
+    _monthlySub?.cancel();
+    _catSub?.cancel();
+    _weeklySub?.cancel();
+    _merchantsSub?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _unsubscribe();
+    super.dispose();
   }
 
   (DateTime?, DateTime?) _rangeBounds() {
@@ -202,22 +115,6 @@ class _StatsScreenState extends State<StatsScreen> {
       case _StatsRange.all:
         return (null, null);
     }
-  }
-
-  List<Transaction> _filterTxns(
-    List<Transaction> txns,
-    DateTime? start,
-    DateTime? end,
-  ) {
-    if (start == null && end == null) return txns;
-    return txns.where((t) {
-      final d = parseDate(t.date);
-      if (d == null) return false;
-      final day = DateTime(d.year, d.month, d.day);
-      if (start != null && day.isBefore(start)) return false;
-      if (end != null && day.isAfter(end)) return false;
-      return true;
-    }).toList();
   }
 
   Future<void> _pickCustomRange(BuildContext context) async {
@@ -238,6 +135,108 @@ class _StatsScreenState extends State<StatsScreen> {
       _range = _StatsRange.custom;
       _customRange = picked;
     });
+    _subscribe();
+  }
+
+  void _setRange(_StatsRange option) {
+    setState(() => _range = option);
+    _subscribe();
+  }
+
+  List<MonthTotal> _buildMonthlyList() {
+    final (rangeStart, rangeEnd) = _rangeBounds();
+    final now = DateTime.now();
+    final effectiveEnd = rangeEnd ?? now;
+    DateTime effectiveStart;
+
+    if (rangeStart != null) {
+      effectiveStart = rangeStart;
+    } else if (_monthly.isNotEmpty) {
+      final sortedKeys = _monthly.keys.toList()..sort();
+      final firstKey = sortedKeys.first;
+      effectiveStart = DateTime(
+        int.parse(firstKey.substring(0, 4)),
+        int.parse(firstKey.substring(5, 7)),
+        1,
+      );
+    } else {
+      effectiveStart = effectiveEnd;
+    }
+
+    if (effectiveStart.isAfter(effectiveEnd)) effectiveStart = effectiveEnd;
+    if (effectiveEnd.difference(effectiveStart).inDays > 365 * 2) {
+      effectiveStart = DateTime(effectiveEnd.year - 2, effectiveEnd.month, 1);
+    }
+
+    final months = _monthsBetween(effectiveStart, effectiveEnd);
+    return months.map((m) {
+      final vals = _monthly[m.key] ?? (0.0, 0.0);
+      return MonthTotal(label: m.label, income: vals.$1, expense: vals.$2);
+    }).toList();
+  }
+
+  List<CategoryTotal> _buildCategoryList() {
+    final entries = _categoryTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
+  }
+
+  List<WeekTotal> _buildWeeklyList() {
+    final keys = _weekly.keys.toList()..sort();
+    return [
+      for (final k in keys)
+        WeekTotal(label: DateFormat('d MMM').format(DateTime.parse(k)), total: _weekly[k]!),
+    ];
+  }
+
+  List<MerchantTotal> _buildMerchantList() {
+    final entries = _merchants.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [
+      for (final e in entries.take(5)) MerchantTotal(name: e.key, amount: e.value),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Stats'),
+        actions: [if (widget.state.refreshing) const AppBarSpinner()],
+      ),
+      body: SafeArea(
+        child: ListenableBuilder(
+          listenable: widget.state,
+          builder: (context, _) {
+            final state = widget.state;
+
+            if (state.loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.accounts.isEmpty &&
+                state.transactions.isEmpty &&
+                state.error != null) {
+              return ErrorState(
+                error: state.error!,
+                onRetry: () => state.load(),
+              );
+            }
+            if (state.transactions.isEmpty) {
+              return const EmptyState(
+                icon: Icons.bar_chart_outlined,
+                title: 'Nothing to show yet',
+                message:
+                    'Once you have some transaction history, your spending trends will appear here.',
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: () => state.load(force: true),
+              child: _body(context),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _rangeSelector(BuildContext context) {
@@ -263,14 +262,13 @@ class _StatsScreenState extends State<StatsScreen> {
             ChoiceChip(
               label: Text(labelFor[option]!),
               selected: _range == option,
-              checkmarkColor: _range == option
-                  ? Colors.white
-                  : context.fern.ink,
+              checkmarkColor:
+                  _range == option ? Colors.white : context.fern.ink,
               onSelected: (_) {
                 if (option == _StatsRange.custom) {
                   _pickCustomRange(context);
                 } else {
-                  setState(() => _range = option);
+                  _setRange(option);
                 }
               },
               labelStyle: TextStyle(
@@ -284,22 +282,31 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _body(BuildContext context, AppState state) {
-    final (start, end) = _rangeBounds();
-    final txns = _filterTxns(state.transactions, start, end);
+  Widget _body(BuildContext context) {
+    final monthly = _buildMonthlyList();
+    final categories = _buildCategoryList();
+    final weekly = _buildWeeklyList();
+    final merchants = _buildMerchantList();
 
-    final monthly = _computeMonthlyTotals(txns, start, end);
-    final categories = _computeCategoryTotals(state, txns);
-    final weekly = _computeWeeklyTrend(txns);
-    final merchants = _computeTopMerchants(txns, 5);
+    final values = _monthly.values.toList();
+    final avgIncome = values.isEmpty
+        ? 0.0
+        : values.fold(0.0, (s, v) => s + v.$1) / values.length;
+    final avgExpense = values.isEmpty
+        ? 0.0
+        : values.fold(0.0, (s, v) => s + v.$2) / values.length;
 
-    final avgIncome = monthly.isEmpty
-        ? 0.0
-        : monthly.map((m) => m.income).reduce((a, b) => a + b) / monthly.length;
-    final avgExpense = monthly.isEmpty
-        ? 0.0
-        : monthly.map((m) => m.expense).reduce((a, b) => a + b) /
-              monthly.length;
+    if (monthly.isEmpty &&
+        categories.isEmpty &&
+        weekly.isEmpty &&
+        merchants.isEmpty) {
+      return const EmptyState(
+        icon: Icons.bar_chart_outlined,
+        title: 'Nothing to show yet',
+        message:
+            'Once you have some transaction history, your spending trends will appear here.',
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -307,66 +314,69 @@ class _StatsScreenState extends State<StatsScreen> {
         _rangeSelector(context),
         const SizedBox(height: 16),
         _summaryRow(context, avgIncome, avgExpense),
-        const SectionHeader('Income vs spending'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 20, 16, 12),
-            child: Column(
-              children: [
-                SizedBox(height: 180, child: _cashFlowChart(context, monthly)),
-                const SizedBox(height: 12),
-                _legendRow(context, [
-                  (context.fern.green, 'Income'),
-                  (context.fern.clay, 'Spending'),
-                ]),
-              ],
-            ),
-          ),
-        ),
-        const SectionHeader('Spending trend'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 20, 16, 16),
-            child: SizedBox(height: 160, child: _trendChart(context, weekly)),
-          ),
-        ),
-        SectionHeader(
-          'Spending by category',
-          trailing: IconButton(
-            icon: Icon(
-              Icons.settings_outlined,
-              size: 18,
-              color: context.fern.slate,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => RecategorizeScreen(state: state),
+        if (monthly.isNotEmpty) ...[
+          const SectionHeader('Income vs spending'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 20, 16, 12),
+              child: Column(
+                children: [
+                  SizedBox(
+                      height: 180, child: _cashFlowChart(context, monthly)),
+                  const SizedBox(height: 12),
+                  _legendRow(context, [
+                    (context.fern.green, 'Income'),
+                    (context.fern.clay, 'Spending'),
+                  ]),
+                ],
               ),
             ),
           ),
-        ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: categories.isEmpty
-                ? Text(
-                    'No spending in this period',
-                    style: TextStyle(color: context.fern.slate),
-                  )
-                : Column(
-                    children: [
-                      SizedBox(
-                        height: 190,
-                        child: _categoryChart(context, categories),
-                      ),
-                      const SizedBox(height: 16),
-                      _categoryLegend(context, categories),
-                    ],
-                  ),
+        ],
+        if (weekly.isNotEmpty) ...[
+          const SectionHeader('Spending trend'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 20, 16, 16),
+              child:
+                  SizedBox(height: 160, child: _trendChart(context, weekly)),
+            ),
           ),
-        ),
+        ],
+        if (categories.isNotEmpty) ...[
+          SectionHeader(
+            'Spending by category',
+            trailing: IconButton(
+              icon: Icon(
+                Icons.settings_outlined,
+                size: 18,
+                color: context.fern.slate,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RecategorizeScreen(state: widget.state),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 190,
+                    child: _categoryChart(context, categories),
+                  ),
+                  const SizedBox(height: 16),
+                  _categoryLegend(context, categories),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (merchants.isNotEmpty) ...[
           const SectionHeader('Top merchants'),
           Card(
@@ -389,21 +399,12 @@ class _StatsScreenState extends State<StatsScreen> {
     return Row(
       children: [
         Expanded(
-          child: _statTile(
-            context,
-            'Avg monthly income',
-            avgIncome,
-            fern.green,
-          ),
+          child: _statTile(context, 'Avg monthly income', avgIncome, fern.green),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _statTile(
-            context,
-            'Avg monthly spending',
-            avgExpense,
-            fern.clay,
-          ),
+              context, 'Avg monthly spending', avgExpense, fern.clay),
         ),
       ],
     );
@@ -480,13 +481,13 @@ class _StatsScreenState extends State<StatsScreen> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                 BarTooltipItem(
-                  money(rod.toY),
-                  const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
+              money(rod.toY),
+              const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
           ),
         ),
         titlesData: FlTitlesData(
@@ -525,17 +526,15 @@ class _StatsScreenState extends State<StatsScreen> {
                   toY: months[i].income,
                   color: fern.green,
                   width: 10,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(4),
-                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
                 BarChartRodData(
                   toY: months[i].expense,
                   color: fern.clay,
                   width: 10,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(4),
-                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ],
               barsSpace: 4,
@@ -555,9 +554,8 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
       );
     }
-    final maxY = weeks
-        .map((w) => w.total)
-        .fold<double>(0, (a, b) => b > a ? b : a);
+    final maxY =
+        weeks.map((w) => w.total).fold<double>(0, (a, b) => b > a ? b : a);
     return LineChart(
       duration: Duration.zero,
       LineChartData(
@@ -649,9 +647,8 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
     ];
     if (otherTotal > 0) {
-      result.add(
-        _CatEntry(name: 'Other', amount: otherTotal, color: context.fern.slate),
-      );
+      result.add(_CatEntry(
+          name: 'Other', amount: otherTotal, color: context.fern.slate));
     }
     return result;
   }
@@ -699,10 +696,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: BoxDecoration(
-                    color: c.color,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration:
+                      BoxDecoration(color: c.color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -711,9 +706,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text(
@@ -749,9 +742,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        fontSize: 12.5, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Expanded(
@@ -772,9 +763,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     masked ? '••••' : money(m.amount),
                     textAlign: TextAlign.right,
                     style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+                        fontSize: 12.5, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
