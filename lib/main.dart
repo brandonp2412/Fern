@@ -245,9 +245,47 @@ class _SetupScreenState extends State<SetupScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                Text(
-                                  'Get your tokens at my.akahu.nz',
-                                  style: TextStyle(color: fern.slate, fontSize: 12),
+                                Card(
+                                  child: Theme(
+                                    data: Theme.of(context).copyWith(
+                                      dividerColor: Colors.transparent,
+                                    ),
+                                    child: ExpansionTile(
+                                      title: const Text(
+                                        'Where do I get these tokens?',
+                                        style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                      childrenPadding: const EdgeInsets.fromLTRB(
+                                          20, 0, 20, 16),
+                                      expandedCrossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _SetupStep(
+                                          number: '1',
+                                          text:
+                                              'Sign up at my.akahu.nz and link one of your bank accounts.',
+                                        ),
+                                        _SetupStep(
+                                          number: '2',
+                                          text:
+                                              'Go to my.akahu.nz/developers and create a personal app. '
+                                              "You'll need to verify your identity and set up two-factor authentication.",
+                                        ),
+                                        _SetupStep(
+                                          number: '3',
+                                          text:
+                                              'Akahu will show you a User access token and an App ID token — copy both into the fields above.',
+                                        ),
+                                        _SetupStep(
+                                          number: '4',
+                                          text:
+                                              'Still on the developers page, under Accounts, enable the bank(s) you want Fern to access.',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -258,6 +296,38 @@ class _SetupScreenState extends State<SetupScreen> {
                   ],
                 ),
         ),
+      ),
+    );
+  }
+}
+
+class _SetupStep extends StatelessWidget {
+  final String number;
+  final String text;
+
+  const _SetupStep({required this.number, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final fern = context.fern;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 10,
+            backgroundColor: fern.sprout.withValues(alpha: 0.3),
+            child: Text(number,
+                style: TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: fern.deep)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(fontSize: 12.5, color: fern.slate, height: 1.35)),
+          ),
+        ],
       ),
     );
   }
