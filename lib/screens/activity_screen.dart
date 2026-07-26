@@ -24,6 +24,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String _query = '';
   String _direction = 'all';
   int _days = 30;
+  Set<String> _selectedCategories = {};
   Timer? _debounce;
 
   @override
@@ -63,13 +64,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   DateTime _cutoff() => DateTime.now().subtract(Duration(days: _days));
 
+  Set<String> get _availableCategories {
+    final cats = <String>{};
+    for (final tx in widget.state.transactions) {
+      cats.add(widget.state.categoryGroupFor(tx) ?? 'Uncategorised');
+    }
+    return cats;
+  }
+
   List<Transaction> get _filtered {
     final cut = _cutoff();
+    final catFilter = _selectedCategories;
     return widget.state.transactions.where((tx) {
       if (_direction == 'in' && tx.amount <= 0) return false;
       if (_direction == 'out' && tx.amount >= 0) return false;
       final d = parseDate(tx.date);
       if (d != null && d.isBefore(cut)) return false;
+      if (catFilter.isNotEmpty) {
+        final cat = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
+        if (!catFilter.contains(cat)) return false;
+      }
       if (_query.isNotEmpty) {
         final q = _query.toLowerCase();
         final searchHay = [
@@ -156,6 +170,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 4),
+          _categoryChips(),
           const SizedBox(height: 8),
           Expanded(child: _body()),
         ],
@@ -180,21 +196,52 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
+  Widget _categoryChips() {
+    final cats = _availableCategories.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorised') return 1;
+        if (b == 'Uncategorised') return -1;
+        return a.compareTo(b);
+      });
+    if (cats.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final cat in cats)
+            FilterChip(
+              label: Text(cat),
+              labelStyle: const TextStyle(fontSize: 12),
+              selected: _selectedCategories.contains(cat),
+              onSelected: (val) {
+                setState(() {
+                  if (val) {
+                    _selectedCategories = {..._selectedCategories, cat};
+                  } else {
+                    _selectedCategories = {..._selectedCategories}..remove(cat);
+                  }
+                });
+              },
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _body() {
     final state = widget.state;
-    final cold = state.accounts.isEmpty && state.transactions.isEmpty;
-    if (cold) {
-      if (state.error != null) {
-        return ErrorState(error: state.error!, onRetry: () => state.load());
-      }
+    if (state.loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (state.accounts.isEmpty && state.transactions.isEmpty && state.error != null) {
+      return ErrorState(error: state.error!, onRetry: () => state.load());
     }
     final grouped = _grouped;
     if (grouped.isEmpty) {
-      final txns = state.transactions;
-      if (txns.isEmpty && state.refreshing) {
-        return const Center(child: CircularProgressIndicator());
-      }
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No transactions',

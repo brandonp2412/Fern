@@ -61,10 +61,8 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<List<String>> loadAccountsJson() async {
-    final rows = await select(cachedAccounts).get();
-    return rows.map((r) => r.json).toList();
-  }
+  Stream<List<String>> watchAccountsJson() =>
+      select(cachedAccounts).watch().map((rows) => rows.map((r) => r.json).toList());
 
   Future<void> saveTransactions(
       List<({String id, String accountId, String json})> items) async {
@@ -84,7 +82,7 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<List<String>> loadTransactionsJson({String? accountId, int limit = 200}) async {
+  Stream<List<String>> watchTransactionsJson({String? accountId, int limit = 2000}) {
     final query = select(cachedTransactions);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
@@ -92,8 +90,7 @@ class AppDatabase extends _$AppDatabase {
     query
       ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
       ..limit(limit);
-    final rows = await query.get();
-    return rows.map((r) => r.json).toList();
+    return query.watch().map((rows) => rows.map((r) => r.json).toList());
   }
 
   Future<void> saveCategoryOverride(String transactionId, String categoryName) {

@@ -81,12 +81,12 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
   Future<void> _report(BuildContext context) async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) =>
-          _ReportDialog(api: widget.state.api, tx: widget.tx),
+      builder: (context) => _ReportDialog(api: widget.state.api, tx: widget.tx),
     );
     if (result != null && context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
@@ -97,7 +97,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
     final meta = tx.meta;
     final conversion = meta?.conversion;
     final state = widget.state;
-    final categoryName = state.categoryNameFor(tx);
+    final categoryName = state.categoryNameFor(tx) ?? 'Uncategorised';
     final categoryGroup = state.categoryGroupFor(tx);
     final overridden = state.hasOverride(tx.id);
     final autoGuess = state.isAutoCategory(tx);
@@ -133,9 +133,10 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                     Text(
                       tx.title,
                       style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -178,47 +179,67 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                   _row(Icons.storefront, 'Merchant', tx.merchant!.name!),
                 if (tx.merchant?.website != null)
                   _row(Icons.language, 'Website', tx.merchant!.website!),
-                if (categoryName != null)
-                  InkWell(
-                    onTap: _pickCategory,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.category_outlined, size: 18, color: fern.moss),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width: 118,
-                            child: Text('Category',
-                                style: TextStyle(color: fern.slate, fontSize: 13)),
+                InkWell(
+                  onTap: _pickCategory,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.category_outlined,
+                          size: 18,
+                          color: fern.moss,
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 118,
+                          child: Text(
+                            'Category',
+                            style: TextStyle(color: fern.slate, fontSize: 13),
                           ),
-                          Expanded(
-                            child: Text(
-                              '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden ? ' (edited)' : autoGuess ? ' (auto)' : ''}',
-                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${categoryGroup != null ? '$categoryGroup · ' : ''}$categoryName${overridden
+                                ? ' (edited)'
+                                : autoGuess
+                                ? ' (auto)'
+                                : ''}',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          Icon(Icons.edit_outlined, size: 16, color: fern.slate),
-                        ],
-                      ),
+                        ),
+                        Icon(Icons.edit_outlined, size: 16, color: fern.slate),
+                      ],
                     ),
                   ),
+                ),
                 if (meta?.particulars != null)
                   _row(Icons.tag, 'Particulars', meta!.particulars!),
-                if (meta?.code != null)
-                  _row(Icons.code, 'Code', meta!.code!),
+                if (meta?.code != null) _row(Icons.code, 'Code', meta!.code!),
                 if (meta?.reference != null)
                   _row(Icons.numbers, 'Reference', meta!.reference!),
                 if (meta?.otherAccount != null)
-                  _row(Icons.account_balance_outlined, 'Other account',
-                      meta!.otherAccount!),
+                  _row(
+                    Icons.account_balance_outlined,
+                    'Other account',
+                    meta!.otherAccount!,
+                  ),
                 if (meta?.cardSuffix != null)
                   _row(Icons.credit_card, 'Card', '•••• ${meta!.cardSuffix}'),
                 if (tx.balance != null)
-                  _row(Icons.account_balance_wallet_outlined,
-                      'Balance after', money(tx.balance)),
+                  _row(
+                    Icons.account_balance_wallet_outlined,
+                    'Balance after',
+                    money(tx.balance),
+                  ),
                 _row(Icons.fingerprint, 'Transaction ID', tx.id),
               ],
             ),
@@ -229,8 +250,10 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
             TextButton.icon(
               onPressed: _clearOverride,
               icon: Icon(Icons.undo, size: 18, color: fern.slate),
-              label: Text('Revert to original category',
-                  style: TextStyle(color: fern.slate)),
+              label: Text(
+                'Revert to original category',
+                style: TextStyle(color: fern.slate),
+              ),
             ),
           ],
           const SizedBox(height: 10),
@@ -255,13 +278,18 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
           const SizedBox(width: 12),
           SizedBox(
             width: 118,
-            child: Text(label,
-                style: TextStyle(color: fern.slate, fontSize: 13)),
+            child: Text(
+              label,
+              style: TextStyle(color: fern.slate, fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -307,15 +335,15 @@ class _ReportDialogState extends State<_ReportDialog> {
         fields: _type != 'DUPLICATE' && _fieldsCtrl.text.isNotEmpty
             ? _fieldsCtrl.text.split(',').map((e) => e.trim()).toList()
             : null,
-        comment:
-            _commentCtrl.text.isNotEmpty ? _commentCtrl.text.trim() : null,
+        comment: _commentCtrl.text.isNotEmpty ? _commentCtrl.text.trim() : null,
       );
       if (mounted) Navigator.of(context).pop('Thanks — report sent to Akahu');
     } catch (e) {
       setState(() => _sending = false);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -333,13 +361,17 @@ class _ReportDialogState extends State<_ReportDialog> {
               decoration: const InputDecoration(labelText: 'Issue type'),
               items: const [
                 DropdownMenuItem(
-                    value: 'DUPLICATE', child: Text('Duplicate transaction')),
+                  value: 'DUPLICATE',
+                  child: Text('Duplicate transaction'),
+                ),
                 DropdownMenuItem(
-                    value: 'ENRICHMENT_ERROR',
-                    child: Text('Wrong enrichment')),
+                  value: 'ENRICHMENT_ERROR',
+                  child: Text('Wrong enrichment'),
+                ),
                 DropdownMenuItem(
-                    value: 'ENRICHMENT_SUGGESTION',
-                    child: Text('Suggest enrichment')),
+                  value: 'ENRICHMENT_SUGGESTION',
+                  child: Text('Suggest enrichment'),
+                ),
               ],
               onChanged: (v) => setState(() => _type = v!),
             ),
@@ -348,16 +380,18 @@ class _ReportDialogState extends State<_ReportDialog> {
               TextField(
                 controller: _otherIdCtrl,
                 decoration: const InputDecoration(
-                    labelText: 'Duplicate transaction ID',
-                    hintText: 'trans_…'),
+                  labelText: 'Duplicate transaction ID',
+                  hintText: 'trans_…',
+                ),
               ),
             ] else ...[
               const SizedBox(height: 12),
               TextField(
                 controller: _fieldsCtrl,
                 decoration: const InputDecoration(
-                    labelText: 'Fields (comma separated)',
-                    hintText: 'merchant.name, category'),
+                  labelText: 'Fields (comma separated)',
+                  hintText: 'merchant.name, category',
+                ),
               ),
             ],
             const SizedBox(height: 12),

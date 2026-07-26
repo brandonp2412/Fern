@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
@@ -21,17 +24,21 @@ class AccountDetailScreen extends StatefulWidget {
 
 class _AccountDetailScreenState extends State<AccountDetailScreen> {
   final _scroll = ScrollController();
-  final List<Transaction> _txns = [];
+  List<Transaction> _txns = [];
   List<PendingTransaction> _pending = [];
   String? _cursor;
   bool _loading = true;
   bool _refreshing = false;
   bool _loadingMore = false;
   String? _error;
+  StreamSubscription<List<String>>? _txnsSub;
 
   @override
   void initState() {
     super.initState();
+    _txnsSub = widget.state.db
+        .watchTransactionsJson(accountId: widget.account.id, limit: 500)
+        .listen(_onTxnRows);
     _load();
     _scroll.addListener(() {
       if (_scroll.position.pixels >
@@ -45,52 +52,49 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
   @override
   void dispose() {
+    _txnsSub?.cancel();
     _scroll.dispose();
     super.dispose();
   }
 
+  void _onTxnRows(List<String> rows) {
+    final result = rows
+        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
+        .toList();
+    result.sort((a, b) =>
+        (parseDate(b.date) ?? DateTime(0)).compareTo(parseDate(a.date) ?? DateTime(0)));
+    if (!mounted) return;
+    setState(() {
+      _txns = result;
+      _loading = false;
+    });
+  }
+
   Future<void> _load() async {
-    if (_txns.isEmpty) {
-      final cached = await widget.state.loadCachedTransactions(
-          accountId: widget.account.id, limit: 200);
-      if (mounted && _txns.isEmpty && cached.isNotEmpty) {
-        setState(() {
-          _txns.addAll(cached);
-          _loading = false;
-        });
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _refreshing = true;
-        _error = null;
-      });
-    }
+    setState(() {
+      _refreshing = true;
+      _error = null;
+    });
     try {
       final api = widget.state.api;
       final results = await Future.wait([
         api.getAccountTransactions(widget.account.id),
         api.getAccountPendingTransactions(widget.account.id),
       ]);
+      final page = results[0] as dynamic;
+      final items = page.items as List<Transaction>;
+      widget.state.cacheTransactions(items);
       if (mounted) {
-        final page = results[0] as dynamic;
-        final items = page.items as List<Transaction>;
         setState(() {
-          _txns
-            ..clear()
-            ..addAll(items);
           _cursor = page.nextCursor as String?;
           _pending = results[1] as List<PendingTransaction>;
-          _loading = false;
           _refreshing = false;
         });
-        widget.state.cacheTransactions(items);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _refreshing = false;
-          _loading = false;
           if (_txns.isEmpty) _error = e.toString();
         });
       }
@@ -102,9 +106,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     try {
       final page = await widget.state.api
           .getAccountTransactions(widget.account.id, cursor: _cursor);
+      widget.state.cacheTransactions(page.items);
       if (mounted) {
         setState(() {
-          _txns.addAll(page.items);
           _cursor = page.nextCursor;
           _loadingMore = false;
         });

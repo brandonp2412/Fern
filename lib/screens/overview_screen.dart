@@ -32,9 +32,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
             listenable: state,
             builder: (context, _) {
               final txns = state.transactions;
-              final cold = state.accounts.isEmpty && txns.isEmpty;
 
-              if (cold && state.error != null) {
+              if (state.loading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state.accounts.isEmpty && txns.isEmpty && state.error != null) {
                 return ErrorState(
                   error: state.error!,
                   onRetry: () => state.load(),
@@ -87,11 +89,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         ),
                       ),
                     ),
-                  ] else if (cold)
-                    const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
+                  ],
                 ],
               );
             },

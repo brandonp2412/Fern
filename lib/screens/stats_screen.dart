@@ -40,13 +40,12 @@ class _StatsScreenState extends State<StatsScreen> {
           builder: (context, _) {
             final state = widget.state;
             final txns = state.transactions;
-            final cold = state.accounts.isEmpty && txns.isEmpty;
 
-            if (cold) {
-              if (state.error != null) {
-                return ErrorState(error: state.error!, onRetry: () => state.load());
-              }
+            if (state.loading) {
               return const Center(child: CircularProgressIndicator());
+            }
+            if (state.accounts.isEmpty && txns.isEmpty && state.error != null) {
+              return ErrorState(error: state.error!, onRetry: () => state.load());
             }
             if (txns.isEmpty) {
               return const EmptyState(

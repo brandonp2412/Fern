@@ -54,6 +54,10 @@ class AppState extends ChangeNotifier {
   String? txnCursor;
   Future<void>? _inFlight;
   bool _loadingOlder = false;
+  bool _accountsLoaded = false;
+  bool _transactionsLoaded = false;
+  StreamSubscription<List<String>>? _accountsSub;
+  StreamSubscription<List<String>>? _txnsSub;
 
   static const _windowDays = 182;
   static const _maxPages = 5;
@@ -74,12 +78,36 @@ class AppState extends ChangeNotifier {
   AppState(this.api, this.settings) {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
+    _accountsSub = db.watchAccountsJson().listen(_onAccountsRows);
+    _txnsSub = db.watchTransactionsJson(limit: 2000).listen(_onTransactionsRows);
   }
 
   Future<void> _loadCategoryOverrides() async {
     _categoryOverrides = await db.loadCategoryOverrides();
     _recomputeSpendByGroup();
     _recomputeStats();
+    notifyListeners();
+  }
+
+  void _onAccountsRows(List<String> rows) {
+    accounts = rows
+        .map((s) => Account.fromJson(json.decode(s) as Map<String, dynamic>))
+        .toList();
+    _accountsLoaded = true;
+    if (_transactionsLoaded) loading = false;
+    notifyListeners();
+  }
+
+  void _onTransactionsRows(List<String> rows) {
+    final result = rows
+        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
+        .toList();
+    result.sort((a, b) =>
+        (parseDate(b.date) ?? DateTime(0)).compareTo(parseDate(a.date) ?? DateTime(0)));
+    transactions = result;
+    _recomputeAll();
+    _transactionsLoaded = true;
+    if (_accountsLoaded) loading = false;
     notifyListeners();
   }
 
@@ -110,39 +138,20 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _run() async {
-    if (accounts.isEmpty && transactions.isEmpty) {
-      final cachedAccounts = await db.loadAccountsJson();
-      if (cachedAccounts.isNotEmpty) {
-        accounts = cachedAccounts
-            .map((s) => Account.fromJson(json.decode(s) as Map<String, dynamic>))
-            .toList();
-        loading = false;
-        notifyListeners();
-      }
-      final cachedTxns = await loadCachedTransactions(limit: 1000);
-      if (cachedTxns.isNotEmpty && transactions.isEmpty) {
-        _setTransactions(cachedTxns);
-        notifyListeners();
-      }
-    }
-
     refreshing = true;
     notifyListeners();
     try {
       final results = await Future.wait([api.getMe(), api.getAccounts()]);
       user = results[0] as User;
-      accounts = results[1] as List<Account>;
-      loading = false;
-      refreshing = false;
+      final fetchedAccounts = results[1] as List<Account>;
       offline = false;
       error = null;
       lastSync = DateTime.now();
-      unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
-      notifyListeners();
+      unawaited(
+          db.saveAccounts({for (final a in fetchedAccounts) a.id: json.encode(a.toJson())}));
     } catch (e) {
       refreshing = false;
       offline = true;
-      loading = false;
       if (transactions.isEmpty) {
         error = e.toString();
       }
@@ -151,32 +160,27 @@ class AppState extends ChangeNotifier {
     }
 
     try {
-      final txns = await _fetchTransactions();
-      _setTransactions(txns);
-      cacheTransactions(transactions);
+      await _fetchTransactions();
     } catch (e) {
       debugPrint('AppState.load: transaction fetch failed: $e');
       offline = true;
       if (transactions.isEmpty) error = e.toString();
     }
+    refreshing = false;
     notifyListeners();
   }
 
-  Future<List<Transaction>> _fetchTransactions() async {
+  Future<void> _fetchTransactions() async {
     final now = DateTime.now();
     final start = isoDay(DateTime(now.year, now.month, now.day).subtract(const Duration(days: _windowDays)));
-    final all = <Transaction>[];
     String? cursor;
     for (var i = 0; i < _maxPages; i++) {
       final page = await api.getTransactions(start: start, cursor: cursor);
-      all.addAll(page.items);
+      cacheTransactions(page.items);
       cursor = page.nextCursor;
-      _setTransactions([...all]);
-      notifyListeners();
       if (cursor == null) break;
     }
     txnCursor = cursor;
-    return all;
   }
 
   Future<void> loadOlder() async {
@@ -187,8 +191,6 @@ class AppState extends ChangeNotifier {
       final now = DateTime.now();
       final start = isoDay(DateTime(now.year, now.month, now.day).subtract(const Duration(days: _windowDays)));
       final page = await api.getTransactions(start: start, cursor: txnCursor);
-      transactions = [...transactions, ...page.items];
-      _recomputeAll();
       cacheTransactions(page.items);
       txnCursor = page.nextCursor;
     } catch (e) {
@@ -197,11 +199,6 @@ class AppState extends ChangeNotifier {
       _loadingOlder = false;
       notifyListeners();
     }
-  }
-
-  void _setTransactions(List<Transaction> v) {
-    transactions = v;
-    _recomputeAll();
   }
 
   void _recomputeAll() {
@@ -328,15 +325,14 @@ class AppState extends ChangeNotifier {
     refreshing = true;
     notifyListeners();
     try {
-      accounts = await api.getAccounts();
+      final fetched = await api.getAccounts();
       error = null;
-      refreshing = false;
       offline = false;
-      unawaited(db.saveAccounts({for (final a in accounts) a.id: json.encode(a.toJson())}));
+      unawaited(db.saveAccounts({for (final a in fetched) a.id: json.encode(a.toJson())}));
     } catch (e) {
-      refreshing = false;
       error = e.toString();
     }
+    refreshing = false;
     notifyListeners();
   }
 
@@ -345,15 +341,6 @@ class AppState extends ChangeNotifier {
       for (final t in txns)
         (id: t.id, accountId: t.account, json: json.encode(t.toJson())),
     ]));
-  }
-
-  Future<List<Transaction>> loadCachedTransactions({String? accountId, int limit = 200}) async {
-    final rows = await db.loadTransactionsJson(accountId: accountId, limit: limit);
-    final result = rows
-        .map((s) => Transaction.fromJson(json.decode(s) as Map<String, dynamic>))
-        .toList();
-    result.sort((a, b) => (parseDate(b.date) ?? DateTime(0)).compareTo(parseDate(a.date) ?? DateTime(0)));
-    return result;
   }
 
   String? categoryNameFor(Transaction t) =>
@@ -389,6 +376,8 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     settings.removeListener(notifyListeners);
+    unawaited(_accountsSub?.cancel());
+    unawaited(_txnsSub?.cancel());
     api.close();
     db.close();
     super.dispose();
