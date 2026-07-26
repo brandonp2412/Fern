@@ -10,13 +10,15 @@ class AkahuApi {
 
   final String _userToken;
   final String _appToken;
-  final http.Client _client = http.Client();
+  final http.Client _client;
 
   AkahuApi({
     required String userToken,
     required String appToken,
+    http.Client? client,
   })  : _userToken = userToken,
-        _appToken = appToken;
+        _appToken = appToken,
+        _client = client ?? http.Client();
 
   Map<String, String> get _userHeaders => {
         'Authorization': 'Bearer $_userToken',

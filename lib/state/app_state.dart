@@ -40,7 +40,7 @@ class MerchantTotal {
 class AppState extends ChangeNotifier {
   final AkahuApi api;
   final AppSettings settings;
-  final AppDatabase db = AppDatabase();
+  final AppDatabase db;
 
   User? user;
   List<Account> accounts = [];
@@ -75,11 +75,12 @@ class AppState extends ChangeNotifier {
   List<WeekTotal> aggWeekly = [];
   List<MerchantTotal> aggMerchants = [];
 
-  AppState(this.api, this.settings) {
+  AppState(this.api, this.settings, {AppDatabase? db})
+      : db = db ?? AppDatabase() {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
-    _accountsSub = db.watchAccountsJson().listen(_onAccountsRows);
-    _txnsSub = db.watchTransactionsJson(limit: 2000).listen(_onTransactionsRows);
+    _accountsSub = this.db.watchAccountsJson().listen(_onAccountsRows);
+    _txnsSub = this.db.watchTransactionsJson(limit: 2000).listen(_onTransactionsRows);
   }
 
   Future<void> _loadCategoryOverrides() async {
