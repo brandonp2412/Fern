@@ -55,6 +55,7 @@ class AppState extends ChangeNotifier {
   bool _loadingOlder = false;
   bool _accountsLoaded = false;
   bool _transactionsLoaded = false;
+  int _txnLimit = 2000;
 
   static const _windowDays = 182;
   static const _maxPages = 5;
@@ -82,7 +83,7 @@ class AppState extends ChangeNotifier {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
     _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
-    _txnsSub = this.db.watchTransactions(limit: 2000).listen(_onTransactionsRows);
+    _subscribeTransactions();
     _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(_onSpendByGroup);
     _monthlySub = this.db.watchMonthlyTotals(_monthCount).listen(_onMonthly);
     _catSub = this.db.watchCategoryTotals().listen(_onCategories);
@@ -115,6 +116,11 @@ class AppState extends ChangeNotifier {
     _accountsLoaded = true;
     if (_transactionsLoaded) loading = false;
     notifyListeners();
+  }
+
+  void _subscribeTransactions() {
+    unawaited(_txnsSub?.cancel());
+    _txnsSub = db.watchTransactions(limit: _txnLimit).listen(_onTransactionsRows);
   }
 
   void _onTransactionsRows(List<Transaction> rows) {
@@ -229,10 +235,12 @@ class AppState extends ChangeNotifier {
     for (var i = 0; i < _maxPages; i++) {
       final page = await api.getTransactions(start: start, cursor: cursor);
       cacheTransactions(page.items);
+      _txnLimit += page.items.length;
       cursor = page.nextCursor;
       if (cursor == null) break;
     }
     txnCursor = cursor;
+    _subscribeTransactions();
   }
 
   Future<void> loadOlder() async {
@@ -244,7 +252,9 @@ class AppState extends ChangeNotifier {
       final start = isoDay(DateTime(now.year, now.month, now.day).subtract(const Duration(days: _windowDays)));
       final page = await api.getTransactions(start: start, cursor: txnCursor);
       cacheTransactions(page.items);
+      _txnLimit += page.items.length;
       txnCursor = page.nextCursor;
+      _subscribeTransactions();
     } catch (e) {
       debugPrint('AppState.loadOlder: failed: $e');
     } finally {
