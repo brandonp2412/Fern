@@ -279,8 +279,9 @@ class AppDatabase extends _$AppDatabase {
           ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
           ' FROM transactions t'
           ' WHERE substr(t.date, 1, 7) >= \'$firstKey\''
+          '${_excludeTransfersWhere()}'
           ' GROUP BY k ORDER BY k',
-      readsFrom: {transactions},
+      readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       final map = <String, (double, double)>{};
       for (final r in rows) {
@@ -394,13 +395,28 @@ class AppDatabase extends _$AppDatabase {
         ')';
   }
 
+  // Transfers between the user's own accounts are not real income or
+  // spending; if left in, a transfer's outflow and inflow each get summed
+  // into "expense" and "income" separately (they never cancel out), so
+  // moving money between accounts inflates both totals.
+  String _excludeTransfersWhere() =>
+      ' AND t.id NOT IN ('
+      'SELECT tt.id FROM transactions tt'
+      ' LEFT JOIN category_overrides oo ON oo.transaction_id = tt.id'
+      ' WHERE COALESCE(oo.category_group, oo.category_name, tt.category_group, tt.auto_category_group, \'Uncategorised\') = \'Transfers\''
+      ')';
+
   Stream<Map<String, (double, double)>> queryMonthlyTotals({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
+    final excludeTransfers =
+        (categoryFilter == null || categoryFilter.isEmpty)
+            ? _excludeTransfersWhere()
+            : '';
     return _watchStat(
       'SELECT substr(t.date, 1, 7) AS k,'
           ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
           ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
           ' FROM transactions t'
-          ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}'
+          ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}$excludeTransfers'
           ' GROUP BY k ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {

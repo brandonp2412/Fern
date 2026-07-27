@@ -51,7 +51,7 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  _StatsRange _range = _StatsRange.d30;
+  _StatsRange _range = _StatsRange.d90;
   DateTimeRange? _customRange;
   Set<String> _catFilter = {};
 
@@ -274,8 +274,7 @@ class _StatsScreenState extends State<StatsScreen> {
               child: ChoiceChip(
                 label: Text(labelFor[option]!),
                 selected: _range == option,
-                checkmarkColor:
-                    _range == option ? Colors.white : context.fern.ink,
+                showCheckmark: false,
                 onSelected: (_) {
                   if (option == _StatsRange.custom) {
                     _pickCustomRange(context);
@@ -298,7 +297,7 @@ class _StatsScreenState extends State<StatsScreen> {
               selected: cnt > 0,
               avatar: const Icon(Icons.filter_list, size: 16),
               onSelected: (_) => _openCatModal(),
-              checkmarkColor: cnt > 0 ? Colors.white : context.fern.ink,
+              showCheckmark: false,
               labelStyle: TextStyle(
                 color: cnt > 0 ? Colors.white : context.fern.ink,
                 fontSize: 12.5,
@@ -365,9 +364,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             FilterChip(
                               label: Text(cat),
                               selected: pending.contains(cat),
-                              checkmarkColor: pending.contains(cat)
-                                  ? Colors.white
-                                  : context.fern.ink,
+                              showCheckmark: false,
                               labelStyle: TextStyle(
                                 color: pending.contains(cat)
                                     ? Colors.white

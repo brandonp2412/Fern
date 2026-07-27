@@ -23,7 +23,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
   String _direction = 'all';
-  int _days = 30;
+  int? _days = 30;
   Set<String> _selectedCategories = {};
   Timer? _debounce;
 
@@ -34,6 +34,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _scroll.addListener(() {
       final state = widget.state;
       if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 300 &&
+          _days == null &&
           state.txnCursor != null) {
         state.loadOlder();
       }
@@ -62,7 +63,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
     });
   }
 
-  DateTime _cutoff() => DateTime.now().subtract(Duration(days: _days));
+  DateTime? _cutoff() =>
+      _days == null ? null : DateTime.now().subtract(Duration(days: _days!));
 
   Set<String> get _availableCategories {
     final cats = <String>{};
@@ -79,7 +81,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (_direction == 'in' && tx.amount <= 0) return false;
       if (_direction == 'out' && tx.amount >= 0) return false;
       final d = parseDate(tx.date);
-      if (d != null && d.isBefore(cut)) return false;
+      if (cut != null && d != null && d.isBefore(cut)) return false;
       if (catFilter.isNotEmpty) {
         final cat = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
         if (!catFilter.contains(cat)) return false;
@@ -167,6 +169,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 const SizedBox(width: 8),
                 _chip('30 days', _days == 30, () => setState(() => _days = 30)),
                 _chip('90 days', _days == 90, () => setState(() => _days = 90)),
+                _chip('All time', _days == null, () => setState(() => _days = null)),
                 _categoryButton(),
               ],
             ),
@@ -185,7 +188,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        checkmarkColor: selected ? Colors.white : context.fern.ink,
+        showCheckmark: false,
         labelStyle: TextStyle(
           color: selected ? Colors.white : context.fern.ink,
           fontSize: 12.5,
@@ -205,7 +208,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         selected: count > 0,
         avatar: const Icon(Icons.filter_list, size: 16),
         onSelected: (_) => _openCategoryModal(),
-        checkmarkColor: count > 0 ? Colors.white : context.fern.ink,
+        showCheckmark: false,
         labelStyle: TextStyle(
           color: count > 0 ? Colors.white : context.fern.ink,
           fontSize: 12.5,
@@ -269,9 +272,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             FilterChip(
                               label: Text(cat),
                               selected: pending.contains(cat),
-                              checkmarkColor: pending.contains(cat)
-                                  ? Colors.white
-                                  : context.fern.ink,
+                              showCheckmark: false,
                               labelStyle: TextStyle(
                                 color: pending.contains(cat)
                                     ? Colors.white
@@ -339,7 +340,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         itemCount: keys.length + 1,
         itemBuilder: (context, i) {
           if (i == keys.length) {
-            return state.txnCursor != null
+            return _days == null && state.txnCursor != null
                 ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator()),
