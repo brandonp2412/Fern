@@ -8,3 +8,7 @@ targets:
           compiler: dart2js
           dart2js_args:
             - -O4
+      drift_dev:
+        options:
+          databases:
+            app_database: lib/db/app_database.dart

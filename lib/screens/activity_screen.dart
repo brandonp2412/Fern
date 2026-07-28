@@ -23,7 +23,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
   String _direction = 'all';
-  int? _days = 30;
+  String _sortOrder = 'date_desc';
   Set<String> _selectedCategories = {};
   Timer? _debounce;
 
@@ -34,7 +34,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _scroll.addListener(() {
       final state = widget.state;
       if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 300 &&
-          _days == null &&
           state.txnCursor != null) {
         state.loadOlder();
       }
@@ -63,9 +62,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
     });
   }
 
-  DateTime? _cutoff() =>
-      _days == null ? null : DateTime.now().subtract(Duration(days: _days!));
-
   Set<String> get _availableCategories {
     final cats = <String>{};
     for (final tx in widget.state.transactions) {
@@ -75,13 +71,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   List<Transaction> get _filtered {
-    final cut = _cutoff();
     final catFilter = _selectedCategories;
     return widget.state.transactions.where((tx) {
       if (_direction == 'in' && tx.amount <= 0) return false;
       if (_direction == 'out' && tx.amount >= 0) return false;
-      final d = parseDate(tx.date);
-      if (cut != null && d != null && d.isBefore(cut)) return false;
       if (catFilter.isNotEmpty) {
         final cat = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
         if (!catFilter.contains(cat)) return false;
@@ -107,6 +100,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final d = parseDate(tx.date);
       final key = d == null ? 'Unknown' : isoDay(d);
       map.putIfAbsent(key, () => []).add(tx);
+    }
+    if (_sortOrder == 'amount_desc' || _sortOrder == 'amount_asc') {
+      final asc = _sortOrder == 'amount_asc';
+      for (final txns in map.values) {
+        txns.sort(
+          (a, b) => asc ? a.amount.compareTo(b.amount) : b.amount.compareTo(a.amount),
+        );
+      }
     }
     return map;
   }
@@ -167,10 +168,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   () => setState(() => _direction = 'out'),
                 ),
                 const SizedBox(width: 8),
-                _chip('30 days', _days == 30, () => setState(() => _days = 30)),
-                _chip('90 days', _days == 90, () => setState(() => _days = 90)),
-                _chip('All time', _days == null, () => setState(() => _days = null)),
                 _categoryButton(),
+                _sortButton(),
               ],
             ),
           ),
@@ -250,10 +249,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (pending.isNotEmpty)
+                        if (cats.isNotEmpty)
                           TextButton(
-                            onPressed: () => setModalState(() => pending = {}),
-                            child: const Text('Clear'),
+                            onPressed: () => setModalState(() {
+                              pending = pending.length == cats.length
+                                  ? {}
+                                  : cats.toSet();
+                            }),
+                            child: Text(
+                              pending.length == cats.length
+                                  ? 'Clear'
+                                  : 'Select all',
+                            ),
                           ),
                       ],
                     ),
@@ -313,6 +320,94 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
+  static const _sortLabels = {
+    'date_desc': 'Newest',
+    'date_asc': 'Oldest',
+    'amount_desc': 'Highest',
+    'amount_asc': 'Lowest',
+  };
+
+  Widget _sortButton() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(_sortLabels[_sortOrder]!),
+        selected: _sortOrder != 'date_desc',
+        avatar: const Icon(Icons.sort, size: 16),
+        onSelected: (_) => _openSortModal(),
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          color: _sortOrder != 'date_desc' ? Colors.white : context.fern.ink,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  void _openSortModal() {
+    var pending = _sortOrder;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Order by',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final entry in _sortLabels.entries)
+                          FilterChip(
+                            label: Text(entry.value),
+                            selected: pending == entry.key,
+                            showCheckmark: false,
+                            labelStyle: TextStyle(
+                              color: pending == entry.key
+                                  ? Colors.white
+                                  : context.fern.ink,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            onSelected: (_) =>
+                                setModalState(() => pending = entry.key),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() => _sortOrder = pending);
+                          Navigator.of(ctx).pop();
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _body() {
     final state = widget.state;
     if (state.loading) {
@@ -331,7 +426,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
         message: 'Try widening your filters or date range.',
       );
     }
-    final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    final keys = grouped.keys.toList()
+      ..sort((a, b) => _sortOrder == 'date_asc' ? a.compareTo(b) : b.compareTo(a));
     return RefreshIndicator(
       onRefresh: () => state.load(force: true),
       child: ListView.builder(
@@ -340,7 +436,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         itemCount: keys.length + 1,
         itemBuilder: (context, i) {
           if (i == keys.length) {
-            return _days == null && state.txnCursor != null
+            return state.txnCursor != null
                 ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator()),

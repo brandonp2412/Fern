@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../services/auto_categorizer.dart';
+import 'app_database.steps.dart';
 import 'connection/connection.dart';
 
 part 'app_database.g.dart';
@@ -24,7 +25,8 @@ class Accounts extends Table {
   RealColumn get balanceCurrent => real().nullable()();
   RealColumn get balanceAvailable => real().nullable()();
   RealColumn get balanceLimit => real().nullable()();
-  BoolColumn get balanceOverdrawn => boolean().withDefault(const Constant(false))();
+  BoolColumn get balanceOverdrawn =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get holder => text().nullable()();
   TextColumn get refreshedBalance => text().nullable()();
   TextColumn get refreshedMeta => text().nullable()();
@@ -49,9 +51,9 @@ class Transactions extends Table {
   TextColumn get categoryName => text().nullable()();
   TextColumn get categoryGroup => text().nullable()();
   TextColumn get autoCategoryName => text().nullable()();
-	TextColumn get autoCategoryGroup => text().nullable()();
-	TextColumn get metaLogo => text().nullable()();
-	DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get autoCategoryGroup => text().nullable()();
+  TextColumn get metaLogo => text().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -69,28 +71,43 @@ class CategoryOverrides extends Table {
 
 @DriftDatabase(tables: [Accounts, Transactions, CategoryOverrides])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(openConnection());
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          if (from == 1) {
-            await m.deleteTable('cached_accounts');
-            await m.deleteTable('cached_transactions');
-            await m.createTable(accounts);
-            await m.createTable(transactions);
-            await m.addColumn(
-                categoryOverrides, categoryOverrides.categoryGroup);
-          }
-          if (from <= 2) {
-            await m.addColumn(transactions, transactions.metaLogo);
-          }
-        },
-      );
+    onUpgrade: stepByStep(
+      from1To2: (m, schema) async {
+        await m.deleteTable('cached_accounts');
+        await m.deleteTable('cached_transactions');
+        await m.createTable(schema.accounts);
+        await m.createTable(schema.transactions);
+        await m.addColumn(
+          schema.categoryOverrides,
+          schema.categoryOverrides.categoryGroup,
+        );
+        await m.database.customStatement(
+          'ALTER TABLE category_overrides DROP COLUMN category_id',
+        );
+      },
+      from2To3: (m, schema) async {
+        await m.addColumn(schema.transactions, schema.transactions.metaLogo);
+      },
+      from3To4: (m, schema) async {
+        final columns = await m.database
+            .customSelect("PRAGMA table_info(category_overrides)")
+            .get();
+        if (columns.any((row) => row.data['name'] == 'category_id')) {
+          await m.database.customStatement(
+            'ALTER TABLE category_overrides DROP COLUMN category_id',
+          );
+        }
+      },
+    ),
+  );
 
   Future<void> saveAccounts(List<Account> list) async {
     if (list.isEmpty) return;
@@ -99,67 +116,68 @@ class AppDatabase extends _$AppDatabase {
       batch.insertAllOnConflictUpdate(
         accounts,
         list
-            .map((a) => AccountsCompanion.insert(
-                  id: a.id,
-                  name: a.name,
-                  status: a.status,
-                  type: a.type,
-                  attributes: json.encode(a.attributes),
-                  formattedAccount: Value(a.formattedAccount),
-                  connectionId: Value(a.connection?.id),
-                  connectionName: Value(a.connection?.name),
-                  connectionLogo: Value(a.connection?.logo),
-                  connectionType: Value(a.connection?.connectionType),
-                  balanceCurrent: Value(a.balance?.current?.toDouble()),
-                  balanceAvailable: Value(a.balance?.available?.toDouble()),
-                  balanceLimit: Value(a.balance?.limit?.toDouble()),
-                  balanceOverdrawn: Value(a.balance?.overdrawn ?? false),
-                  holder: Value(a.holder),
-                  refreshedBalance: Value(a.refreshed?.balance),
-                  refreshedMeta: Value(a.refreshed?.meta),
-                  refreshedTransactions: Value(a.refreshed?.transactions),
-                  updatedAt: now,
-                ))
+            .map(
+              (a) => AccountsCompanion.insert(
+                id: a.id,
+                name: a.name,
+                status: a.status,
+                type: a.type,
+                attributes: json.encode(a.attributes),
+                formattedAccount: Value(a.formattedAccount),
+                connectionId: Value(a.connection?.id),
+                connectionName: Value(a.connection?.name),
+                connectionLogo: Value(a.connection?.logo),
+                connectionType: Value(a.connection?.connectionType),
+                balanceCurrent: Value(a.balance?.current?.toDouble()),
+                balanceAvailable: Value(a.balance?.available?.toDouble()),
+                balanceLimit: Value(a.balance?.limit?.toDouble()),
+                balanceOverdrawn: Value(a.balance?.overdrawn ?? false),
+                holder: Value(a.holder),
+                refreshedBalance: Value(a.refreshed?.balance),
+                refreshedMeta: Value(a.refreshed?.meta),
+                refreshedTransactions: Value(a.refreshed?.transactions),
+                updatedAt: now,
+              ),
+            )
             .toList(),
       );
     });
   }
 
-  Stream<List<Account>> watchAccounts() =>
-      select(accounts).watch().map((rows) {
-        return rows.map((r) {
-          return Account(
-            id: r.id,
-            name: r.name,
-            status: r.status,
-            type: r.type,
-            attributes: (json.decode(r.attributes) as List<dynamic>)
-                .map((e) => e.toString())
-                .toList(),
-            formattedAccount: r.formattedAccount,
-            connection: r.connectionId != null
-                ? AccountConnection(
-                    id: r.connectionId!,
-                    name: r.connectionName ?? '',
-                    logo: r.connectionLogo ?? '',
-                    connectionType: r.connectionType,
-                  )
-                : null,
-            balance: AccountBalance(
-              current: r.balanceCurrent,
-              available: r.balanceAvailable,
-              limit: r.balanceLimit,
-              overdrawn: r.balanceOverdrawn,
-            ),
-            holder: r.holder,
-            refreshed: AccountRefreshed(
-              balance: r.refreshedBalance,
-              meta: r.refreshedMeta,
-              transactions: r.refreshedTransactions,
-            ),
-          );
-        }).toList();
-      });
+  Stream<List<Account>> watchAccounts() => select(accounts).watch().map((rows) {
+    return rows.map((r) {
+      return Account(
+        id: r.id,
+        name: r.name,
+        status: r.status,
+        type: r.type,
+        attributes: (json.decode(r.attributes) as List<dynamic>)
+            .map((e) => e.toString())
+            .toList(),
+        formattedAccount: r.formattedAccount,
+        connection: r.connectionId != null
+            ? AccountConnection(
+                id: r.connectionId!,
+                name: r.connectionName ?? '',
+                logo: r.connectionLogo ?? '',
+                connectionType: r.connectionType,
+              )
+            : null,
+        balance: AccountBalance(
+          current: r.balanceCurrent,
+          available: r.balanceAvailable,
+          limit: r.balanceLimit,
+          overdrawn: r.balanceOverdrawn,
+        ),
+        holder: r.holder,
+        refreshed: AccountRefreshed(
+          balance: r.refreshedBalance,
+          meta: r.refreshedMeta,
+          transactions: r.refreshedTransactions,
+        ),
+      );
+    }).toList();
+  });
 
   Future<void> saveTransactions(List<Transaction> txns) async {
     if (txns.isEmpty) return;
@@ -167,41 +185,42 @@ class AppDatabase extends _$AppDatabase {
     await batch((batch) {
       batch.insertAllOnConflictUpdate(
         transactions,
-        txns
-            .map((t) {
-              var autoName = t.autoCategoryName;
-              var autoGroup = t.autoCategoryGroup;
-              if (autoName == null) {
-                final auto = AutoCategorizer.categorize(t);
-                if (auto != null) {
-                  autoName = auto.name;
-                  autoGroup = auto.group;
-                }
-              }
-              return TransactionsCompanion.insert(
-                id: t.id,
-                accountId: t.account,
-                connectionId: t.connection,
-                date: t.date,
-                description: t.description,
-                amount: t.amount.toDouble(),
-                balance: Value(t.balance?.toDouble()),
-                type: t.type,
-                merchantName: Value(t.merchant?.name),
-                categoryName: Value(t.category?.name),
-                categoryGroup: Value(t.category?.groupName),
-                autoCategoryName: Value(autoName),
-                autoCategoryGroup: Value(autoGroup),
-                metaLogo: Value(t.meta?.logo),
-                updatedAt: now,
-              );
-            })
-            .toList(),
+        txns.map((t) {
+          var autoName = t.autoCategoryName;
+          var autoGroup = t.autoCategoryGroup;
+          if (autoName == null) {
+            final auto = AutoCategorizer.categorize(t);
+            if (auto != null) {
+              autoName = auto.name;
+              autoGroup = auto.group;
+            }
+          }
+          return TransactionsCompanion.insert(
+            id: t.id,
+            accountId: t.account,
+            connectionId: t.connection,
+            date: t.date,
+            description: t.description,
+            amount: t.amount.toDouble(),
+            balance: Value(t.balance?.toDouble()),
+            type: t.type,
+            merchantName: Value(t.merchant?.name),
+            categoryName: Value(t.category?.name),
+            categoryGroup: Value(t.category?.groupName),
+            autoCategoryName: Value(autoName),
+            autoCategoryGroup: Value(autoGroup),
+            metaLogo: Value(t.meta?.logo),
+            updatedAt: now,
+          );
+        }).toList(),
       );
     });
   }
 
-  Stream<List<Transaction>> watchTransactions({String? accountId, int limit = 2000}) {
+  Stream<List<Transaction>> watchTransactions({
+    String? accountId,
+    int limit = 2000,
+  }) {
     final query = select(transactions);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
@@ -220,14 +239,19 @@ class AppDatabase extends _$AppDatabase {
           amount: r.amount,
           balance: r.balance,
           type: r.type,
-          merchant: r.merchantName != null ? TransactionMerchant(name: r.merchantName) : null,
+          merchant: r.merchantName != null
+              ? TransactionMerchant(name: r.merchantName)
+              : null,
           category: r.categoryName != null
               ? TransactionCategory(
                   id: '',
                   name: r.categoryName!,
                   groups: r.categoryGroup != null
                       ? {
-                          'personal_finance': CategoryGroup(id: '', name: r.categoryGroup!),
+                          'personal_finance': CategoryGroup(
+                            id: '',
+                            name: r.categoryGroup!,
+                          ),
                         }
                       : {},
                 )
@@ -240,7 +264,11 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<void> saveCategoryOverride(String transactionId, String categoryName, String? categoryGroup) {
+  Future<void> saveCategoryOverride(
+    String transactionId,
+    String categoryName,
+    String? categoryGroup,
+  ) {
     return into(categoryOverrides).insertOnConflictUpdate(
       CategoryOverridesCompanion.insert(
         transactionId: transactionId,
@@ -252,9 +280,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> clearCategoryOverride(String transactionId) {
-    return (delete(categoryOverrides)
-          ..where((t) => t.transactionId.equals(transactionId)))
-        .go();
+    return (delete(
+      categoryOverrides,
+    )..where((t) => t.transactionId.equals(transactionId))).go();
   }
 
   Future<Map<String, CategoryOverride>> loadCategoryOverrides() async {
@@ -262,7 +290,10 @@ class AppDatabase extends _$AppDatabase {
     return {for (final r in rows) r.transactionId: r};
   }
 
-  Stream<List<_StatRow>> _watchStat(String sql, {required Set<ResultSetImplementation> readsFrom}) {
+  Stream<List<_StatRow>> _watchStat(
+    String sql, {
+    required Set<ResultSetImplementation> readsFrom,
+  }) {
     return customSelect(sql, readsFrom: readsFrom).watch().map((rows) {
       return rows.map((row) => _StatRow(row.data)).toList();
     });
@@ -275,12 +306,12 @@ class AppDatabase extends _$AppDatabase {
         '${first.year.toString().padLeft(4, '0')}-${first.month.toString().padLeft(2, '0')}';
     return _watchStat(
       'SELECT substr(t.date, 1, 7) AS k,'
-          ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
-          ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
-          ' FROM transactions t'
-          ' WHERE substr(t.date, 1, 7) >= \'$firstKey\''
-          '${_excludeTransfersWhere()}'
-          ' GROUP BY k ORDER BY k',
+      ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
+      ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
+      ' FROM transactions t'
+      ' WHERE substr(t.date, 1, 7) >= \'$firstKey\''
+      '${_excludeTransfersWhere()}'
+      ' GROUP BY k ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       final map = <String, (double, double)>{};
@@ -297,12 +328,12 @@ class AppDatabase extends _$AppDatabase {
   Stream<Map<String, double>> watchCategoryTotals() {
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-          ' WHERE t.amount < 0'
-          ' GROUP BY k'
-          ' ORDER BY total DESC',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
+      ' WHERE t.amount < 0'
+      ' GROUP BY k'
+      ' ORDER BY total DESC',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
@@ -315,12 +346,12 @@ class AppDatabase extends _$AppDatabase {
         '${start.year.toString().padLeft(4, '0')}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
     return _watchStat(
       'SELECT date(substr(t.date, 1, 10), \'-\' || ((strftime(\'%w\', substr(t.date, 1, 10)) + 6) % 7) || \' days\') AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' WHERE substr(t.date, 1, 10) >= \'$startDate\''
-          ' AND t.amount < 0'
-          ' GROUP BY k'
-          ' ORDER BY k',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' WHERE substr(t.date, 1, 10) >= \'$startDate\''
+      ' AND t.amount < 0'
+      ' GROUP BY k'
+      ' ORDER BY k',
       readsFrom: {transactions},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
@@ -330,13 +361,13 @@ class AppDatabase extends _$AppDatabase {
   Stream<Map<String, double>> watchTopMerchants(int count) {
     return _watchStat(
       'SELECT COALESCE(t.merchant_name, t.description) AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' WHERE t.amount < 0'
-          ' AND COALESCE(t.merchant_name, t.description) != \'\''
-          ' GROUP BY k'
-          ' ORDER BY total DESC'
-          ' LIMIT $count',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' WHERE t.amount < 0'
+      ' AND COALESCE(t.merchant_name, t.description) != \'\''
+      ' GROUP BY k'
+      ' ORDER BY total DESC'
+      ' LIMIT $count',
       readsFrom: {transactions},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
@@ -349,14 +380,14 @@ class AppDatabase extends _$AppDatabase {
         '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-          ' WHERE substr(t.date, 1, 7) = \'$monthKey\''
-          ' AND t.amount < 0'
-          ' GROUP BY k'
-          ' ORDER BY total DESC'
-          ' LIMIT 6',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
+      ' WHERE substr(t.date, 1, 7) = \'$monthKey\''
+      ' AND t.amount < 0'
+      ' GROUP BY k'
+      ' ORDER BY total DESC'
+      ' LIMIT 6',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
@@ -406,18 +437,21 @@ class AppDatabase extends _$AppDatabase {
       ' WHERE COALESCE(oo.category_group, oo.category_name, tt.category_group, tt.auto_category_group, \'Uncategorised\') = \'Transfers\''
       ')';
 
-  Stream<Map<String, (double, double)>> queryMonthlyTotals({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
-    final excludeTransfers =
-        (categoryFilter == null || categoryFilter.isEmpty)
-            ? _excludeTransfersWhere()
-            : '';
+  Stream<Map<String, (double, double)>> queryMonthlyTotals({
+    DateTime? start,
+    DateTime? end,
+    Set<String>? categoryFilter,
+  }) {
+    final excludeTransfers = (categoryFilter == null || categoryFilter.isEmpty)
+        ? _excludeTransfersWhere()
+        : '';
     return _watchStat(
       'SELECT substr(t.date, 1, 7) AS k,'
-          ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
-          ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
-          ' FROM transactions t'
-          ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}$excludeTransfers'
-          ' GROUP BY k ORDER BY k',
+      ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
+      ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
+      ' FROM transactions t'
+      ' WHERE ${_dateWhere(start: start, end: end)}${_categoryWhere(categoryFilter: categoryFilter)}$excludeTransfers'
+      ' GROUP BY k ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       final map = <String, (double, double)>{};
@@ -428,53 +462,66 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Stream<Map<String, double>> queryCategoryTotals({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
+  Stream<Map<String, double>> queryCategoryTotals({
+    DateTime? start,
+    DateTime? end,
+    Set<String>? categoryFilter,
+  }) {
     final where = start != null || end != null
         ? 'AND ${_dateWhere(start: start, end: end)}'
         : '';
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-          ' WHERE t.amount < 0 $where$catWhere'
-          ' GROUP BY k'
-          ' ORDER BY total DESC',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
+      ' WHERE t.amount < 0 $where$catWhere'
+      ' GROUP BY k'
+      ' ORDER BY total DESC',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
     });
   }
 
-  Stream<Map<String, double>> queryWeeklyTrend({DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
+  Stream<Map<String, double>> queryWeeklyTrend({
+    DateTime? start,
+    DateTime? end,
+    Set<String>? categoryFilter,
+  }) {
     final where = _dateWhere(start: start, end: end);
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT date(substr(t.date, 1, 10), \'-\' || ((strftime(\'%w\', substr(t.date, 1, 10)) + 6) % 7) || \' days\') AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' WHERE t.amount < 0 AND $where$catWhere'
-          ' GROUP BY k'
-          ' ORDER BY k',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' WHERE t.amount < 0 AND $where$catWhere'
+      ' GROUP BY k'
+      ' ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
     });
   }
 
-  Stream<Map<String, double>> queryTopMerchants({int count = 5, DateTime? start, DateTime? end, Set<String>? categoryFilter}) {
+  Stream<Map<String, double>> queryTopMerchants({
+    int count = 5,
+    DateTime? start,
+    DateTime? end,
+    Set<String>? categoryFilter,
+  }) {
     final where = _dateWhere(start: start, end: end);
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
       'SELECT COALESCE(t.merchant_name, t.description) AS k,'
-          ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
-          ' FROM transactions t'
-          ' WHERE t.amount < 0 AND $where$catWhere'
-          ' AND COALESCE(t.merchant_name, t.description) != \'\''
-          ' GROUP BY k'
-          ' ORDER BY total DESC'
-          ' LIMIT $count',
+      ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
+      ' FROM transactions t'
+      ' WHERE t.amount < 0 AND $where$catWhere'
+      ' AND COALESCE(t.merchant_name, t.description) != \'\''
+      ' GROUP BY k'
+      ' ORDER BY total DESC'
+      ' LIMIT $count',
       readsFrom: {transactions, categoryOverrides},
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
