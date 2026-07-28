@@ -51,11 +51,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void _selectTab(int i) {
     setState(() => _tab = i);
     if (widget.state.settings.swipeTabs && _pageController.hasClients) {
-      _pageController.animateToPage(
-        i,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      _pageController.jumpToPage(i);
     }
   }
 
