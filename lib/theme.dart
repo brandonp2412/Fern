@@ -198,7 +198,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       slate: scheme.onSurfaceVariant,
       mist: scheme.surfaceContainerHighest,
       cream: dark ? scheme.surface : const Color(0xFFF5F7F0),
-      deep: dark ? scheme.surfaceContainerHighest : Color.lerp(scheme.primary, Colors.black, 0.5)!,
+      deep: Color.lerp(scheme.primary, Colors.black, dark ? 0.65 : 0.5)!,
       green: scheme.primary,
       moss: Color.lerp(scheme.primary, dark ? Colors.white : Colors.black, 0.2)!,
       sprout: dark ? Color.lerp(scheme.primary, Colors.white, 0.6)! : Color.lerp(scheme.primary, Colors.white, 0.55)!,

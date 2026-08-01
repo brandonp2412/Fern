@@ -62,11 +62,19 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => RecategorizeScreen(state: state),
-                          ),
-                        ),
+                        onPressed: () {
+                          final now = DateTime.now();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => RecategorizeScreen(
+                                state: state,
+                                start: DateTime(now.year, now.month, 1),
+                                end: DateTime(now.year, now.month + 1, 1)
+                                    .subtract(const Duration(seconds: 1)),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     _spendCard(context, state.spendByGroup),

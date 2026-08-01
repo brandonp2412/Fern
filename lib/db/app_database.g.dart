@@ -2369,6 +2369,657 @@ class CategoryOverridesCompanion extends UpdateCompanion<CategoryOverride> {
   }
 }
 
+class $CategoryRulesTable extends CategoryRules
+    with TableInfo<$CategoryRulesTable, CategoryRule> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CategoryRulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _matchTextMeta = const VerificationMeta(
+    'matchText',
+  );
+  @override
+  late final GeneratedColumn<String> matchText = GeneratedColumn<String>(
+    'match_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryNameMeta = const VerificationMeta(
+    'categoryName',
+  );
+  @override
+  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
+    'category_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryGroupMeta = const VerificationMeta(
+    'categoryGroup',
+  );
+  @override
+  late final GeneratedColumn<String> categoryGroup = GeneratedColumn<String>(
+    'category_group',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    matchText,
+    categoryName,
+    categoryGroup,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'category_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CategoryRule> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('match_text')) {
+      context.handle(
+        _matchTextMeta,
+        matchText.isAcceptableOrUnknown(data['match_text']!, _matchTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_matchTextMeta);
+    }
+    if (data.containsKey('category_name')) {
+      context.handle(
+        _categoryNameMeta,
+        categoryName.isAcceptableOrUnknown(
+          data['category_name']!,
+          _categoryNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryNameMeta);
+    }
+    if (data.containsKey('category_group')) {
+      context.handle(
+        _categoryGroupMeta,
+        categoryGroup.isAcceptableOrUnknown(
+          data['category_group']!,
+          _categoryGroupMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CategoryRule map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CategoryRule(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      matchText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}match_text'],
+      )!,
+      categoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_name'],
+      )!,
+      categoryGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_group'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CategoryRulesTable createAlias(String alias) {
+    return $CategoryRulesTable(attachedDatabase, alias);
+  }
+}
+
+class CategoryRule extends DataClass implements Insertable<CategoryRule> {
+  final String id;
+  final String matchText;
+  final String categoryName;
+  final String? categoryGroup;
+  final DateTime createdAt;
+  const CategoryRule({
+    required this.id,
+    required this.matchText,
+    required this.categoryName,
+    this.categoryGroup,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['match_text'] = Variable<String>(matchText);
+    map['category_name'] = Variable<String>(categoryName);
+    if (!nullToAbsent || categoryGroup != null) {
+      map['category_group'] = Variable<String>(categoryGroup);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CategoryRulesCompanion toCompanion(bool nullToAbsent) {
+    return CategoryRulesCompanion(
+      id: Value(id),
+      matchText: Value(matchText),
+      categoryName: Value(categoryName),
+      categoryGroup: categoryGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryGroup),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CategoryRule.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CategoryRule(
+      id: serializer.fromJson<String>(json['id']),
+      matchText: serializer.fromJson<String>(json['matchText']),
+      categoryName: serializer.fromJson<String>(json['categoryName']),
+      categoryGroup: serializer.fromJson<String?>(json['categoryGroup']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'matchText': serializer.toJson<String>(matchText),
+      'categoryName': serializer.toJson<String>(categoryName),
+      'categoryGroup': serializer.toJson<String?>(categoryGroup),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CategoryRule copyWith({
+    String? id,
+    String? matchText,
+    String? categoryName,
+    Value<String?> categoryGroup = const Value.absent(),
+    DateTime? createdAt,
+  }) => CategoryRule(
+    id: id ?? this.id,
+    matchText: matchText ?? this.matchText,
+    categoryName: categoryName ?? this.categoryName,
+    categoryGroup: categoryGroup.present
+        ? categoryGroup.value
+        : this.categoryGroup,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CategoryRule copyWithCompanion(CategoryRulesCompanion data) {
+    return CategoryRule(
+      id: data.id.present ? data.id.value : this.id,
+      matchText: data.matchText.present ? data.matchText.value : this.matchText,
+      categoryName: data.categoryName.present
+          ? data.categoryName.value
+          : this.categoryName,
+      categoryGroup: data.categoryGroup.present
+          ? data.categoryGroup.value
+          : this.categoryGroup,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoryRule(')
+          ..write('id: $id, ')
+          ..write('matchText: $matchText, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, matchText, categoryName, categoryGroup, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CategoryRule &&
+          other.id == this.id &&
+          other.matchText == this.matchText &&
+          other.categoryName == this.categoryName &&
+          other.categoryGroup == this.categoryGroup &&
+          other.createdAt == this.createdAt);
+}
+
+class CategoryRulesCompanion extends UpdateCompanion<CategoryRule> {
+  final Value<String> id;
+  final Value<String> matchText;
+  final Value<String> categoryName;
+  final Value<String?> categoryGroup;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const CategoryRulesCompanion({
+    this.id = const Value.absent(),
+    this.matchText = const Value.absent(),
+    this.categoryName = const Value.absent(),
+    this.categoryGroup = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CategoryRulesCompanion.insert({
+    required String id,
+    required String matchText,
+    required String categoryName,
+    this.categoryGroup = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       matchText = Value(matchText),
+       categoryName = Value(categoryName),
+       createdAt = Value(createdAt);
+  static Insertable<CategoryRule> custom({
+    Expression<String>? id,
+    Expression<String>? matchText,
+    Expression<String>? categoryName,
+    Expression<String>? categoryGroup,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (matchText != null) 'match_text': matchText,
+      if (categoryName != null) 'category_name': categoryName,
+      if (categoryGroup != null) 'category_group': categoryGroup,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CategoryRulesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? matchText,
+    Value<String>? categoryName,
+    Value<String?>? categoryGroup,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return CategoryRulesCompanion(
+      id: id ?? this.id,
+      matchText: matchText ?? this.matchText,
+      categoryName: categoryName ?? this.categoryName,
+      categoryGroup: categoryGroup ?? this.categoryGroup,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (matchText.present) {
+      map['match_text'] = Variable<String>(matchText.value);
+    }
+    if (categoryName.present) {
+      map['category_name'] = Variable<String>(categoryName.value);
+    }
+    if (categoryGroup.present) {
+      map['category_group'] = Variable<String>(categoryGroup.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoryRulesCompanion(')
+          ..write('id: $id, ')
+          ..write('matchText: $matchText, ')
+          ..write('categoryName: $categoryName, ')
+          ..write('categoryGroup: $categoryGroup, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TransactionImagesTable extends TransactionImages
+    with TableInfo<$TransactionImagesTable, TransactionImage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TransactionImagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
+    'transactionId',
+  );
+  @override
+  late final GeneratedColumn<String> transactionId = GeneratedColumn<String>(
+    'transaction_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [transactionId, imagePath, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'transaction_images';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TransactionImage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+        _transactionIdMeta,
+        transactionId.isAcceptableOrUnknown(
+          data['transaction_id']!,
+          _transactionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_transactionIdMeta);
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_imagePathMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {transactionId};
+  @override
+  TransactionImage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TransactionImage(
+      transactionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transaction_id'],
+      )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TransactionImagesTable createAlias(String alias) {
+    return $TransactionImagesTable(attachedDatabase, alias);
+  }
+}
+
+class TransactionImage extends DataClass
+    implements Insertable<TransactionImage> {
+  final String transactionId;
+  final String imagePath;
+  final DateTime updatedAt;
+  const TransactionImage({
+    required this.transactionId,
+    required this.imagePath,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['transaction_id'] = Variable<String>(transactionId);
+    map['image_path'] = Variable<String>(imagePath);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  TransactionImagesCompanion toCompanion(bool nullToAbsent) {
+    return TransactionImagesCompanion(
+      transactionId: Value(transactionId),
+      imagePath: Value(imagePath),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory TransactionImage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TransactionImage(
+      transactionId: serializer.fromJson<String>(json['transactionId']),
+      imagePath: serializer.fromJson<String>(json['imagePath']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'transactionId': serializer.toJson<String>(transactionId),
+      'imagePath': serializer.toJson<String>(imagePath),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  TransactionImage copyWith({
+    String? transactionId,
+    String? imagePath,
+    DateTime? updatedAt,
+  }) => TransactionImage(
+    transactionId: transactionId ?? this.transactionId,
+    imagePath: imagePath ?? this.imagePath,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  TransactionImage copyWithCompanion(TransactionImagesCompanion data) {
+    return TransactionImage(
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TransactionImage(')
+          ..write('transactionId: $transactionId, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(transactionId, imagePath, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TransactionImage &&
+          other.transactionId == this.transactionId &&
+          other.imagePath == this.imagePath &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TransactionImagesCompanion extends UpdateCompanion<TransactionImage> {
+  final Value<String> transactionId;
+  final Value<String> imagePath;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const TransactionImagesCompanion({
+    this.transactionId = const Value.absent(),
+    this.imagePath = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TransactionImagesCompanion.insert({
+    required String transactionId,
+    required String imagePath,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : transactionId = Value(transactionId),
+       imagePath = Value(imagePath),
+       updatedAt = Value(updatedAt);
+  static Insertable<TransactionImage> custom({
+    Expression<String>? transactionId,
+    Expression<String>? imagePath,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (imagePath != null) 'image_path': imagePath,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TransactionImagesCompanion copyWith({
+    Value<String>? transactionId,
+    Value<String>? imagePath,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return TransactionImagesCompanion(
+      transactionId: transactionId ?? this.transactionId,
+      imagePath: imagePath ?? this.imagePath,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<String>(transactionId.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TransactionImagesCompanion(')
+          ..write('transactionId: $transactionId, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2376,6 +3027,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $CategoryOverridesTable categoryOverrides =
       $CategoryOverridesTable(this);
+  late final $CategoryRulesTable categoryRules = $CategoryRulesTable(this);
+  late final $TransactionImagesTable transactionImages =
+      $TransactionImagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2384,6 +3038,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     accounts,
     transactions,
     categoryOverrides,
+    categoryRules,
+    transactionImages,
   ];
 }
 
@@ -3480,6 +4136,387 @@ typedef $$CategoryOverridesTableProcessedTableManager =
       CategoryOverride,
       PrefetchHooks Function()
     >;
+typedef $$CategoryRulesTableCreateCompanionBuilder =
+    CategoryRulesCompanion Function({
+      required String id,
+      required String matchText,
+      required String categoryName,
+      Value<String?> categoryGroup,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$CategoryRulesTableUpdateCompanionBuilder =
+    CategoryRulesCompanion Function({
+      Value<String> id,
+      Value<String> matchText,
+      Value<String> categoryName,
+      Value<String?> categoryGroup,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$CategoryRulesTableFilterComposer
+    extends Composer<_$AppDatabase, $CategoryRulesTable> {
+  $$CategoryRulesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get matchText => $composableBuilder(
+    column: $table.matchText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CategoryRulesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CategoryRulesTable> {
+  $$CategoryRulesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get matchText => $composableBuilder(
+    column: $table.matchText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CategoryRulesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CategoryRulesTable> {
+  $$CategoryRulesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get matchText =>
+      $composableBuilder(column: $table.matchText, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryName => $composableBuilder(
+    column: $table.categoryName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get categoryGroup => $composableBuilder(
+    column: $table.categoryGroup,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$CategoryRulesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CategoryRulesTable,
+          CategoryRule,
+          $$CategoryRulesTableFilterComposer,
+          $$CategoryRulesTableOrderingComposer,
+          $$CategoryRulesTableAnnotationComposer,
+          $$CategoryRulesTableCreateCompanionBuilder,
+          $$CategoryRulesTableUpdateCompanionBuilder,
+          (
+            CategoryRule,
+            BaseReferences<_$AppDatabase, $CategoryRulesTable, CategoryRule>,
+          ),
+          CategoryRule,
+          PrefetchHooks Function()
+        > {
+  $$CategoryRulesTableTableManager(_$AppDatabase db, $CategoryRulesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CategoryRulesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CategoryRulesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CategoryRulesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> matchText = const Value.absent(),
+                Value<String> categoryName = const Value.absent(),
+                Value<String?> categoryGroup = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CategoryRulesCompanion(
+                id: id,
+                matchText: matchText,
+                categoryName: categoryName,
+                categoryGroup: categoryGroup,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String matchText,
+                required String categoryName,
+                Value<String?> categoryGroup = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CategoryRulesCompanion.insert(
+                id: id,
+                matchText: matchText,
+                categoryName: categoryName,
+                categoryGroup: categoryGroup,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CategoryRulesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CategoryRulesTable,
+      CategoryRule,
+      $$CategoryRulesTableFilterComposer,
+      $$CategoryRulesTableOrderingComposer,
+      $$CategoryRulesTableAnnotationComposer,
+      $$CategoryRulesTableCreateCompanionBuilder,
+      $$CategoryRulesTableUpdateCompanionBuilder,
+      (
+        CategoryRule,
+        BaseReferences<_$AppDatabase, $CategoryRulesTable, CategoryRule>,
+      ),
+      CategoryRule,
+      PrefetchHooks Function()
+    >;
+typedef $$TransactionImagesTableCreateCompanionBuilder =
+    TransactionImagesCompanion Function({
+      required String transactionId,
+      required String imagePath,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$TransactionImagesTableUpdateCompanionBuilder =
+    TransactionImagesCompanion Function({
+      Value<String> transactionId,
+      Value<String> imagePath,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$TransactionImagesTableFilterComposer
+    extends Composer<_$AppDatabase, $TransactionImagesTable> {
+  $$TransactionImagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TransactionImagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TransactionImagesTable> {
+  $$TransactionImagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TransactionImagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TransactionImagesTable> {
+  $$TransactionImagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$TransactionImagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TransactionImagesTable,
+          TransactionImage,
+          $$TransactionImagesTableFilterComposer,
+          $$TransactionImagesTableOrderingComposer,
+          $$TransactionImagesTableAnnotationComposer,
+          $$TransactionImagesTableCreateCompanionBuilder,
+          $$TransactionImagesTableUpdateCompanionBuilder,
+          (
+            TransactionImage,
+            BaseReferences<
+              _$AppDatabase,
+              $TransactionImagesTable,
+              TransactionImage
+            >,
+          ),
+          TransactionImage,
+          PrefetchHooks Function()
+        > {
+  $$TransactionImagesTableTableManager(
+    _$AppDatabase db,
+    $TransactionImagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TransactionImagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TransactionImagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TransactionImagesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> transactionId = const Value.absent(),
+                Value<String> imagePath = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TransactionImagesCompanion(
+                transactionId: transactionId,
+                imagePath: imagePath,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String transactionId,
+                required String imagePath,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TransactionImagesCompanion.insert(
+                transactionId: transactionId,
+                imagePath: imagePath,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TransactionImagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TransactionImagesTable,
+      TransactionImage,
+      $$TransactionImagesTableFilterComposer,
+      $$TransactionImagesTableOrderingComposer,
+      $$TransactionImagesTableAnnotationComposer,
+      $$TransactionImagesTableCreateCompanionBuilder,
+      $$TransactionImagesTableUpdateCompanionBuilder,
+      (
+        TransactionImage,
+        BaseReferences<
+          _$AppDatabase,
+          $TransactionImagesTable,
+          TransactionImage
+        >,
+      ),
+      TransactionImage,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3490,4 +4527,8 @@ class $AppDatabaseManager {
       $$TransactionsTableTableManager(_db, _db.transactions);
   $$CategoryOverridesTableTableManager get categoryOverrides =>
       $$CategoryOverridesTableTableManager(_db, _db.categoryOverrides);
+  $$CategoryRulesTableTableManager get categoryRules =>
+      $$CategoryRulesTableTableManager(_db, _db.categoryRules);
+  $$TransactionImagesTableTableManager get transactionImages =>
+      $$TransactionImagesTableTableManager(_db, _db.transactionImages);
 }

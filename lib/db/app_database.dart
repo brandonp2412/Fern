@@ -69,13 +69,42 @@ class CategoryOverrides extends Table {
   Set<Column> get primaryKey => {transactionId};
 }
 
-@DriftDatabase(tables: [Accounts, Transactions, CategoryOverrides])
+@DataClassName('CategoryRule')
+class CategoryRules extends Table {
+  TextColumn get id => text()();
+  TextColumn get matchText => text()();
+  TextColumn get categoryName => text()();
+  TextColumn get categoryGroup => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class TransactionImages extends Table {
+  TextColumn get transactionId => text()();
+  TextColumn get imagePath => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {transactionId};
+}
+
+@DriftDatabase(
+  tables: [
+    Accounts,
+    Transactions,
+    CategoryOverrides,
+    CategoryRules,
+    TransactionImages,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -105,6 +134,12 @@ class AppDatabase extends _$AppDatabase {
             'ALTER TABLE category_overrides DROP COLUMN category_id',
           );
         }
+      },
+      from4To5: (m, schema) async {
+        await m.createTable(schema.categoryRules);
+      },
+      from5To6: (m, schema) async {
+        await m.createTable(schema.transactionImages);
       },
     ),
   );
@@ -279,6 +314,25 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<void> saveCategoryOverrides(
+    List<String> transactionIds,
+    String categoryName,
+    String? categoryGroup,
+  ) async {
+    final now = DateTime.now();
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(categoryOverrides, [
+        for (final id in transactionIds)
+          CategoryOverridesCompanion.insert(
+            transactionId: id,
+            categoryName: categoryName,
+            categoryGroup: Value(categoryGroup),
+            updatedAt: now,
+          ),
+      ]);
+    });
+  }
+
   Future<void> clearCategoryOverride(String transactionId) {
     return (delete(
       categoryOverrides,
@@ -288,6 +342,53 @@ class AppDatabase extends _$AppDatabase {
   Future<Map<String, CategoryOverride>> loadCategoryOverrides() async {
     final rows = await select(categoryOverrides).get();
     return {for (final r in rows) r.transactionId: r};
+  }
+
+  Future<void> saveCategoryRule(
+    String matchText,
+    String categoryName,
+    String? categoryGroup,
+  ) {
+    return into(categoryRules).insert(
+      CategoryRulesCompanion.insert(
+        id: '${DateTime.now().microsecondsSinceEpoch}',
+        matchText: matchText,
+        categoryName: categoryName,
+        categoryGroup: Value(categoryGroup),
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> deleteCategoryRule(String id) {
+    return (delete(categoryRules)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<List<CategoryRule>> loadCategoryRules() {
+    return (select(categoryRules)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  Future<void> saveTransactionImage(String transactionId, String imagePath) {
+    return into(transactionImages).insertOnConflictUpdate(
+      TransactionImagesCompanion.insert(
+        transactionId: transactionId,
+        imagePath: imagePath,
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> clearTransactionImage(String transactionId) {
+    return (delete(
+      transactionImages,
+    )..where((t) => t.transactionId.equals(transactionId))).go();
+  }
+
+  Future<Map<String, String>> loadTransactionImages() async {
+    final rows = await select(transactionImages).get();
+    return {for (final r in rows) r.transactionId: r.imagePath};
   }
 
   Stream<List<_StatRow>> _watchStat(
@@ -533,6 +634,8 @@ class AppDatabase extends _$AppDatabase {
       batch.deleteAll(accounts);
       batch.deleteAll(transactions);
       batch.deleteAll(categoryOverrides);
+      batch.deleteAll(categoryRules);
+      batch.deleteAll(transactionImages);
     });
   }
 }

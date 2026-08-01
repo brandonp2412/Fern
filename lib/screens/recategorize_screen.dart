@@ -262,6 +262,8 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
       }
     }
 
+    final matchLabel = tx.merchant?.name ?? tx.title;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -269,11 +271,17 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
         known: known,
         extra: akahuCats,
         current: currentName,
-        onPick: (cat) {
+        matchLabel: matchLabel.isNotEmpty ? matchLabel : null,
+        onPick: (cat, applyToFuture) {
           if (cat == 'Uncategorised') {
             widget.state.clearCategoryOverride(tx.id);
           } else {
-            widget.state.saveCategoryOverride(tx.id, cat);
+            widget.state.saveCategoryOverride(
+              tx.id,
+              cat,
+              applyToFuture: applyToFuture,
+              matchText: matchLabel,
+            );
           }
           Navigator.of(ctx).pop();
         },

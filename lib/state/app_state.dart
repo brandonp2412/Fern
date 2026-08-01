@@ -58,11 +58,13 @@ class AppState extends ChangeNotifier {
   int _txnLimit = 2000;
 
   static const _windowDays = 182;
-  static const _maxPages = 5;
+  static const _maxPages = 1;
   static const _staleAfter = Duration(minutes: 2);
   static const _monthCount = 6;
 
   Map<String, CategoryOverride> _categoryOverrides = {};
+  List<CategoryRule> categoryRules = [];
+  Map<String, String> _transactionImages = {};
 
   Map<String, double> _spendByGroup = {};
   StreamSubscription<List<Account>>? _accountsSub;
@@ -82,6 +84,8 @@ class AppState extends ChangeNotifier {
       : db = db ?? AppDatabase() {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
+    _loadCategoryRules();
+    _loadTransactionImages();
     _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
     _subscribeTransactions();
     _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(_onSpendByGroup);
@@ -109,6 +113,37 @@ class AppState extends ChangeNotifier {
     }
     _categoryOverrides = map;
     notifyListeners();
+  }
+
+  Future<void> _loadCategoryRules() async {
+    categoryRules = await db.loadCategoryRules();
+    notifyListeners();
+  }
+
+  Future<void> _loadTransactionImages() async {
+    _transactionImages = await db.loadTransactionImages();
+    notifyListeners();
+  }
+
+  String? imagePathFor(Transaction t) => _transactionImages[t.id];
+
+  Future<void> saveTransactionImage(String txnId, String imagePath) async {
+    await db.saveTransactionImage(txnId, imagePath);
+    await _loadTransactionImages();
+  }
+
+  Future<void> clearTransactionImage(String txnId) async {
+    await db.clearTransactionImage(txnId);
+    await _loadTransactionImages();
+  }
+
+  CategoryRule? _matchingRule(Transaction t) {
+    if (categoryRules.isEmpty) return null;
+    final hay = '${t.merchant?.name ?? ''} ${t.description}'.toLowerCase();
+    for (final rule in categoryRules) {
+      if (hay.contains(rule.matchText.toLowerCase())) return rule;
+    }
+    return null;
   }
 
   void _onAccountsRows(List<Account> rows) {
@@ -188,7 +223,7 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    _inFlight = _run();
+    _inFlight = _run(manual: force);
     try {
       await _inFlight!;
     } finally {
@@ -196,8 +231,8 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> _run() async {
-    refreshing = true;
+  Future<void> _run({bool manual = false}) async {
+    if (manual) refreshing = true;
     notifyListeners();
     try {
       final results = await Future.wait([api.getMe(), api.getAccounts()]);
@@ -299,6 +334,7 @@ class AppState extends ChangeNotifier {
 
   String? categoryNameFor(Transaction t) =>
       _categoryOverrides[t.id]?.categoryName ??
+      _matchingRule(t)?.categoryName ??
       t.category?.name ??
       t.autoCategoryName;
 
@@ -309,20 +345,47 @@ class AppState extends ChangeNotifier {
           AutoCategorizer.lookupGroup(override.categoryName) ??
           override.categoryName;
     }
+    final rule = _matchingRule(t);
+    if (rule != null) {
+      return rule.categoryGroup ??
+          AutoCategorizer.lookupGroup(rule.categoryName) ??
+          rule.categoryName;
+    }
     return t.category?.groupName ?? t.autoCategoryGroup;
   }
 
   bool isAutoCategory(Transaction t) =>
       !_categoryOverrides.containsKey(t.id) &&
+      _matchingRule(t) == null &&
       t.category == null &&
       t.autoCategoryName != null;
 
   bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
 
-  Future<void> saveCategoryOverride(String txnId, String catName) async {
+  Future<void> saveCategoryOverride(
+    String txnId,
+    String catName, {
+    bool applyToFuture = false,
+    String? matchText,
+  }) async {
     final group = AutoCategorizer.lookupGroup(catName) ?? catName;
     await db.saveCategoryOverride(txnId, catName, group);
     await _loadCategoryOverrides();
+    if (applyToFuture && matchText != null && matchText.trim().isNotEmpty) {
+      await db.saveCategoryRule(matchText.trim(), catName, group);
+      await _loadCategoryRules();
+    }
+  }
+
+  Future<void> saveCategoryOverrides(List<String> txnIds, String catName) async {
+    final group = AutoCategorizer.lookupGroup(catName) ?? catName;
+    await db.saveCategoryOverrides(txnIds, catName, group);
+    await _loadCategoryOverrides();
+  }
+
+  Future<void> deleteCategoryRule(String id) async {
+    await db.deleteCategoryRule(id);
+    await _loadCategoryRules();
   }
 
   Future<void> clearCategoryOverride(String transactionId) async {

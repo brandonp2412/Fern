@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/transaction.dart';
 import '../services/akahu_api.dart';
 import '../services/auto_categorizer.dart';
@@ -46,6 +50,26 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
     await widget.state.clearCategoryOverride(widget.tx.id);
   }
 
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (picked == null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final imagesDir = Directory('${dir.path}/txn_images');
+    await imagesDir.create(recursive: true);
+    final ext = picked.path.split('.').last;
+    final savedPath = '${imagesDir.path}/${widget.tx.id}.$ext';
+    await File(picked.path).copy(savedPath);
+    await widget.state.saveTransactionImage(widget.tx.id, savedPath);
+  }
+
+  Future<void> _clearImage() async {
+    await widget.state.clearTransactionImage(widget.tx.id);
+  }
+
   void _pickCategory() {
     final known = AutoCategorizer.categoriesByGroup;
     final currentName = widget.state.categoryNameFor(widget.tx);
@@ -59,6 +83,8 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
       }
     }
 
+    final matchLabel = widget.tx.merchant?.name ?? widget.tx.title;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -66,11 +92,17 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
         known: known,
         extra: akahuCats,
         current: currentName,
-        onPick: (cat) {
+        matchLabel: matchLabel.isNotEmpty ? matchLabel : null,
+        onPick: (cat, applyToFuture) {
           if (cat == 'Uncategorised') {
             widget.state.clearCategoryOverride(widget.tx.id);
           } else {
-            widget.state.saveCategoryOverride(widget.tx.id, cat);
+            widget.state.saveCategoryOverride(
+              widget.tx.id,
+              cat,
+              applyToFuture: applyToFuture,
+              matchText: matchLabel,
+            );
           }
           Navigator.of(ctx).pop();
         },
@@ -124,7 +156,36 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LogoAvatar(url: meta?.logo, size: 46),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    LogoAvatar(
+                      url: meta?.logo,
+                      filePath: state.imagePathFor(tx),
+                      size: 46,
+                    ),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: fern.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: fern.cream, width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 11,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -252,6 +313,17 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
               icon: Icon(Icons.undo, size: 18, color: fern.slate),
               label: Text(
                 'Revert to original category',
+                style: TextStyle(color: fern.slate),
+              ),
+            ),
+          ],
+          if (state.imagePathFor(tx) != null) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _clearImage,
+              icon: Icon(Icons.undo, size: 18, color: fern.slate),
+              label: Text(
+                'Remove custom image',
                 style: TextStyle(color: fern.slate),
               ),
             ),

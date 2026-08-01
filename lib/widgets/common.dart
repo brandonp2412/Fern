@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -39,12 +41,14 @@ class MoneyText extends StatelessWidget {
 
 class LogoAvatar extends StatelessWidget {
   final String? url;
+  final String? filePath;
   final IconData fallback;
   final double size;
 
   const LogoAvatar({
     super.key,
     this.url,
+    this.filePath,
     this.fallback = Icons.account_balance,
     this.size = 40,
   });
@@ -60,7 +64,15 @@ class LogoAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
       clipBehavior: Clip.antiAlias,
-      child: url != null && url!.isNotEmpty
+      child: filePath != null && filePath!.isNotEmpty
+          ? Image.file(
+              File(filePath!),
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, e, s) => _icon(fern),
+            )
+          : url != null && url!.isNotEmpty
           ? Image.network(
               url!,
               width: size,
@@ -257,7 +269,8 @@ class CategoryPicker extends StatefulWidget {
   final Map<String, List<String>> known;
   final List<String> extra;
   final String? current;
-  final ValueChanged<String> onPick;
+  final void Function(String category, bool applyToFuture) onPick;
+  final String? matchLabel;
 
   const CategoryPicker({
     super.key,
@@ -265,6 +278,7 @@ class CategoryPicker extends StatefulWidget {
     required this.extra,
     required this.current,
     required this.onPick,
+    this.matchLabel,
   });
 
   @override
@@ -274,6 +288,7 @@ class CategoryPicker extends StatefulWidget {
 class _CategoryPickerState extends State<CategoryPicker> {
   final _searchCtrl = TextEditingController();
   String _q = '';
+  bool _applyToFuture = false;
 
   @override
   void initState() {
@@ -327,6 +342,18 @@ class _CategoryPickerState extends State<CategoryPicker> {
               ),
             ),
           ),
+          if (widget.matchLabel != null)
+            CheckboxListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.only(left: 12, right: 16),
+              controlAffinity: ListTileControlAffinity.leading,
+              value: _applyToFuture,
+              onChanged: (v) => setState(() => _applyToFuture = v ?? false),
+              title: Text(
+                'Auto-categorize future "${widget.matchLabel}" transactions',
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+            ),
           Expanded(
             child: ListView(
               controller: scroll,
@@ -395,7 +422,10 @@ class _CategoryPickerState extends State<CategoryPicker> {
         trailing: selected
             ? Icon(Icons.check, size: 18, color: fern.green)
             : null,
-        onTap: () => widget.onPick(name),
+        onTap: () => widget.onPick(
+          name,
+          name != 'Uncategorised' && _applyToFuture,
+        ),
       ),
     );
   }

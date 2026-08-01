@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
+import 'category_rules_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppState state;
@@ -132,6 +133,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: settings.setShowDebt,
                   ),
                 ],
+              ),
+            ),
+            const SectionHeader('Categorization'),
+            Card(
+              child: ListTile(
+                title: const Text('Auto-categorize rules',
+                    style: TextStyle(
+                        fontSize: 14.5, fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                    'Manage rules that auto-categorize future transactions',
+                    style: TextStyle(fontSize: 12, color: fern.slate)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CategoryRulesScreen(state: state),
+                  ),
+                ),
               ),
             ),
             const SectionHeader('Navigation'),

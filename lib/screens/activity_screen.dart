@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
+import '../services/auto_categorizer.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
@@ -26,6 +27,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String _sortOrder = 'date_desc';
   Set<String> _selectedCategories = {};
   Timer? _debounce;
+  bool _selectionMode = false;
+  Set<String> _selectedTxnIds = {};
 
   @override
   void initState() {
@@ -112,13 +115,80 @@ class _ActivityScreenState extends State<ActivityScreen> {
     return map;
   }
 
+  void _enterSelectionMode(String txnId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedTxnIds = {txnId};
+    });
+  }
+
+  void _toggleSelection(String txnId) {
+    setState(() {
+      if (_selectedTxnIds.contains(txnId)) {
+        _selectedTxnIds = {..._selectedTxnIds}..remove(txnId);
+      } else {
+        _selectedTxnIds = {..._selectedTxnIds, txnId};
+      }
+      if (_selectedTxnIds.isEmpty) _selectionMode = false;
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedTxnIds = {};
+    });
+  }
+
+  void _bulkCategorize() {
+    final known = AutoCategorizer.categoriesByGroup;
+    final akahuCats = <String>[];
+    for (final t in widget.state.transactions) {
+      if (t.category?.name != null &&
+          !known.values.any((list) => list.contains(t.category!.name)) &&
+          !akahuCats.contains(t.category!.name)) {
+        akahuCats.add(t.category!.name);
+      }
+    }
+    final ids = _selectedTxnIds.toList();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => CategoryPicker(
+        known: known,
+        extra: akahuCats,
+        current: null,
+        onPick: (cat, _) async {
+          Navigator.of(ctx).pop();
+          await widget.state.saveCategoryOverrides(ids, cat);
+          if (mounted) _exitSelectionMode();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Activity'),
-        actions: [if (widget.state.refreshing) const AppBarSpinner()],
-      ),
+      appBar: _selectionMode
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectionMode,
+              ),
+              title: Text('${_selectedTxnIds.length} selected'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.category_outlined),
+                  tooltip: 'Set category',
+                  onPressed: _selectedTxnIds.isEmpty ? null : _bulkCategorize,
+                ),
+              ],
+            )
+          : AppBar(
+              title: const Text('Activity'),
+              actions: [if (widget.state.refreshing) const AppBarSpinner()],
+            ),
       body: Column(
         children: [
           Padding(
@@ -161,13 +231,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   'Money in',
                   _direction == 'in',
                   () => setState(() => _direction = 'in'),
+                  icon: Icons.call_received,
                 ),
                 _chip(
                   'Money out',
                   _direction == 'out',
                   () => setState(() => _direction = 'out'),
+                  icon: Icons.call_made,
                 ),
-                const SizedBox(width: 8),
                 _categoryButton(),
                 _sortButton(),
               ],
@@ -180,12 +251,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _chip(String label, bool selected, VoidCallback onTap) {
+  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
+        avatar: icon != null ? Icon(icon, size: 16) : null,
         onSelected: (_) => onTap(),
         showCheckmark: false,
         labelStyle: TextStyle(
@@ -484,8 +556,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
                         TxnTile(
                           tx: tx,
                           categoryGroupOverride: state.categoryGroupFor(tx),
+                          imagePath: state.imagePathFor(tx),
                           masked: masked,
-                          onTap: () => showTxnDetail(context, state, tx),
+                          selectionMode: _selectionMode,
+                          selected: _selectedTxnIds.contains(tx.id),
+                          onTap: () => _selectionMode
+                              ? _toggleSelection(tx.id)
+                              : showTxnDetail(context, state, tx),
+                          onLongPress: _selectionMode
+                              ? null
+                              : () => _enterSelectionMode(tx.id),
                         ),
                     ],
                   ),
