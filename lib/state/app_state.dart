@@ -64,7 +64,7 @@ class AppState extends ChangeNotifier {
 
   Map<String, CategoryOverride> _categoryOverrides = {};
   List<CategoryRule> categoryRules = [];
-  Map<String, String> _transactionImages = {};
+  List<ImageRule> imageRules = [];
 
   Map<String, double> _spendByGroup = {};
   StreamSubscription<List<Account>>? _accountsSub;
@@ -85,7 +85,7 @@ class AppState extends ChangeNotifier {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
     _loadCategoryRules();
-    _loadTransactionImages();
+    _loadImageRules();
     _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
     _subscribeTransactions();
     _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(_onSpendByGroup);
@@ -120,26 +120,58 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadTransactionImages() async {
-    _transactionImages = await db.loadTransactionImages();
+  Future<void> _loadImageRules() async {
+    imageRules = await db.loadImageRules();
     notifyListeners();
   }
 
-  String? imagePathFor(Transaction t) => _transactionImages[t.id];
+  static String _hay(Transaction t) =>
+      [t.merchant?.name, t.description].where((s) => s != null && s.isNotEmpty).join(' ').toLowerCase();
 
-  Future<void> saveTransactionImage(String txnId, String imagePath) async {
-    await db.saveTransactionImage(txnId, imagePath);
-    await _loadTransactionImages();
+  String matchTextFor(Transaction t) => _hay(t);
+
+  String? imagePathFor(Transaction t) {
+    final hay = _hay(t);
+    ImageRule? contains;
+    for (final rule in imageRules) {
+      final needle = rule.matchText.toLowerCase();
+      if (rule.exact) {
+        if (hay == needle) return rule.imagePath;
+      } else if (contains == null && hay.contains(needle)) {
+        contains = rule;
+      }
+    }
+    return contains?.imagePath;
   }
 
-  Future<void> clearTransactionImage(String txnId) async {
-    await db.clearTransactionImage(txnId);
-    await _loadTransactionImages();
+  Future<void> saveTransactionImage(
+    Transaction tx,
+    String imagePath, {
+    required bool exact,
+    String? matchText,
+  }) async {
+    final text = (matchText ?? _hay(tx)).trim();
+    if (text.isEmpty) return;
+    await db.saveImageRule(text, exact, imagePath);
+    await _loadImageRules();
+  }
+
+  Future<void> clearTransactionImage(Transaction tx) async {
+    final hay = _hay(tx);
+    final matches = imageRules.where(
+      (r) => r.exact
+          ? hay == r.matchText.toLowerCase()
+          : hay.contains(r.matchText.toLowerCase()),
+    );
+    for (final r in matches) {
+      await db.deleteImageRule(r.id);
+    }
+    await _loadImageRules();
   }
 
   CategoryRule? _matchingRule(Transaction t) {
     if (categoryRules.isEmpty) return null;
-    final hay = '${t.merchant?.name ?? ''} ${t.description}'.toLowerCase();
+    final hay = _hay(t);
     for (final rule in categoryRules) {
       if (hay.contains(rule.matchText.toLowerCase())) return rule;
     }

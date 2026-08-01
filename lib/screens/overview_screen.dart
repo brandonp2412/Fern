@@ -90,6 +90,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                                 categoryGroupOverride: state.categoryGroupFor(
                                   tx,
                                 ),
+                                imagePath: state.imagePathFor(tx),
                                 masked: masked,
                                 onTap: () => showTxnDetail(context, state, tx),
                               ),

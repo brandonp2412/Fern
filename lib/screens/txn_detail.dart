@@ -63,11 +63,20 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
     final ext = picked.path.split('.').last;
     final savedPath = '${imagesDir.path}/${widget.tx.id}.$ext';
     await File(picked.path).copy(savedPath);
-    await widget.state.saveTransactionImage(widget.tx.id, savedPath);
+    if (!mounted) return;
+    final matchText = (widget.tx.merchant?.name ?? widget.tx.title)
+        .trim()
+        .toLowerCase();
+    await widget.state.saveTransactionImage(
+      widget.tx,
+      savedPath,
+      exact: false,
+      matchText: matchText,
+    );
   }
 
   Future<void> _clearImage() async {
-    await widget.state.clearTransactionImage(widget.tx.id);
+    await widget.state.clearTransactionImage(widget.tx);
   }
 
   void _pickCategory() {
