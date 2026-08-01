@@ -72,6 +72,25 @@ void main() {
     expect(find.byType(RecategorizeScreen), findsOneWidget);
   });
 
+  testWidgets(
+    'a transaction just after local midnight on the 1st still counts as spending this month',
+    (tester) async {
+      final now = DateTime.now();
+      final localFirstOfMonth = DateTime(now.year, now.month, 1, 0, 30);
+      final state = await seededState(
+        tester: tester,
+        accounts: [anzEveryday()],
+        transactions: [
+          mcdonaldsBurger(date: localFirstOfMonth.toUtc().toIso8601String()),
+        ],
+      );
+      await _pump(tester, state);
+
+      expect(find.text('No spending this month'), findsNothing);
+      expect(find.text('Lifestyle'), findsOneWidget);
+    },
+  );
+
   testWidgets('the spend card breaks down real category groups', (tester) async {
     final state = await seededState(
       tester: tester,
