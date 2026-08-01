@@ -406,11 +406,11 @@ class AppDatabase extends _$AppDatabase {
     final firstKey =
         '${first.year.toString().padLeft(4, '0')}-${first.month.toString().padLeft(2, '0')}';
     return _watchStat(
-      'SELECT substr(t.date, 1, 7) AS k,'
+      'SELECT strftime(\'%Y-%m\', t.date, \'localtime\') AS k,'
       ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
       ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
       ' FROM transactions t'
-      ' WHERE substr(t.date, 1, 7) >= \'$firstKey\''
+      ' WHERE strftime(\'%Y-%m\', t.date, \'localtime\') >= \'$firstKey\''
       '${_excludeTransfersWhere()}'
       ' GROUP BY k ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
@@ -446,10 +446,10 @@ class AppDatabase extends _$AppDatabase {
     final startDate =
         '${start.year.toString().padLeft(4, '0')}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
     return _watchStat(
-      'SELECT date(substr(t.date, 1, 10), \'-\' || ((strftime(\'%w\', substr(t.date, 1, 10)) + 6) % 7) || \' days\') AS k,'
+      'SELECT date(date(t.date, \'localtime\'), \'-\' || ((strftime(\'%w\', date(t.date, \'localtime\')) + 6) % 7) || \' days\') AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
-      ' WHERE substr(t.date, 1, 10) >= \'$startDate\''
+      ' WHERE date(t.date, \'localtime\') >= \'$startDate\''
       ' AND t.amount < 0'
       ' GROUP BY k'
       ' ORDER BY k',
@@ -477,14 +477,14 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<Map<String, double>> watchMonthlySpendByGroup() {
     final now = DateTime.now();
-    final monthKey =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
+    final start = DateTime(now.year, now.month, 1).toUtc().toIso8601String();
+    final end = DateTime(now.year, now.month + 1, 1).toUtc().toIso8601String();
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
       ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-      ' WHERE substr(t.date, 1, 7) = \'$monthKey\''
+      ' WHERE t.date >= \'$start\' AND t.date < \'$end\''
       ' AND t.amount < 0'
       ' GROUP BY k'
       ' ORDER BY total DESC'
@@ -501,10 +501,10 @@ class AppDatabase extends _$AppDatabase {
   String _dateWhere({DateTime? start, DateTime? end}) {
     final parts = <String>[];
     if (start != null) {
-      parts.add('substr(t.date, 1, 10) >= \'${_fmtDate(start)}\'');
+      parts.add('date(t.date, \'localtime\') >= \'${_fmtDate(start)}\'');
     }
     if (end != null) {
-      parts.add('substr(t.date, 1, 10) <= \'${_fmtDate(end)}\'');
+      parts.add('date(t.date, \'localtime\') <= \'${_fmtDate(end)}\'');
     }
     if (parts.isEmpty) return '1=1';
     return parts.join(' AND ');
@@ -547,7 +547,7 @@ class AppDatabase extends _$AppDatabase {
         ? _excludeTransfersWhere()
         : '';
     return _watchStat(
-      'SELECT substr(t.date, 1, 7) AS k,'
+      'SELECT strftime(\'%Y-%m\', t.date, \'localtime\') AS k,'
       ' COALESCE(SUM(CASE WHEN t.amount >= 0 THEN CAST(t.amount AS REAL) ELSE 0 END), 0) AS income,'
       ' COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(CAST(t.amount AS REAL)) ELSE 0 END), 0) AS expense'
       ' FROM transactions t'
@@ -594,7 +594,7 @@ class AppDatabase extends _$AppDatabase {
     final where = _dateWhere(start: start, end: end);
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
     return _watchStat(
-      'SELECT date(substr(t.date, 1, 10), \'-\' || ((strftime(\'%w\', substr(t.date, 1, 10)) + 6) % 7) || \' days\') AS k,'
+      'SELECT date(date(t.date, \'localtime\'), \'-\' || ((strftime(\'%w\', date(t.date, \'localtime\')) + 6) % 7) || \' days\') AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
       ' WHERE t.amount < 0 AND $where$catWhere'

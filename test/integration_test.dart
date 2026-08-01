@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:drift/drift.dart' show DatabaseConnection;
+import 'package:drift/native.dart';
 import 'package:test/test.dart';
+import 'package:fern/db/app_database.dart';
 import 'package:fern/models/account.dart';
 import 'package:fern/models/transaction.dart';
 import 'package:fern/models/user.dart';
@@ -133,6 +136,82 @@ void main() {
       final badApi = AkahuApi(userToken: 'bad_token', appToken: appToken!);
       expect(() => badApi.getAccounts(), throwsA(isA<ApiException>()));
     });
+
+    // The three tests below all pin themselves to the same known,
+    // already-happened boundary case rather than "the current month" or
+    // "today": three real transactions on this account are dated
+    // 2026-07-31T12:00:00.000Z UTC, which is midnight NZST on 2026-08-01 —
+    // i.e. their raw UTC date is July but their local date is August 1st.
+    // Verified directly against the Akahu API on 2026-08-01:
+    //   - a Lifestyle-group transaction of $18.71
+    //   - a Transport-group transaction of $4.99
+    //   (total $23.70)
+    // Any query that buckets by raw UTC date instead of local date will
+    // drop these into July and fail these assertions.
+
+    test(
+      'Overview "spending this month" includes the Jul 31 UTC / Aug 1 NZST transactions',
+      () async {
+        final page = await api.getTransactions(start: '2026-07-29');
+
+        final db = AppDatabase.forTesting(
+          DatabaseConnection(
+            NativeDatabase.memory(),
+            closeStreamsSynchronously: true,
+          ),
+        );
+        addTearDown(() => db.close());
+        await db.saveTransactions(page.items);
+
+        final grouped = await db.watchMonthlySpendByGroup().first;
+
+        expect(grouped['Lifestyle'], closeTo(18.71, 0.01));
+        expect(grouped['Transport'], closeTo(4.99, 0.01));
+      },
+    );
+
+    test(
+      'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to August, not July',
+      () async {
+        final page = await api.getTransactions(start: '2026-07-29');
+
+        final db = AppDatabase.forTesting(
+          DatabaseConnection(
+            NativeDatabase.memory(),
+            closeStreamsSynchronously: true,
+          ),
+        );
+        addTearDown(() => db.close());
+        await db.saveTransactions(page.items);
+
+        final monthly = await db.watchMonthlyTotals(2).first;
+
+        expect(monthly['2026-08']?.$2, closeTo(23.70, 0.01));
+      },
+    );
+
+    test(
+      '_dateWhere-backed queries (queryCategoryTotals) attribute the Jul 31 UTC '
+      'transactions to the Aug 1 local day',
+      () async {
+        final page = await api.getTransactions(start: '2026-07-29');
+
+        final db = AppDatabase.forTesting(
+          DatabaseConnection(
+            NativeDatabase.memory(),
+            closeStreamsSynchronously: true,
+          ),
+        );
+        addTearDown(() => db.close());
+        await db.saveTransactions(page.items);
+
+        final categories =
+            await db.queryCategoryTotals(start: DateTime(2026, 8, 1)).first;
+
+        expect(categories['Lifestyle'], closeTo(18.71, 0.01));
+        expect(categories['Transport'], closeTo(4.99, 0.01));
+      },
+    );
   });
 
   group('model parsing from raw JSON', () {
