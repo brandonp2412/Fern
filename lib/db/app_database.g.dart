@@ -2745,22 +2745,44 @@ class CategoryRulesCompanion extends UpdateCompanion<CategoryRule> {
   }
 }
 
-class $TransactionImagesTable extends TransactionImages
-    with TableInfo<$TransactionImagesTable, TransactionImage> {
+class $ImageRulesTable extends ImageRules
+    with TableInfo<$ImageRulesTable, ImageRule> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $TransactionImagesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
-    'transactionId',
-  );
+  $ImageRulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<String> transactionId = GeneratedColumn<String>(
-    'transaction_id',
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _matchTextMeta = const VerificationMeta(
+    'matchText',
+  );
+  @override
+  late final GeneratedColumn<String> matchText = GeneratedColumn<String>(
+    'match_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _exactMeta = const VerificationMeta('exact');
+  @override
+  late final GeneratedColumn<bool> exact = GeneratedColumn<bool>(
+    'exact',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("exact" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
   );
   static const VerificationMeta _imagePathMeta = const VerificationMeta(
     'imagePath',
@@ -2773,41 +2795,55 @@ class $TransactionImagesTable extends TransactionImages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
   );
   @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [transactionId, imagePath, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    matchText,
+    exact,
+    imagePath,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'transaction_images';
+  static const String $name = 'image_rules';
   @override
   VerificationContext validateIntegrity(
-    Insertable<TransactionImage> instance, {
+    Insertable<ImageRule> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('transaction_id')) {
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('match_text')) {
       context.handle(
-        _transactionIdMeta,
-        transactionId.isAcceptableOrUnknown(
-          data['transaction_id']!,
-          _transactionIdMeta,
-        ),
+        _matchTextMeta,
+        matchText.isAcceptableOrUnknown(data['match_text']!, _matchTextMeta),
       );
     } else if (isInserting) {
-      context.missing(_transactionIdMeta);
+      context.missing(_matchTextMeta);
+    }
+    if (data.containsKey('exact')) {
+      context.handle(
+        _exactMeta,
+        exact.isAcceptableOrUnknown(data['exact']!, _exactMeta),
+      );
     }
     if (data.containsKey('image_path')) {
       context.handle(
@@ -2817,175 +2853,217 @@ class $TransactionImagesTable extends TransactionImages
     } else if (isInserting) {
       context.missing(_imagePathMeta);
     }
-    if (data.containsKey('updated_at')) {
+    if (data.containsKey('created_at')) {
       context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     } else if (isInserting) {
-      context.missing(_updatedAtMeta);
+      context.missing(_createdAtMeta);
     }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {transactionId};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  TransactionImage map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ImageRule map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return TransactionImage(
-      transactionId: attachedDatabase.typeMapping.read(
+    return ImageRule(
+      id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}transaction_id'],
+        data['${effectivePrefix}id'],
+      )!,
+      matchText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}match_text'],
+      )!,
+      exact: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}exact'],
       )!,
       imagePath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}image_path'],
       )!,
-      updatedAt: attachedDatabase.typeMapping.read(
+      createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
+        data['${effectivePrefix}created_at'],
       )!,
     );
   }
 
   @override
-  $TransactionImagesTable createAlias(String alias) {
-    return $TransactionImagesTable(attachedDatabase, alias);
+  $ImageRulesTable createAlias(String alias) {
+    return $ImageRulesTable(attachedDatabase, alias);
   }
 }
 
-class TransactionImage extends DataClass
-    implements Insertable<TransactionImage> {
-  final String transactionId;
+class ImageRule extends DataClass implements Insertable<ImageRule> {
+  final String id;
+  final String matchText;
+  final bool exact;
   final String imagePath;
-  final DateTime updatedAt;
-  const TransactionImage({
-    required this.transactionId,
+  final DateTime createdAt;
+  const ImageRule({
+    required this.id,
+    required this.matchText,
+    required this.exact,
     required this.imagePath,
-    required this.updatedAt,
+    required this.createdAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['transaction_id'] = Variable<String>(transactionId);
+    map['id'] = Variable<String>(id);
+    map['match_text'] = Variable<String>(matchText);
+    map['exact'] = Variable<bool>(exact);
     map['image_path'] = Variable<String>(imagePath);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
-  TransactionImagesCompanion toCompanion(bool nullToAbsent) {
-    return TransactionImagesCompanion(
-      transactionId: Value(transactionId),
+  ImageRulesCompanion toCompanion(bool nullToAbsent) {
+    return ImageRulesCompanion(
+      id: Value(id),
+      matchText: Value(matchText),
+      exact: Value(exact),
       imagePath: Value(imagePath),
-      updatedAt: Value(updatedAt),
+      createdAt: Value(createdAt),
     );
   }
 
-  factory TransactionImage.fromJson(
+  factory ImageRule.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return TransactionImage(
-      transactionId: serializer.fromJson<String>(json['transactionId']),
+    return ImageRule(
+      id: serializer.fromJson<String>(json['id']),
+      matchText: serializer.fromJson<String>(json['matchText']),
+      exact: serializer.fromJson<bool>(json['exact']),
       imagePath: serializer.fromJson<String>(json['imagePath']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'transactionId': serializer.toJson<String>(transactionId),
+      'id': serializer.toJson<String>(id),
+      'matchText': serializer.toJson<String>(matchText),
+      'exact': serializer.toJson<bool>(exact),
       'imagePath': serializer.toJson<String>(imagePath),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
-  TransactionImage copyWith({
-    String? transactionId,
+  ImageRule copyWith({
+    String? id,
+    String? matchText,
+    bool? exact,
     String? imagePath,
-    DateTime? updatedAt,
-  }) => TransactionImage(
-    transactionId: transactionId ?? this.transactionId,
+    DateTime? createdAt,
+  }) => ImageRule(
+    id: id ?? this.id,
+    matchText: matchText ?? this.matchText,
+    exact: exact ?? this.exact,
     imagePath: imagePath ?? this.imagePath,
-    updatedAt: updatedAt ?? this.updatedAt,
+    createdAt: createdAt ?? this.createdAt,
   );
-  TransactionImage copyWithCompanion(TransactionImagesCompanion data) {
-    return TransactionImage(
-      transactionId: data.transactionId.present
-          ? data.transactionId.value
-          : this.transactionId,
+  ImageRule copyWithCompanion(ImageRulesCompanion data) {
+    return ImageRule(
+      id: data.id.present ? data.id.value : this.id,
+      matchText: data.matchText.present ? data.matchText.value : this.matchText,
+      exact: data.exact.present ? data.exact.value : this.exact,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('TransactionImage(')
-          ..write('transactionId: $transactionId, ')
+    return (StringBuffer('ImageRule(')
+          ..write('id: $id, ')
+          ..write('matchText: $matchText, ')
+          ..write('exact: $exact, ')
           ..write('imagePath: $imagePath, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(transactionId, imagePath, updatedAt);
+  int get hashCode => Object.hash(id, matchText, exact, imagePath, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is TransactionImage &&
-          other.transactionId == this.transactionId &&
+      (other is ImageRule &&
+          other.id == this.id &&
+          other.matchText == this.matchText &&
+          other.exact == this.exact &&
           other.imagePath == this.imagePath &&
-          other.updatedAt == this.updatedAt);
+          other.createdAt == this.createdAt);
 }
 
-class TransactionImagesCompanion extends UpdateCompanion<TransactionImage> {
-  final Value<String> transactionId;
+class ImageRulesCompanion extends UpdateCompanion<ImageRule> {
+  final Value<String> id;
+  final Value<String> matchText;
+  final Value<bool> exact;
   final Value<String> imagePath;
-  final Value<DateTime> updatedAt;
+  final Value<DateTime> createdAt;
   final Value<int> rowid;
-  const TransactionImagesCompanion({
-    this.transactionId = const Value.absent(),
+  const ImageRulesCompanion({
+    this.id = const Value.absent(),
+    this.matchText = const Value.absent(),
+    this.exact = const Value.absent(),
     this.imagePath = const Value.absent(),
-    this.updatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  TransactionImagesCompanion.insert({
-    required String transactionId,
+  ImageRulesCompanion.insert({
+    required String id,
+    required String matchText,
+    this.exact = const Value.absent(),
     required String imagePath,
-    required DateTime updatedAt,
+    required DateTime createdAt,
     this.rowid = const Value.absent(),
-  }) : transactionId = Value(transactionId),
+  }) : id = Value(id),
+       matchText = Value(matchText),
        imagePath = Value(imagePath),
-       updatedAt = Value(updatedAt);
-  static Insertable<TransactionImage> custom({
-    Expression<String>? transactionId,
+       createdAt = Value(createdAt);
+  static Insertable<ImageRule> custom({
+    Expression<String>? id,
+    Expression<String>? matchText,
+    Expression<bool>? exact,
     Expression<String>? imagePath,
-    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (transactionId != null) 'transaction_id': transactionId,
+      if (id != null) 'id': id,
+      if (matchText != null) 'match_text': matchText,
+      if (exact != null) 'exact': exact,
       if (imagePath != null) 'image_path': imagePath,
-      if (updatedAt != null) 'updated_at': updatedAt,
+      if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  TransactionImagesCompanion copyWith({
-    Value<String>? transactionId,
+  ImageRulesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? matchText,
+    Value<bool>? exact,
     Value<String>? imagePath,
-    Value<DateTime>? updatedAt,
+    Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
-    return TransactionImagesCompanion(
-      transactionId: transactionId ?? this.transactionId,
+    return ImageRulesCompanion(
+      id: id ?? this.id,
+      matchText: matchText ?? this.matchText,
+      exact: exact ?? this.exact,
       imagePath: imagePath ?? this.imagePath,
-      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2993,14 +3071,20 @@ class TransactionImagesCompanion extends UpdateCompanion<TransactionImage> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (transactionId.present) {
-      map['transaction_id'] = Variable<String>(transactionId.value);
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (matchText.present) {
+      map['match_text'] = Variable<String>(matchText.value);
+    }
+    if (exact.present) {
+      map['exact'] = Variable<bool>(exact.value);
     }
     if (imagePath.present) {
       map['image_path'] = Variable<String>(imagePath.value);
     }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -3010,10 +3094,12 @@ class TransactionImagesCompanion extends UpdateCompanion<TransactionImage> {
 
   @override
   String toString() {
-    return (StringBuffer('TransactionImagesCompanion(')
-          ..write('transactionId: $transactionId, ')
+    return (StringBuffer('ImageRulesCompanion(')
+          ..write('id: $id, ')
+          ..write('matchText: $matchText, ')
+          ..write('exact: $exact, ')
           ..write('imagePath: $imagePath, ')
-          ..write('updatedAt: $updatedAt, ')
+          ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3028,8 +3114,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CategoryOverridesTable categoryOverrides =
       $CategoryOverridesTable(this);
   late final $CategoryRulesTable categoryRules = $CategoryRulesTable(this);
-  late final $TransactionImagesTable transactionImages =
-      $TransactionImagesTable(this);
+  late final $ImageRulesTable imageRules = $ImageRulesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3039,7 +3124,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     transactions,
     categoryOverrides,
     categoryRules,
-    transactionImages,
+    imageRules,
   ];
 }
 
@@ -4340,32 +4425,46 @@ typedef $$CategoryRulesTableProcessedTableManager =
       CategoryRule,
       PrefetchHooks Function()
     >;
-typedef $$TransactionImagesTableCreateCompanionBuilder =
-    TransactionImagesCompanion Function({
-      required String transactionId,
+typedef $$ImageRulesTableCreateCompanionBuilder =
+    ImageRulesCompanion Function({
+      required String id,
+      required String matchText,
+      Value<bool> exact,
       required String imagePath,
-      required DateTime updatedAt,
+      required DateTime createdAt,
       Value<int> rowid,
     });
-typedef $$TransactionImagesTableUpdateCompanionBuilder =
-    TransactionImagesCompanion Function({
-      Value<String> transactionId,
+typedef $$ImageRulesTableUpdateCompanionBuilder =
+    ImageRulesCompanion Function({
+      Value<String> id,
+      Value<String> matchText,
+      Value<bool> exact,
       Value<String> imagePath,
-      Value<DateTime> updatedAt,
+      Value<DateTime> createdAt,
       Value<int> rowid,
     });
 
-class $$TransactionImagesTableFilterComposer
-    extends Composer<_$AppDatabase, $TransactionImagesTable> {
-  $$TransactionImagesTableFilterComposer({
+class $$ImageRulesTableFilterComposer
+    extends Composer<_$AppDatabase, $ImageRulesTable> {
+  $$ImageRulesTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get transactionId => $composableBuilder(
-    column: $table.transactionId,
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get matchText => $composableBuilder(
+    column: $table.matchText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get exact => $composableBuilder(
+    column: $table.exact,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4374,23 +4473,33 @@ class $$TransactionImagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
 }
 
-class $$TransactionImagesTableOrderingComposer
-    extends Composer<_$AppDatabase, $TransactionImagesTable> {
-  $$TransactionImagesTableOrderingComposer({
+class $$ImageRulesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ImageRulesTable> {
+  $$ImageRulesTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get transactionId => $composableBuilder(
-    column: $table.transactionId,
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get matchText => $composableBuilder(
+    column: $table.matchText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get exact => $composableBuilder(
+    column: $table.exact,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4399,93 +4508,96 @@ class $$TransactionImagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
 }
 
-class $$TransactionImagesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TransactionImagesTable> {
-  $$TransactionImagesTableAnnotationComposer({
+class $$ImageRulesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ImageRulesTable> {
+  $$ImageRulesTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get transactionId => $composableBuilder(
-    column: $table.transactionId,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get matchText =>
+      $composableBuilder(column: $table.matchText, builder: (column) => column);
+
+  GeneratedColumn<bool> get exact =>
+      $composableBuilder(column: $table.exact, builder: (column) => column);
 
   GeneratedColumn<String> get imagePath =>
       $composableBuilder(column: $table.imagePath, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 }
 
-class $$TransactionImagesTableTableManager
+class $$ImageRulesTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $TransactionImagesTable,
-          TransactionImage,
-          $$TransactionImagesTableFilterComposer,
-          $$TransactionImagesTableOrderingComposer,
-          $$TransactionImagesTableAnnotationComposer,
-          $$TransactionImagesTableCreateCompanionBuilder,
-          $$TransactionImagesTableUpdateCompanionBuilder,
+          $ImageRulesTable,
+          ImageRule,
+          $$ImageRulesTableFilterComposer,
+          $$ImageRulesTableOrderingComposer,
+          $$ImageRulesTableAnnotationComposer,
+          $$ImageRulesTableCreateCompanionBuilder,
+          $$ImageRulesTableUpdateCompanionBuilder,
           (
-            TransactionImage,
-            BaseReferences<
-              _$AppDatabase,
-              $TransactionImagesTable,
-              TransactionImage
-            >,
+            ImageRule,
+            BaseReferences<_$AppDatabase, $ImageRulesTable, ImageRule>,
           ),
-          TransactionImage,
+          ImageRule,
           PrefetchHooks Function()
         > {
-  $$TransactionImagesTableTableManager(
-    _$AppDatabase db,
-    $TransactionImagesTable table,
-  ) : super(
+  $$ImageRulesTableTableManager(_$AppDatabase db, $ImageRulesTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$TransactionImagesTableFilterComposer($db: db, $table: table),
+              $$ImageRulesTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$TransactionImagesTableOrderingComposer($db: db, $table: table),
+              $$ImageRulesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$TransactionImagesTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
+              $$ImageRulesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> transactionId = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> matchText = const Value.absent(),
+                Value<bool> exact = const Value.absent(),
                 Value<String> imagePath = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => TransactionImagesCompanion(
-                transactionId: transactionId,
+              }) => ImageRulesCompanion(
+                id: id,
+                matchText: matchText,
+                exact: exact,
                 imagePath: imagePath,
-                updatedAt: updatedAt,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                required String transactionId,
+                required String id,
+                required String matchText,
+                Value<bool> exact = const Value.absent(),
                 required String imagePath,
-                required DateTime updatedAt,
+                required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
-              }) => TransactionImagesCompanion.insert(
-                transactionId: transactionId,
+              }) => ImageRulesCompanion.insert(
+                id: id,
+                matchText: matchText,
+                exact: exact,
                 imagePath: imagePath,
-                updatedAt: updatedAt,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4496,25 +4608,18 @@ class $$TransactionImagesTableTableManager
       );
 }
 
-typedef $$TransactionImagesTableProcessedTableManager =
+typedef $$ImageRulesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $TransactionImagesTable,
-      TransactionImage,
-      $$TransactionImagesTableFilterComposer,
-      $$TransactionImagesTableOrderingComposer,
-      $$TransactionImagesTableAnnotationComposer,
-      $$TransactionImagesTableCreateCompanionBuilder,
-      $$TransactionImagesTableUpdateCompanionBuilder,
-      (
-        TransactionImage,
-        BaseReferences<
-          _$AppDatabase,
-          $TransactionImagesTable,
-          TransactionImage
-        >,
-      ),
-      TransactionImage,
+      $ImageRulesTable,
+      ImageRule,
+      $$ImageRulesTableFilterComposer,
+      $$ImageRulesTableOrderingComposer,
+      $$ImageRulesTableAnnotationComposer,
+      $$ImageRulesTableCreateCompanionBuilder,
+      $$ImageRulesTableUpdateCompanionBuilder,
+      (ImageRule, BaseReferences<_$AppDatabase, $ImageRulesTable, ImageRule>),
+      ImageRule,
       PrefetchHooks Function()
     >;
 
@@ -4529,6 +4634,6 @@ class $AppDatabaseManager {
       $$CategoryOverridesTableTableManager(_db, _db.categoryOverrides);
   $$CategoryRulesTableTableManager get categoryRules =>
       $$CategoryRulesTableTableManager(_db, _db.categoryRules);
-  $$TransactionImagesTableTableManager get transactionImages =>
-      $$TransactionImagesTableTableManager(_db, _db.transactionImages);
+  $$ImageRulesTableTableManager get imageRules =>
+      $$ImageRulesTableTableManager(_db, _db.imageRules);
 }

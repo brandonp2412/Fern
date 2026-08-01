@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/backup_settings_file.dart';
 import '../theme.dart';
 
 /// Persisted, app-wide user preferences. Follows the same hand-rolled
@@ -11,12 +12,16 @@ class AppSettings extends ChangeNotifier {
   static const _showDebtKey = 'settings_show_debt';
   static const _themeModeKey = 'settings_theme_mode';
   static const _seedColorKey = 'settings_seed_color';
+  static const _automaticBackupsKey = 'settings_automatic_backups';
+  static const _backupUriKey = 'settings_backup_uri';
 
   bool hideBalances = false;
   bool swipeTabs = false;
   bool showDebt = true;
   ThemeMode themeMode = ThemeMode.system;
   Color seedColor = Fern.green;
+  bool automaticBackups = false;
+  String? backupUri;
 
   bool _loaded = false;
   bool get loaded => _loaded;
@@ -32,6 +37,8 @@ class AppSettings extends ChangeNotifier {
     }
     final seedValue = prefs.getInt(_seedColorKey);
     if (seedValue != null) seedColor = Color(seedValue);
+    automaticBackups = prefs.getBool(_automaticBackupsKey) ?? false;
+    backupUri = prefs.getString(_backupUriKey);
     _loaded = true;
     notifyListeners();
   }
@@ -69,5 +76,31 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_seedColorKey, color.toARGB32());
+  }
+
+  Future<void> setAutomaticBackups(bool value) async {
+    automaticBackups = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_automaticBackupsKey, value);
+    await writeBackupSettingsFile(
+      automaticBackups: automaticBackups,
+      backupUri: backupUri,
+    );
+  }
+
+  Future<void> setBackupUri(String? uri) async {
+    backupUri = uri;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (uri == null) {
+      await prefs.remove(_backupUriKey);
+    } else {
+      await prefs.setString(_backupUriKey, uri);
+    }
+    await writeBackupSettingsFile(
+      automaticBackups: automaticBackups,
+      backupUri: backupUri,
+    );
   }
 }

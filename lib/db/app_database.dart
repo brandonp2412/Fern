@@ -81,13 +81,16 @@ class CategoryRules extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class TransactionImages extends Table {
-  TextColumn get transactionId => text()();
+@DataClassName('ImageRule')
+class ImageRules extends Table {
+  TextColumn get id => text()();
+  TextColumn get matchText => text()();
+  BoolColumn get exact => boolean().withDefault(const Constant(true))();
   TextColumn get imagePath => text()();
-  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
-  Set<Column> get primaryKey => {transactionId};
+  Set<Column> get primaryKey => {id};
 }
 
 @DriftDatabase(
@@ -96,7 +99,7 @@ class TransactionImages extends Table {
     Transactions,
     CategoryOverrides,
     CategoryRules,
-    TransactionImages,
+    ImageRules,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -104,7 +107,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -140,6 +143,20 @@ class AppDatabase extends _$AppDatabase {
       },
       from5To6: (m, schema) async {
         await m.createTable(schema.transactionImages);
+      },
+      from6To7: (m, schema) async {
+        await m.createTable(schema.imageRules);
+        await m.database.customStatement('''
+          INSERT INTO image_rules (id, match_text, exact, image_path, created_at)
+          SELECT ti.transaction_id,
+                 COALESCE(t.merchant_name, '') || ' ' || t.description,
+                 1,
+                 ti.image_path,
+                 ti.updated_at
+          FROM transaction_images ti
+          JOIN transactions t ON t.id = ti.transaction_id
+        ''');
+        await m.deleteTable('transaction_images');
       },
     ),
   );
@@ -370,25 +387,30 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  Future<void> saveTransactionImage(String transactionId, String imagePath) {
-    return into(transactionImages).insertOnConflictUpdate(
-      TransactionImagesCompanion.insert(
-        transactionId: transactionId,
+  Future<void> saveImageRule(String matchText, bool exact, String imagePath) async {
+    final normalized = matchText.trim();
+    await (delete(
+      imageRules,
+    )..where((t) => t.matchText.equals(normalized) & t.exact.equals(exact))).go();
+    await into(imageRules).insert(
+      ImageRulesCompanion.insert(
+        id: '${DateTime.now().microsecondsSinceEpoch}',
+        matchText: normalized,
+        exact: Value(exact),
         imagePath: imagePath,
-        updatedAt: DateTime.now(),
+        createdAt: DateTime.now(),
       ),
     );
   }
 
-  Future<void> clearTransactionImage(String transactionId) {
-    return (delete(
-      transactionImages,
-    )..where((t) => t.transactionId.equals(transactionId))).go();
+  Future<void> deleteImageRule(String id) {
+    return (delete(imageRules)..where((t) => t.id.equals(id))).go();
   }
 
-  Future<Map<String, String>> loadTransactionImages() async {
-    final rows = await select(transactionImages).get();
-    return {for (final r in rows) r.transactionId: r.imagePath};
+  Future<List<ImageRule>> loadImageRules() {
+    return (select(
+      imageRules,
+    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
   }
 
   Stream<List<_StatRow>> _watchStat(
@@ -635,7 +657,7 @@ class AppDatabase extends _$AppDatabase {
       batch.deleteAll(transactions);
       batch.deleteAll(categoryOverrides);
       batch.deleteAll(categoryRules);
-      batch.deleteAll(transactionImages);
+      batch.deleteAll(imageRules);
     });
   }
 }

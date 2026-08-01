@@ -1,5 +1,15 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../data/export_data.dart';
+import '../data/import_data.dart';
 import '../main.dart';
+import '../services/android_channel.dart';
 import '../services/secure_store.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
@@ -51,6 +61,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           builder: (_) => SetupScreen(settings: widget.state.settings)),
       (_) => false,
     );
+  }
+
+  Future<void> _toggleAutomaticBackups(bool value) async {
+    final settings = widget.state.settings;
+    if (!value) {
+      await settings.setAutomaticBackups(false);
+      return;
+    }
+    await Permission.notification.request();
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbPath = p.join(dbFolder.path, 'fern_cache.sqlite');
+    await settings.setAutomaticBackups(true);
+    await androidChannel.invokeMethod('pick', {'dbPath': dbPath});
   }
 
   @override
@@ -135,6 +158,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+            const SectionHeader('Data'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(child: ExportData(state: state)),
+                    Expanded(child: ImportData(state: state)),
+                  ],
+                ),
+              ),
+            ),
+            if (!kIsWeb && Platform.isAndroid)
+              Card(
+                child: SwitchListTile(
+                  title: const Text('Automatic backups',
+                      style: TextStyle(
+                          fontSize: 14.5, fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                      'Back up your database daily to a folder you choose',
+                      style: TextStyle(fontSize: 12, color: fern.slate)),
+                  value: settings.automaticBackups,
+                  onChanged: _toggleAutomaticBackups,
+                ),
+              ),
             const SectionHeader('Categorization'),
             Card(
               child: ListTile(

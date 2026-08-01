@@ -342,11 +342,33 @@ class _StatsScreenState extends State<StatsScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (pending.isNotEmpty)
-                          TextButton(
-                            onPressed: () => setModalState(() => pending = {}),
-                            child: const Text('Clear'),
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  if (pending.length == cats.length) {
+                                    pending = {};
+                                  } else {
+                                    pending = cats.toSet();
+                                  }
+                                });
+                              },
+                              child: Text(
+                                pending.length == cats.length
+                                    ? 'Deselect all'
+                                    : 'Select all',
+                              ),
+                            ),
+                            if (pending.isNotEmpty)
+                              TextButton(
+                                onPressed: () =>
+                                    setModalState(() => pending = {}),
+                                child: const Text('Clear'),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),

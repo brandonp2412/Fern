@@ -151,6 +151,45 @@ void main() {
     });
   });
 
+  group('image rules (exact reproduction of the txn_detail pick-image flow)', () {
+    test('setting an image via matchTextFor+saveTransactionImage shows up on imagePathFor for the same tx', () async {
+      final fixtureTx = mcdonaldsBurger();
+      final state = await seededState(transactions: [fixtureTx]);
+      final tx = state.transactions.first;
+
+      expect(state.imagePathFor(tx), isNull);
+
+      final hay = state.matchTextFor(tx);
+      await state.saveTransactionImage(
+        tx,
+        '/tmp/fake_image.png',
+        exact: true,
+        matchText: hay,
+      );
+
+      expect(state.imagePathFor(state.transactions.first), '/tmp/fake_image.png');
+    });
+
+    test('exact match also applies to a different transaction with the identical merchant+description', () async {
+      final tx1 = mcdonaldsBurger(date: '2026-07-01T00:00:00.000Z');
+      final tx2 = mcdonaldsBurger(date: '2026-07-20T00:00:00.000Z');
+      final state = await seededState(transactions: [tx1, tx2]);
+
+      final target = state.transactions.firstWhere((t) => t.id == tx1.id);
+      final hay = state.matchTextFor(target);
+      await state.saveTransactionImage(
+        target,
+        '/tmp/fake_image.png',
+        exact: true,
+        matchText: hay,
+      );
+
+      for (final t in state.transactions) {
+        expect(state.imagePathFor(t), '/tmp/fake_image.png');
+      }
+    });
+  });
+
   group('load / loadOlder', () {
     test('load() fetches the user, accounts and transactions from a fake Akahu API and caches them', () async {
       final client = MockClient((req) async {
