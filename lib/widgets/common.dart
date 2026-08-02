@@ -67,6 +67,9 @@ class LogoAvatar extends StatelessWidget {
       child: filePath != null && filePath!.isNotEmpty
           ? Image.file(
               File(filePath!),
+              key: ValueKey(
+                '$filePath-${_fileStamp(filePath!)}',
+              ),
               width: size,
               height: size,
               fit: BoxFit.cover,
@@ -90,6 +93,14 @@ class LogoAvatar extends StatelessWidget {
   Widget _icon(FernPalette fern) => Center(
         child: Icon(fallback, color: fern.green, size: size * 0.55),
       );
+
+  int _fileStamp(String path) {
+    try {
+      return File(path).lastModifiedSync().millisecondsSinceEpoch;
+    } catch (_) {
+      return 0;
+    }
+  }
 }
 
 class AppBarSpinner extends StatelessWidget {
