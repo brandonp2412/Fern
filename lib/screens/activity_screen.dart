@@ -34,18 +34,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void initState() {
     super.initState();
     widget.state.addListener(_onAppStateChange);
-    _scroll.addListener(() {
-      final state = widget.state;
-      if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 300 &&
-          state.txnCursor != null) {
-        state.loadOlder();
-      }
-    });
+    _scroll.addListener(_maybeLoadMore);
   }
 
   void _onAppStateChange() {
     if (!mounted) return;
     setState(() {});
+    // Newly loaded items extend the list below the current scroll offset,
+    // so `pixels` doesn't change and the scroll listener won't fire again.
+    // Re-check post-frame (once the new items have laid out) so pagination
+    // keeps going until the buffer clears or there's nothing left to load.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
+  }
+
+  void _maybeLoadMore() {
+    if (!mounted || !_scroll.hasClients) return;
+    final state = widget.state;
+    if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 300 &&
+        state.txnCursor != null) {
+      state.loadOlder();
+    }
   }
 
   @override

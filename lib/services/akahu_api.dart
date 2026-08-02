@@ -13,12 +13,10 @@ class AkahuApi {
   final http.Client _client;
 
   AkahuApi({
-    required String userToken,
-    required String appToken,
+    required this._userToken,
+    required this._appToken,
     http.Client? client,
-  })  : _userToken = userToken,
-        _appToken = appToken,
-        _client = client ?? http.Client();
+  })  : _client = client ?? http.Client();
 
   Map<String, String> get _userHeaders => {
         'Authorization': 'Bearer $_userToken',
@@ -76,12 +74,13 @@ class AkahuApi {
   }
 
   static Map<String, String> _range(String? start, String? end,
-          {String? cursor}) =>
-      {
-        if (start != null) 'start': start,
-        if (end != null) 'end': end,
-        if (cursor != null) 'cursor': cursor,
-      };
+          {String? cursor}) {
+    final m = <String, String>{};
+    if (start != null) m['start'] = start;
+    if (end != null) m['end'] = end;
+    if (cursor != null) m['cursor'] = cursor;
+    return m;
+  }
 
   Future<User> getMe() async =>
       User.fromJson((await _get('/me'))['item']);
@@ -163,13 +162,15 @@ class AkahuApi {
     String? otherId,
     List<String>? fields,
     String? comment,
-  }) =>
-      _post('/support/$transactionId', body: {
-        'type': type,
-        if (otherId != null) 'other_id': otherId,
-        if (fields != null && fields.isNotEmpty) 'fields': fields,
-        if (comment != null) 'comment': comment,
-      }).then((_) {});
+  }) {
+    final body = <String, dynamic>{
+      'type': type,
+    };
+    if (otherId != null) body['other_id'] = otherId;
+    if (fields != null && fields.isNotEmpty) body['fields'] = fields;
+    if (comment != null) body['comment'] = comment;
+    return _post('/support/$transactionId', body: body).then((_) {});
+  }
 
   Future<void> revokeToken() => _delete('/token').then((_) {});
 

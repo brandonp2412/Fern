@@ -253,27 +253,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SectionHeader('Appearance'),
             Card(
-              child: Column(
-                children: [
-                  RadioListTile<ThemeMode>(
-                    title: const Text('Light'),
-                    value: ThemeMode.light,
-                    groupValue: settings.themeMode,
-                    onChanged: (v) => settings.setThemeMode(v!),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    title: const Text('Dark'),
-                    value: ThemeMode.dark,
-                    groupValue: settings.themeMode,
-                    onChanged: (v) => settings.setThemeMode(v!),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    title: const Text('System'),
-                    value: ThemeMode.system,
-                    groupValue: settings.themeMode,
-                    onChanged: (v) => settings.setThemeMode(v!),
-                  ),
-                ],
+              child: RadioGroup<ThemeMode>(
+                groupValue: settings.themeMode,
+                onChanged: (v) {
+                  if (v != null) settings.setThemeMode(v);
+                },
+                child: Column(
+                  children: [
+                    RadioListTile<ThemeMode>(
+                      title: const Text('Light'),
+                      value: ThemeMode.light,
+                    ),
+                    RadioListTile<ThemeMode>(
+                      title: const Text('Dark'),
+                      value: ThemeMode.dark,
+                    ),
+                    RadioListTile<ThemeMode>(
+                      title: const Text('System'),
+                      value: ThemeMode.system,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SectionHeader('Color palette'),
