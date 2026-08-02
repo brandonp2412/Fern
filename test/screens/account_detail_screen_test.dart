@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:fern/models/account.dart';
-import 'package:fern/models/transaction.dart';
 import 'package:fern/screens/account_detail_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';

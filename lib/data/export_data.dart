@@ -51,7 +51,7 @@ class ExportData extends StatelessWidget {
       ]);
     }
     final csv = CsvEncoder(lineDelimiter: '\n').convert(data);
-    await _saveCsv(context, 'category_rules.csv', csv);
+    await _saveCsv('category_rules.csv', csv);
   }
 
   Future<void> _exportTransactions(BuildContext context) async {
@@ -86,10 +86,10 @@ class ExportData extends StatelessWidget {
       ]);
     }
     final csv = CsvEncoder(lineDelimiter: '\n').convert(data);
-    await _saveCsv(context, 'transactions.csv', csv);
+    await _saveCsv('transactions.csv', csv);
   }
 
-  Future<void> _saveCsv(BuildContext context, String fileName, String csv) async {
+  Future<void> _saveCsv(String fileName, String csv) async {
     final bytes = Uint8List.fromList(csv.codeUnits);
     await FilePicker.saveFile(
       fileName: fileName,
