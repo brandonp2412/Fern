@@ -72,7 +72,7 @@ class Fern {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: palette.green,
-          foregroundColor: Colors.white,
+          foregroundColor: palette.onGreen,
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -124,7 +124,7 @@ class Fern {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: palette.deep,
-        contentTextStyle: const TextStyle(color: Colors.white),
+        contentTextStyle: TextStyle(color: palette.onGreen),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -177,6 +177,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
   final Color sprout;
   final Color clay;
   final Color sand;
+  final Color onGreen;
 
   const FernPalette({
     required this.ink,
@@ -189,6 +190,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
     required this.sprout,
     required this.clay,
     required this.sand,
+    required this.onGreen,
   });
 
   factory FernPalette.fromScheme(ColorScheme scheme) {
@@ -204,6 +206,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       sprout: dark ? Color.lerp(scheme.primary, Colors.white, 0.6)! : Color.lerp(scheme.primary, Colors.white, 0.55)!,
       clay: scheme.error,
       sand: dark ? scheme.surfaceContainerHigh : const Color(0xFFEFE9DC),
+      onGreen: scheme.onPrimary,
     );
   }
 
@@ -219,6 +222,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
     Color? sprout,
     Color? clay,
     Color? sand,
+    Color? onGreen,
   }) {
     return FernPalette(
       ink: ink ?? this.ink,
@@ -231,6 +235,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       sprout: sprout ?? this.sprout,
       clay: clay ?? this.clay,
       sand: sand ?? this.sand,
+      onGreen: onGreen ?? this.onGreen,
     );
   }
 
@@ -248,6 +253,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       sprout: Color.lerp(sprout, other.sprout, t)!,
       clay: Color.lerp(clay, other.clay, t)!,
       sand: Color.lerp(sand, other.sand, t)!,
+      onGreen: Color.lerp(onGreen, other.onGreen, t)!,
     );
   }
 }

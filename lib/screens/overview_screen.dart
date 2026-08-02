@@ -189,8 +189,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
           const SizedBox(height: 6),
           Text(
             masked ? '••••' : money(state.totalBalance),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: fern.onGreen,
               fontSize: 36,
               fontWeight: FontWeight.w800,
               letterSpacing: -1,

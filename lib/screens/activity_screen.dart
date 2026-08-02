@@ -267,13 +267,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ? Icon(
                 icon,
                 size: 16,
-                color: selected ? Colors.white : context.fern.ink,
+                color: selected ? context.fern.onGreen : context.fern.ink,
               )
             : null,
         onSelected: (_) => onTap(),
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : context.fern.ink,
+          color: selected ? context.fern.onGreen : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -293,7 +293,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         onSelected: (_) => _openCategoryModal(),
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: count > 0 ? Colors.white : context.fern.ink,
+          color: count > 0 ? context.fern.onGreen : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -366,7 +366,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               showCheckmark: false,
                               labelStyle: TextStyle(
                                 color: pending.contains(cat)
-                                    ? Colors.white
+                                    ? context.fern.onGreen
                                     : context.fern.ink,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -421,7 +421,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         onSelected: (_) => _openSortModal(),
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: _sortOrder != 'date_desc' ? Colors.white : context.fern.ink,
+          color: _sortOrder != 'date_desc' ? context.fern.onGreen : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -464,7 +464,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             showCheckmark: false,
                             labelStyle: TextStyle(
                               color: pending == entry.key
-                                  ? Colors.white
+                                  ? context.fern.onGreen
                                   : context.fern.ink,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,

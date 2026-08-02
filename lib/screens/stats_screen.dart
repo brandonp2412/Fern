@@ -283,7 +283,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   }
                 },
                 labelStyle: TextStyle(
-                  color: _range == option ? Colors.white : context.fern.ink,
+                  color: _range == option ? context.fern.onGreen : context.fern.ink,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -299,7 +299,7 @@ class _StatsScreenState extends State<StatsScreen> {
               onSelected: (_) => _openCatModal(),
               showCheckmark: false,
               labelStyle: TextStyle(
-                color: cnt > 0 ? Colors.white : context.fern.ink,
+                color: cnt > 0 ? context.fern.onGreen : context.fern.ink,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -389,7 +389,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               showCheckmark: false,
                               labelStyle: TextStyle(
                                 color: pending.contains(cat)
-                                    ? Colors.white
+                                    ? context.fern.onGreen
                                     : context.fern.ink,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
