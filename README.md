@@ -7,6 +7,12 @@ dashboard: balances, net position, spending breakdowns, searchable
 transaction history, and more.
 
 <p align="center">
+  <a href="https://github.com/brandonp2412/fern/releases/latest/download/fern.apk">
+    <img src="https://img.shields.io/badge/Get%20the%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Get the APK" />
+  </a>
+</p>
+
+<p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" width="380" />
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" width="380" />
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" width="380" />
