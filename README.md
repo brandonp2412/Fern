@@ -151,3 +151,11 @@ dart test test/integration_test.dart
 ```
 
 - A `model parsing` group validates JSON → model mapping offline.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

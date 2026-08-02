@@ -60,6 +60,10 @@ coverage/
 /web/drift_worker.dart.js.map
 /web/drift_worker.dart.js.deps
 
+# Environment files
+.env
+.env.*
+
 # AI tool debug/session artifacts
 .playwright-mcp/
 android/.artifacts/
