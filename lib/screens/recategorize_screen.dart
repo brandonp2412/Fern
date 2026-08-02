@@ -31,10 +31,12 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
   Timer? _debounce;
+  late Set<String> _selectedCategories;
 
   @override
   void initState() {
     super.initState();
+    _selectedCategories = {...?widget.catFilter};
     widget.state.addListener(_onChange);
   }
 
@@ -72,11 +74,23 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
 
   bool _inDateRange(Transaction tx) {
     if (widget.start == null && widget.end == null) return true;
-    final d = DateTime.tryParse(tx.date.substring(0, 10));
-    if (d == null) return true;
+    final parsed = DateTime.tryParse(tx.date);
+    if (parsed == null) return true;
+    final local = parsed.toLocal();
+    final d = DateTime(local.year, local.month, local.day);
     if (widget.start != null && d.isBefore(widget.start!)) return false;
     if (widget.end != null && d.isAfter(widget.end!)) return false;
     return true;
+  }
+
+  Set<String> get _availableCategories {
+    final cats = <String>{};
+    for (final tx in widget.state.transactions) {
+      if (tx.amount >= 0) continue;
+      if (!_inDateRange(tx)) continue;
+      cats.add(widget.state.categoryGroupFor(tx) ?? 'Uncategorised');
+    }
+    return cats;
   }
 
   Map<String, List<Transaction>> _groupTxns() {
@@ -86,7 +100,7 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
       if (!_txMatches(tx)) continue;
       if (!_inDateRange(tx)) continue;
       final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
-      if (widget.catFilter != null && !widget.catFilter!.contains(group)) continue;
+      if (_selectedCategories.isNotEmpty && !_selectedCategories.contains(group)) continue;
       groups.putIfAbsent(group, () => []).add(tx);
     }
     final sorted = groups.entries.toList()
@@ -135,6 +149,15 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
                     ),
                   ),
                 ),
+                SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [_categoryButton()],
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Expanded(
                   child: grouped.isEmpty
                       ? const EmptyState(
@@ -153,6 +176,129 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _categoryButton() {
+    final count = _selectedCategories.length;
+    final label = count == 0 ? 'Categories' : 'Categories ($count)';
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: count > 0,
+        avatar: const Icon(Icons.filter_list, size: 16),
+        onSelected: (_) => _openCategoryModal(),
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          color: count > 0 ? context.fern.onGreen : context.fern.ink,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  void _openCategoryModal() {
+    final cats = _availableCategories.toList()
+      ..sort((a, b) {
+        if (a == 'Uncategorised') return 1;
+        if (b == 'Uncategorised') return -1;
+        return a.compareTo(b);
+      });
+    var pending = {..._selectedCategories};
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Categories',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (cats.isNotEmpty)
+                          TextButton(
+                            onPressed: () => setModalState(() {
+                              pending = pending.length == cats.length
+                                  ? {}
+                                  : cats.toSet();
+                            }),
+                            child: Text(
+                              pending.length == cats.length
+                                  ? 'Clear'
+                                  : 'Select all',
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (cats.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('No categories yet'),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final cat in cats)
+                            FilterChip(
+                              label: Text(cat),
+                              selected: pending.contains(cat),
+                              showCheckmark: false,
+                              labelStyle: TextStyle(
+                                color: pending.contains(cat)
+                                    ? context.fern.onGreen
+                                    : context.fern.ink,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              onSelected: (val) {
+                                setModalState(() {
+                                  if (val) {
+                                    pending = {...pending, cat};
+                                  } else {
+                                    pending = {...pending}..remove(cat);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() => _selectedCategories = pending);
+                          Navigator.of(ctx).pop();
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -72,38 +72,64 @@ List<Account> _fakeAccounts() => [
       ),
     ];
 
+Transaction _fakeTransaction(int i, DateTime date, List<String> names, {bool forceSpend = false}) {
+  final merchant = names[i % names.length];
+  final category = _merchants[merchant]!;
+  final isIncome = !forceSpend && i % 11 == 0;
+  final amount = isIncome ? 1850.0 : -(12.5 + (i % 9) * 8.35);
+
+  return Transaction(
+    id: 'trans_$i',
+    account: i % 5 == 0 ? 'acc_savings' : 'acc_checking',
+    date: date.toUtc().toIso8601String(),
+    description: isIncome ? 'Salary' : merchant,
+    amount: amount,
+    type: isIncome ? 'CREDIT' : 'DEBIT',
+    merchant: isIncome ? null : TransactionMerchant(id: 'merch_$i', name: merchant),
+    category: isIncome
+        ? null
+        : TransactionCategory(
+            id: 'cat_$i',
+            name: category,
+            groups: {
+              'personal_finance': CategoryGroup(id: 'grp_$category', name: category),
+            },
+          ),
+  );
+}
+
 List<Transaction> _fakeTransactions() {
   final txns = <Transaction>[];
   final now = DateTime.now();
+  final startOfMonth = DateTime(now.year, now.month, 1);
   final names = _merchants.keys.toList();
+  var index = 0;
 
-  for (var i = 0; i < 30; i++) {
-    final date = now.subtract(Duration(days: i * 2));
-    final merchant = names[i % names.length];
-    final category = _merchants[merchant]!;
-    final isIncome = i % 11 == 0;
-    final amount = isIncome ? 1850.0 : -(12.5 + (i % 9) * 8.35);
+  // Guarantee one forced-spend transaction per merchant lands within the
+  // *current* calendar month, spread evenly across however much of the
+  // month has elapsed so far (even if that's only a few hours), so the
+  // Overview "Spending this month" card always shows a realistic
+  // multi-category breakdown regardless of what day of the month the
+  // screenshot happens to be taken. Spacing every transaction "N days
+  // before now" made this flaky: near the start of a month, day 0 is
+  // income and every other sample lands in the previous month, leaving
+  // nothing (or just one category) for the current-month spend query.
+  final monthHours = now.difference(startOfMonth).inHours;
+  for (var j = 0; j < names.length; j++) {
+    final hoursBack = (j * monthHours) ~/ (names.length - 1);
+    final date = now.subtract(Duration(hours: hoursBack));
+    txns.add(_fakeTransaction(index, date, names, forceSpend: true));
+    index++;
+  }
 
-    txns.add(
-      Transaction(
-        id: 'trans_$i',
-        account: i % 5 == 0 ? 'acc_savings' : 'acc_checking',
-        date: date.toUtc().toIso8601String(),
-        description: isIncome ? 'Salary' : merchant,
-        amount: amount,
-        type: isIncome ? 'CREDIT' : 'DEBIT',
-        merchant: isIncome ? null : TransactionMerchant(id: 'merch_$i', name: merchant),
-        category: isIncome
-            ? null
-            : TransactionCategory(
-                id: 'cat_$i',
-                name: category,
-                groups: {
-                  'personal_finance': CategoryGroup(id: 'grp_$category', name: category),
-                },
-              ),
-      ),
-    );
+  // Fill out the rest of the history further back, starting before the 1st
+  // of this month so these never collide with the guaranteed in-month set.
+  var historyStep = 0;
+  while (index < 30) {
+    final date = startOfMonth.subtract(Duration(days: 1 + historyStep * 2));
+    txns.add(_fakeTransaction(index, date, names));
+    index++;
+    historyStep++;
   }
 
   return txns;
