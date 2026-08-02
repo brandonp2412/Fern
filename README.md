@@ -6,6 +6,15 @@ accounts through Akahu and gives you a full dashboard: balances, net
 position, spending breakdowns, searchable transaction history,
 and more.
 
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" height="400" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" height="400" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" height="400" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" height="400" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" height="400" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png" height="400" />
+</p>
+
 ## The Akahu API spec
 
 The machine-readable OpenAPI 3.1 spec that this app is built against lives
