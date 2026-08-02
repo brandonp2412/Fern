@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "fern" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "fern" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.fern. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Fern contributors. MIT License." "\0"
             VALUE "OriginalFilename", "fern.exe" "\0"
             VALUE "ProductName", "fern" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
