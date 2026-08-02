@@ -16,9 +16,22 @@ show=0
 headless_pid=""
 watchdog_pid=""
 
+# Usage: screenshots-waydroid.sh [device-type] [screenshot] [--show|--headed]
+# device-type: phoneScreenshots | sevenInchScreenshots | tenInchScreenshots | desktop
+# screenshot:  screenshot number (e.g. 1) or test name (e.g. Overview)
+device_type_filter=""
+only=""
+
 for arg in "$@"; do
     case "$arg" in
         --show|--headed) show=1 ;;
+        *)
+            if [ -z "$device_type_filter" ]; then
+                device_type_filter="$arg"
+            elif [ -z "$only" ]; then
+                only="$arg"
+            fi
+            ;;
     esac
 done
 
@@ -230,7 +243,7 @@ set_resolution() {
 }
 
 run_device_type() {
-    local device_type="$1" w="$2" h="$3" attempt rc
+    local device_type="$1" w="$2" h="$3" only="$4" attempt rc
 
     for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
         log "=== [$device_type] attempt ${attempt}/${MAX_ATTEMPTS} (resolution ${w}x${h}) ==="
@@ -256,7 +269,7 @@ run_device_type() {
 
         log "[$device_type] Running screenshot tests on $device (timeout ${DRIVE_TIMEOUT}s)..."
         start_unfreeze_watchdog
-        run_with_timeout "$DRIVE_TIMEOUT" bash -c "cd '$PROJECT_DIR' && '$SCRIPT_DIR/screenshots-android.sh' '$device' '$device_type'" 2>&1 | add_timestamps
+        run_with_timeout "$DRIVE_TIMEOUT" bash -c "cd '$PROJECT_DIR' && '$SCRIPT_DIR/screenshots-android.sh' '$device' '$device_type' '$only'" 2>&1 | add_timestamps
         rc=${PIPESTATUS[0]}
         stop_unfreeze_watchdog
 
@@ -294,26 +307,42 @@ main() {
     sudo sed -i '/^persist\.waydroid\.width=/d;/^persist\.waydroid\.height=/d;/^qemu\.hw\.mainkeys=/d' "$BASE_PROP"
     printf 'qemu.hw.mainkeys=1\n' | sudo tee -a "$BASE_PROP" >/dev/null
 
-    for device_type in phoneScreenshots sevenInchScreenshots tenInchScreenshots; do
-        case "$device_type" in
-            phoneScreenshots)     width=1080; height=2424 ;;
-            sevenInchScreenshots) width=1920; height=1080 ;;
-            tenInchScreenshots)   width=2560; height=1600 ;;
+    local device_types=(phoneScreenshots sevenInchScreenshots tenInchScreenshots)
+    if [ -n "$device_type_filter" ] && [ "$device_type_filter" != "desktop" ]; then
+        case "$device_type_filter" in
+            phoneScreenshots|sevenInchScreenshots|tenInchScreenshots) device_types=("$device_type_filter") ;;
+            *)
+                log "ERROR: unknown device type '$device_type_filter' (expected phoneScreenshots, sevenInchScreenshots, tenInchScreenshots, or desktop)"
+                exit 1
+                ;;
         esac
+    fi
 
-        if ! run_device_type "$device_type" "$width" "$height"; then
-            log "Aborting: could not generate $device_type screenshots."
+    if [ -z "$device_type_filter" ] || [ "$device_type_filter" != "desktop" ]; then
+        for device_type in "${device_types[@]}"; do
+            case "$device_type" in
+                phoneScreenshots)     width=1080; height=2424 ;;
+                sevenInchScreenshots) width=1920; height=1080 ;;
+                tenInchScreenshots)   width=2560; height=1600 ;;
+            esac
+
+            if ! run_device_type "$device_type" "$width" "$height" "$only"; then
+                log "Aborting: could not generate $device_type screenshots."
+                exit 1
+            fi
+        done
+    fi
+
+    if [ -z "$device_type_filter" ] || [ "$device_type_filter" = "desktop" ]; then
+        log "=== Running desktop screenshots with Chrome ==="
+        local chrome_args=(desktop)
+        [ "$show" -eq 1 ] && chrome_args+=(--show)
+        [ -n "$only" ] && chrome_args+=("$only")
+        cd "$PROJECT_DIR" && "$SCRIPT_DIR/screenshots-chrome.sh" "${chrome_args[@]}" 2>&1 | add_timestamps
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            log "ERROR: Chrome screenshots failed."
             exit 1
         fi
-    done
-
-    log "=== Running desktop screenshots with Chrome ==="
-    local chrome_args=(desktop)
-    [ "$show" -eq 1 ] && chrome_args+=(--show)
-    cd "$PROJECT_DIR" && "$SCRIPT_DIR/screenshots-chrome.sh" "${chrome_args[@]}" 2>&1 | add_timestamps
-    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-        log "ERROR: Chrome screenshots failed."
-        exit 1
     fi
 
     log "All screenshots generated successfully!"

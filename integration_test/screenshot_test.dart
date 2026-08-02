@@ -183,15 +183,20 @@ Future<void> _capture({
   await binding.takeScreenshot(name);
 }
 
+// Set with --dart-define=SCREENSHOT_ONLY=<TestName> to run a single
+// screenshot, e.g. SCREENSHOT_ONLY=Settings for phoneScreenshots #6.
+const _only = String.fromEnvironment('SCREENSHOT_ONLY');
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  bool skip(String name) => _only.isNotEmpty && _only != name;
 
   group('Generate screenshots', () {
     testWidgets('Overview', (tester) async {
       final state = await _seedState();
       await _pumpApp(tester, state);
       await _capture(binding: binding, tester: tester, name: '1_en-US');
-    });
+    }, skip: skip('Overview'));
 
     testWidgets('AccountDetail', (tester) async {
       final state = await _seedState();
@@ -211,14 +216,14 @@ void main() {
       await tester.tap(finder);
       await tester.pumpAndSettle();
       await _capture(binding: binding, tester: tester, name: '2_en-US');
-    });
+    }, skip: skip('AccountDetail'));
 
     testWidgets('Activity', (tester) async {
       final state = await _seedState();
       await _pumpApp(tester, state);
       await _switchTab(tester, 'Activity');
       await _capture(binding: binding, tester: tester, name: '3_en-US');
-    });
+    }, skip: skip('Activity'));
 
     testWidgets('TransactionDetail', (tester) async {
       final state = await _seedState();
@@ -227,20 +232,20 @@ void main() {
       await tester.tap(find.byType(TxnTile).first);
       await tester.pumpAndSettle();
       await _capture(binding: binding, tester: tester, name: '4_en-US');
-    });
+    }, skip: skip('TransactionDetail'));
 
     testWidgets('Stats', (tester) async {
       final state = await _seedState();
       await _pumpApp(tester, state);
       await _switchTab(tester, 'Stats');
       await _capture(binding: binding, tester: tester, name: '5_en-US');
-    });
+    }, skip: skip('Stats'));
 
     testWidgets('Settings', (tester) async {
       final state = await _seedState();
       await _pumpApp(tester, state);
       await _switchTab(tester, 'Settings');
       await _capture(binding: binding, tester: tester, name: '6_en-US');
-    });
+    }, skip: skip('Settings'));
   });
 }
