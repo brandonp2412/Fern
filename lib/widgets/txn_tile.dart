@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../theme.dart';
+import '../utils/category_colors.dart';
 import '../utils/format.dart';
 import 'common.dart';
 
@@ -87,6 +88,9 @@ class TxnTile extends StatelessWidget {
         url: tx.meta?.logo,
         filePath: imagePath,
         fallback: _iconFor(tx.type),
+        color: colorForCategory(
+          categoryGroupOverride ?? tx.category?.groupName ?? 'Uncategorised',
+        ),
         size: 38,
       );
     }

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/category_colors.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import 'recategorize_screen.dart';
@@ -30,16 +31,6 @@ List<_MonthBucket> _monthsBetween(DateTime start, DateTime end) {
   }
   return result;
 }
-
-const _kCategoryColors = [
-  Color(0xFF2A78D6),
-  Color(0xFFEB6834),
-  Color(0xFF1BAF7A),
-  Color(0xFFEDA100),
-  Color(0xFFE87BA4),
-  Color(0xFF008300),
-  Color(0xFF4A3AA7),
-];
 
 class StatsScreen extends StatefulWidget {
   final AppState state;
@@ -790,15 +781,15 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   List<_CatEntry> _buildCategoryEntries(List<CategoryTotal> cats) {
-    final top = cats.take(_kCategoryColors.length).toList();
-    final rest = cats.skip(_kCategoryColors.length);
+    final top = cats.take(kCategoryColors.length).toList();
+    final rest = cats.skip(kCategoryColors.length);
     final otherTotal = rest.fold<double>(0, (s, c) => s + c.amount);
     final result = [
       for (var i = 0; i < top.length; i++)
         _CatEntry(
           name: top[i].name,
           amount: top[i].amount,
-          color: _kCategoryColors[i],
+          color: kCategoryColors[i],
         ),
     ];
     if (otherTotal > 0) {

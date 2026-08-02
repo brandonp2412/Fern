@@ -8,6 +8,7 @@ import '../services/akahu_api.dart';
 import '../services/auto_categorizer.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/category_colors.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 
@@ -174,6 +175,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                     LogoAvatar(
                       url: meta?.logo,
                       filePath: state.imagePathFor(tx),
+                      color: colorForCategory(categoryGroup ?? 'Uncategorised'),
                       size: 46,
                     ),
                     Positioned(

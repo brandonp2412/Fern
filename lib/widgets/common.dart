@@ -44,6 +44,7 @@ class LogoAvatar extends StatelessWidget {
   final String? filePath;
   final IconData fallback;
   final double size;
+  final Color? color;
 
   const LogoAvatar({
     super.key,
@@ -51,6 +52,7 @@ class LogoAvatar extends StatelessWidget {
     this.filePath,
     this.fallback = Icons.account_balance,
     this.size = 40,
+    this.color,
   });
 
   @override
@@ -60,7 +62,7 @@ class LogoAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: fern.mist,
+        color: color?.withValues(alpha: 0.16) ?? fern.mist,
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
       clipBehavior: Clip.antiAlias,
@@ -91,7 +93,7 @@ class LogoAvatar extends StatelessWidget {
   }
 
   Widget _icon(FernPalette fern) => Center(
-        child: Icon(fallback, color: fern.green, size: size * 0.55),
+        child: Icon(fallback, color: color ?? fern.green, size: size * 0.55),
       );
 
   int _fileStamp(String path) {
