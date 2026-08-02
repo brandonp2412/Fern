@@ -16,6 +16,7 @@ import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import 'category_rules_screen.dart';
+import 'home_shell.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppState state;
@@ -33,7 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Disconnect?'),
         content: const Text(
-            'This revokes your Akahu access token and signs you out of Fern.'),
+          'This revokes your Akahu access token and signs you out of Fern.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -42,8 +44,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
-                backgroundColor: context.fern.clay,
-                minimumSize: const Size(110, 44)),
+              backgroundColor: context.fern.clay,
+              minimumSize: const Size(110, 44),
+            ),
             child: const Text('Disconnect'),
           ),
         ],
@@ -58,7 +61,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-          builder: (_) => SetupScreen(settings: widget.state.settings)),
+        builder: (routeContext) => SetupScreen(
+          settings: widget.state.settings,
+          onConnected: (newState) => Navigator.of(routeContext).pushReplacement(
+            MaterialPageRoute(builder: (_) => HomeShell(state: newState)),
+          ),
+        ),
+      ),
       (_) => false,
     );
   }
@@ -99,11 +108,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 52,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                            colors: [fern.green, fern.moss]),
+                          colors: [fern.green, fern.moss],
+                        ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.person,
-                          color: Colors.white, size: 26),
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -113,7 +126,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text(
                             user?.email ?? 'Akahu user',
                             style: const TextStyle(
-                                fontSize: 15.5, fontWeight: FontWeight.w700),
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -136,22 +151,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Hide account balances',
-                        style: TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Mask totals and balances on screen',
-                        style: TextStyle(fontSize: 12, color: fern.slate)),
+                    title: const Text(
+                      'Hide account balances',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Mask totals and balances on screen',
+                      style: TextStyle(fontSize: 12, color: fern.slate),
+                    ),
                     value: settings.hideBalances,
                     onChanged: settings.setHideBalances,
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
-                    title: const Text('Show debt accounts',
-                        style: TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w600)),
+                    title: const Text(
+                      'Show debt accounts',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     subtitle: Text(
-                        'Include credit cards & loans in totals and lists',
-                        style: TextStyle(fontSize: 12, color: fern.slate)),
+                      'Include credit cards & loans in totals and lists',
+                      style: TextStyle(fontSize: 12, color: fern.slate),
+                    ),
                     value: settings.showDebt,
                     onChanged: settings.setShowDebt,
                   ),
@@ -161,7 +187,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SectionHeader('Data'),
             Card(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Expanded(child: ExportData(state: state)),
@@ -173,12 +202,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (!kIsWeb && Platform.isAndroid)
               Card(
                 child: SwitchListTile(
-                  title: const Text('Automatic backups',
-                      style: TextStyle(
-                          fontSize: 14.5, fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Automatic backups',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   subtitle: Text(
-                      'Back up your database daily to a folder you choose',
-                      style: TextStyle(fontSize: 12, color: fern.slate)),
+                    'Back up your database daily to a folder you choose',
+                    style: TextStyle(fontSize: 12, color: fern.slate),
+                  ),
                   value: settings.automaticBackups,
                   onChanged: _toggleAutomaticBackups,
                 ),
@@ -186,12 +220,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SectionHeader('Categorization'),
             Card(
               child: ListTile(
-                title: const Text('Auto-categorize rules',
-                    style: TextStyle(
-                        fontSize: 14.5, fontWeight: FontWeight.w600)),
+                title: const Text(
+                  'Auto-categorize rules',
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(
-                    'Manage rules that auto-categorize future transactions',
-                    style: TextStyle(fontSize: 12, color: fern.slate)),
+                  'Manage rules that auto-categorize future transactions',
+                  style: TextStyle(fontSize: 12, color: fern.slate),
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -203,12 +239,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SectionHeader('Navigation'),
             Card(
               child: SwitchListTile(
-                title: const Text('Swipe between tabs',
-                    style: TextStyle(
-                        fontSize: 14.5, fontWeight: FontWeight.w600)),
+                title: const Text(
+                  'Swipe between tabs',
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(
-                    'Swipe left/right to switch tabs, not just tap',
-                    style: TextStyle(fontSize: 12, color: fern.slate)),
+                  'Swipe left/right to switch tabs, not just tap',
+                  style: TextStyle(fontSize: 12, color: fern.slate),
+                ),
                 value: settings.swipeTabs,
                 onChanged: settings.setSwipeTabs,
               ),
@@ -249,7 +287,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     for (final seed in FernSeed.values)
                       _SeedSwatch(
                         seed: seed,
-                        selected: settings.seedColor.toARGB32() ==
+                        selected:
+                            settings.seedColor.toARGB32() ==
                             seed.color.toARGB32(),
                         onTap: () => settings.setSeedColor(seed.color),
                       ),
@@ -261,8 +300,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             OutlinedButton.icon(
               onPressed: _disconnect,
               icon: Icon(Icons.logout, size: 18, color: fern.clay),
-              label: Text('Disconnect & revoke access',
-                  style: TextStyle(color: fern.clay)),
+              label: Text(
+                'Disconnect & revoke access',
+                style: TextStyle(color: fern.clay),
+              ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: fern.clay),
               ),

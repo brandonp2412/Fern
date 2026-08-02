@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../db/app_database.dart';
 import '../main.dart';
+import '../screens/home_shell.dart';
 import '../state/app_state.dart';
 
 class ImportData extends StatelessWidget {
@@ -19,7 +20,12 @@ class ImportData extends StatelessWidget {
   void _restart(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => SetupScreen(settings: state.settings),
+        builder: (routeContext) => SetupScreen(
+          settings: state.settings,
+          onConnected: (newState) => Navigator.of(routeContext).pushReplacement(
+            MaterialPageRoute(builder: (_) => HomeShell(state: newState)),
+          ),
+        ),
       ),
       (_) => false,
     );
@@ -45,9 +51,9 @@ class ImportData extends StatelessWidget {
       _restart(context);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to import database: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to import database: $e')));
     }
   }
 
@@ -75,18 +81,17 @@ class ImportData extends StatelessWidget {
                   ? null
                   : categoryGroup,
             ),
-            createdAt: DateTime.tryParse(row[4].toString().trim()) ??
-                DateTime.now(),
+            createdAt:
+                DateTime.tryParse(row[4].toString().trim()) ?? DateTime.now(),
           ),
         );
       }
 
       await state.db.transaction(() async {
         await state.db.delete(state.db.categoryRules).go();
-        await state.db.batch((batch) => batch.insertAll(
-              state.db.categoryRules,
-              rules,
-            ));
+        await state.db.batch(
+          (batch) => batch.insertAll(state.db.categoryRules, rules),
+        );
       });
 
       if (!context.mounted) return;
