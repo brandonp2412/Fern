@@ -108,7 +108,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final asc = _sortOrder == 'amount_asc';
       for (final txns in map.values) {
         txns.sort(
-          (a, b) => asc ? a.amount.compareTo(b.amount) : b.amount.compareTo(a.amount),
+          (a, b) =>
+              asc ? a.amount.compareTo(b.amount) : b.amount.compareTo(a.amount),
         );
       }
     }
@@ -251,13 +252,24 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) {
+  Widget _chip(
+    String label,
+    bool selected,
+    VoidCallback onTap, {
+    IconData? icon,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
-        avatar: icon != null ? Icon(icon, size: 16) : null,
+        avatar: icon != null
+            ? Icon(
+                icon,
+                size: 16,
+                color: selected ? Colors.white : context.fern.ink,
+              )
+            : null,
         onSelected: (_) => onTap(),
         showCheckmark: false,
         labelStyle: TextStyle(
@@ -435,7 +447,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   children: [
                     const Text(
                       'Order by',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -499,7 +514,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
       );
     }
     final keys = grouped.keys.toList()
-      ..sort((a, b) => _sortOrder == 'date_asc' ? a.compareTo(b) : b.compareTo(a));
+      ..sort(
+        (a, b) => _sortOrder == 'date_asc' ? a.compareTo(b) : b.compareTo(a),
+      );
     return RefreshIndicator(
       onRefresh: () => state.load(force: true),
       child: ListView.builder(
