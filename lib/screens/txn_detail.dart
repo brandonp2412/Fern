@@ -63,6 +63,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
     final ext = picked.path.split('.').last;
     final savedPath = '${imagesDir.path}/${widget.tx.id}.$ext';
     await File(picked.path).copy(savedPath);
+    await FileImage(File(savedPath)).evict();
     if (!mounted) return;
     final matchText = (widget.tx.merchant?.name ?? widget.tx.title)
         .trim()
