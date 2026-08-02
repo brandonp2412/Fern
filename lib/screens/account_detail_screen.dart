@@ -251,8 +251,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                         style:
                             TextStyle(color: fern.sprout, fontSize: 12.5)),
                     Text(accountTypeLabel(a.type),
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
+                        style: TextStyle(
+                            color: fern.onGreen.withValues(alpha: 0.7),
+                            fontSize: 12)),
                   ],
                 ),
               ),
@@ -265,8 +266,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 ? '••••'
                 : money(a.displayBalance,
                     currency: a.balance?.currency ?? 'NZD'),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: fern.onGreen,
               fontSize: 32,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.8,
@@ -296,7 +297,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           if (a.formattedAccount != null) ...[
             const SizedBox(height: 8),
             Text(a.formattedAccount!,
-                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                style: TextStyle(
+                    color: fern.onGreen.withValues(alpha: 0.54),
+                    fontSize: 12)),
           ],
         ],
       ),

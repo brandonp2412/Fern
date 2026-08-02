@@ -186,10 +186,10 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                           shape: BoxShape.circle,
                           border: Border.all(color: fern.cream, width: 1.5),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.camera_alt,
                           size: 11,
-                          color: Colors.white,
+                          color: fern.onGreen,
                         ),
                       ),
                     ),

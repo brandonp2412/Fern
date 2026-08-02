@@ -168,20 +168,20 @@ class _SetupScreenState extends State<SetupScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: fern.onGreen.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.eco_outlined,
                   size: 56,
-                  color: Colors.white,
+                  color: fern.onGreen,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Fern',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: fern.onGreen,
                   fontSize: 34,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1,
@@ -262,12 +262,12 @@ class _SetupScreenState extends State<SetupScreen> {
                                     FilledButton(
                                       onPressed: _connecting ? null : _connect,
                                       child: _connecting
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               height: 20,
                                               width: 20,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.white,
+                                                color: fern.onGreen,
                                               ),
                                             )
                                           : const Text('Connect'),
