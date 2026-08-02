@@ -186,37 +186,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SectionHeader('Data'),
             Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(child: ExportData(state: state)),
-                    Expanded(child: ImportData(state: state)),
+              child: Column(
+                children: [
+                  ExportData(state: state),
+                  const Divider(height: 1),
+                  ImportData(state: state),
+                  if (!kIsWeb && Platform.isAndroid) ...[
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      title: const Text(
+                        'Automatic backups',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Back up your database daily to a folder you choose',
+                        style: TextStyle(fontSize: 12, color: fern.slate),
+                      ),
+                      value: settings.automaticBackups,
+                      onChanged: _toggleAutomaticBackups,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
-            if (!kIsWeb && Platform.isAndroid)
-              Card(
-                child: SwitchListTile(
-                  title: const Text(
-                    'Automatic backups',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Back up your database daily to a folder you choose',
-                    style: TextStyle(fontSize: 12, color: fern.slate),
-                  ),
-                  value: settings.automaticBackups,
-                  onChanged: _toggleAutomaticBackups,
-                ),
-              ),
             const SectionHeader('Categorization'),
             Card(
               child: ListTile(

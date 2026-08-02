@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../state/app_state.dart';
+import '../theme.dart';
 
 class ExportData extends StatelessWidget {
   final AppState state;
@@ -101,8 +102,18 @@ class ExportData extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: () {
+    final fern = context.fern;
+    return ListTile(
+      title: const Text(
+        'Export data',
+        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        'Save your database, category rules, or transactions',
+        style: TextStyle(fontSize: 12, color: fern.slate),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
         showModalBottomSheet(
           context: context,
           useRootNavigator: true,
@@ -131,8 +142,6 @@ class ExportData extends StatelessWidget {
           },
         );
       },
-      icon: const Icon(Icons.download),
-      label: const Text('Export data'),
     );
   }
 }

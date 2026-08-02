@@ -11,6 +11,7 @@ import '../db/app_database.dart';
 import '../main.dart';
 import '../screens/home_shell.dart';
 import '../state/app_state.dart';
+import '../theme.dart';
 
 class ImportData extends StatelessWidget {
   final AppState state;
@@ -106,8 +107,18 @@ class ImportData extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: () {
+    final fern = context.fern;
+    return ListTile(
+      title: const Text(
+        'Import data',
+        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        'Restore your database or category rules from a file',
+        style: TextStyle(fontSize: 12, color: fern.slate),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
         showModalBottomSheet(
           context: context,
           useRootNavigator: true,
@@ -131,8 +142,6 @@ class ImportData extends StatelessWidget {
           },
         );
       },
-      icon: const Icon(Icons.upload),
-      label: const Text('Import data'),
     );
   }
 }
