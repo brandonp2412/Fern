@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# The single source of truth for "is this app OK": refreshes the akahu
+# client, formats, auto-fixes lints, then analyzes and tests. Used by both
+# .githooks/pre-push and release.yml's test job, so there's exactly one
+# place that defines what passing means.
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+flutter pub get
+curl -sSfL -o swaggers/akahu.swagger https://developers.akahu.nz/openapi/api-akahu-io-spec.yml
+dart run build_runner build -d
+
+echo "== formatting =="
+dart format .
+
+echo "== applying auto-fixes =="
+dart fix --apply
+
+echo "== analyzing =="
+flutter analyze
+
+echo "== testing =="
+flutter test

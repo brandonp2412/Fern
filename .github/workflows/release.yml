@@ -16,11 +16,7 @@ jobs:
         with:
           channel: stable
 
-      - run: flutter pub get
-      - run: |
-          curl -sSfL -o swaggers/akahu.swagger https://developers.akahu.nz/openapi/api-akahu-io-spec.yml
-      - run: dart run build_runner build -d
-      - run: flutter test
+      - run: ./scripts/check.sh
 
   version-bump:
     needs: test

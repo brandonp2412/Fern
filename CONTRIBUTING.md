@@ -21,3 +21,15 @@ I only care about:
 3. If you added new model fields, run `dart test test/integration_test.dart` against the live API to verify parsing.
 
 That's it. Open a PR.
+
+## One-time setup: pre-push hook
+
+```
+git config core.hooksPath .githooks
+```
+
+This mirrors what CI checks on push (fresh Akahu spec, regenerated client,
+`flutter test`), auto-fixing and committing formatting/lint issues along the
+way. Git doesn't run anything automatically on `git clone`, so this one
+command is unfortunately unavoidable — but it only needs to be run once per
+clone.
