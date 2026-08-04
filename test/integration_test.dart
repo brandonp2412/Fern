@@ -7,6 +7,20 @@ import 'package:fern/models/account.dart';
 import 'package:fern/models/transaction.dart';
 import 'package:fern/models/user.dart';
 import 'package:fern/services/akahu_api.dart';
+import 'package:fern/services/auto_categorizer.dart';
+
+// Mirrors the group COALESCE(category_group, auto_category_group, 'Uncategorised')
+// logic in AppDatabase.saveTransactions/watch* queries, so expectations can be
+// derived from whatever transactions the live API happens to return.
+String _categoryGroupOf(Transaction t) {
+  final categoryGroup = t.category?.groupName;
+  if (categoryGroup != null) return categoryGroup;
+  var autoGroup = t.autoCategoryGroup;
+  if (autoGroup == null) {
+    autoGroup = AutoCategorizer.categorize(t)?.group;
+  }
+  return autoGroup ?? 'Uncategorised';
+}
 
 void main() {
   final userToken = Platform.environment['AKAHU_ACCESS_TOKEN'];
@@ -147,13 +161,12 @@ void main() {
     // Any query that buckets by raw UTC date instead of local date will
     // drop these into July and fail these assertions.
     //
-    // In the 2026-07-29 … 2026-08-01 window, the four July-31-UTC
-    // transactions categorise (via auto-categorizer) as:
-    //   - Health: $0.00  (REDACTED_MERCHANT)
-    //   - Transport: $0.00  (REDACTED_MERCHANT)
-    //   - Food: $0.00  (REDACTED_MERCHANT)
-    //   - Uncategorised: $0.00  (REDACTED_MERCHANT — no Akahu group, no auto match)
-    //   (total expense $0.00)
+    // Rather than pin expected dollar amounts (which drift as the live/sandbox
+    // account's transaction history changes over time), expectations are
+    // derived from whatever transactions the API actually returns for the
+    // window, using the same category-grouping logic the app uses. This keeps
+    // the tests focused on their real purpose — verifying local-date bucketing
+    // across the UTC/NZST boundary — without being brittle to external data.
 
     test(
       'Overview "spending this month" includes the Jul 31 UTC / Aug 1 NZST transactions',
@@ -170,15 +183,29 @@ void main() {
         addTearDown(() => db.close());
         await db.saveTransactions(page.items);
 
+        final now = DateTime.now();
+        final expected = <String, double>{};
+        for (final t in page.items) {
+          if (t.amount >= 0) continue;
+          final local = DateTime.parse(t.date).toLocal();
+          if (local.year != now.year || local.month != now.month) continue;
+          final group = _categoryGroupOf(t);
+          if (group == 'Transfers') continue;
+          expected[group] = (expected[group] ?? 0) + t.amount.abs();
+        }
+        expect(expected, isNotEmpty,
+            reason: 'no local-current-month transactions in the fetched window');
+
         final grouped = await db.watchMonthlySpendByGroup().first;
 
-        expect(grouped['Health'], closeTo(0.00, 0.01));
-        expect(grouped['Transport'], closeTo(0.00, 0.01));
+        for (final entry in expected.entries) {
+          expect(grouped[entry.key], closeTo(entry.value, 0.01));
+        }
       },
     );
 
     test(
-      'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to August, not July',
+      'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to their local month',
       () async {
         final page =
             await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
@@ -192,9 +219,27 @@ void main() {
         addTearDown(() => db.close());
         await db.saveTransactions(page.items);
 
+        final byMonth = <String, (double, double)>{};
+        for (final t in page.items) {
+          if (_categoryGroupOf(t) == 'Transfers') continue;
+          final local = DateTime.parse(t.date).toLocal();
+          final key =
+              '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}';
+          final cur = byMonth[key] ?? (0.0, 0.0);
+          if (t.amount >= 0) {
+            byMonth[key] = (cur.$1 + t.amount, cur.$2);
+          } else {
+            byMonth[key] = (cur.$1, cur.$2 + t.amount.abs());
+          }
+        }
+        expect(byMonth, isNotEmpty);
+
         final monthly = await db.watchMonthlyTotals(2).first;
 
-        expect(monthly['2026-08']?.$2, closeTo(0.00, 0.01));
+        for (final entry in byMonth.entries) {
+          expect(monthly[entry.key]?.$1, closeTo(entry.value.$1, 0.01));
+          expect(monthly[entry.key]?.$2, closeTo(entry.value.$2, 0.01));
+        }
       },
     );
 
@@ -214,11 +259,25 @@ void main() {
         addTearDown(() => db.close());
         await db.saveTransactions(page.items);
 
-        final categories =
-            await db.queryCategoryTotals(start: DateTime(2026, 8, 1)).first;
+        final cutoff = DateTime(2026, 8, 1);
+        final expected = <String, double>{};
+        for (final t in page.items) {
+          if (t.amount >= 0) continue;
+          final local = DateTime.parse(t.date).toLocal();
+          final localDate = DateTime(local.year, local.month, local.day);
+          if (localDate.isBefore(cutoff)) continue;
+          final group = _categoryGroupOf(t);
+          expected[group] = (expected[group] ?? 0) + t.amount.abs();
+        }
+        expect(expected, isNotEmpty,
+            reason: 'no transactions on/after the Aug 1 local cutoff');
 
-        expect(categories['Health'], closeTo(0.00, 0.01));
-        expect(categories['Transport'], closeTo(0.00, 0.01));
+        final categories =
+            await db.queryCategoryTotals(start: cutoff).first;
+
+        for (final entry in expected.entries) {
+          expect(categories[entry.key], closeTo(entry.value, 0.01));
+        }
       },
     );
   });
