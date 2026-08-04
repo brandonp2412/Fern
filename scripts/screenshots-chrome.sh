@@ -39,6 +39,30 @@ fi
 headless_flag=(--headless)
 [ "$show" -eq 1 ] && headless_flag=()
 
+chromedriver_pid=""
+cleanup() {
+    [ -n "$chromedriver_pid" ] || return 0
+    kill -TERM "$chromedriver_pid" >/dev/null 2>&1 || true
+    wait "$chromedriver_pid" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+if ! curl -s -o /dev/null http://localhost:4444/status; then
+    echo "Starting chromedriver on port 4444..."
+    chromedriver --port=4444 >/tmp/fern-chromedriver.log 2>&1 &
+    chromedriver_pid=$!
+
+    for _ in $(seq 1 20); do
+        curl -s -o /dev/null http://localhost:4444/status && break
+        sleep 0.5
+    done
+
+    if ! curl -s -o /dev/null http://localhost:4444/status; then
+        echo "ERROR: chromedriver did not become ready on port 4444"
+        exit 1
+    fi
+fi
+
 # Run Flutter drive command targeting Chrome
 flutter drive --profile --driver=test_driver/integration_test.dart \
     --target=integration_test/screenshot_test.dart \
