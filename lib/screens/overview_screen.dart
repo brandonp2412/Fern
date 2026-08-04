@@ -1,4 +1,4 @@
-import 'package:fern/screens/account_detail_screen.dart';
+import 'package:fern/screens/account_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/account.dart';
 import '../state/app_state.dart';
@@ -264,7 +264,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) =>
-                        AccountDetailScreen(state: widget.state, account: a),
+                        AccountScreen(state: widget.state, account: a),
                   ),
                 ),
                 child: Padding(

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:fern/models/account.dart';
-import 'package:fern/screens/account_detail_screen.dart';
+import 'package:fern/screens/account_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:flutter/material.dart';
@@ -18,10 +18,12 @@ Future<void> _pump(WidgetTester tester, AppState state, Account account) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: AccountDetailScreen(state: state, account: account),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: AccountScreen(state: state, account: account),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -35,15 +37,20 @@ void main() {
     final state = await seededState(
       tester: tester,
       accounts: [a],
-      api: fakeApi(client: MockClient((req) async {
-        if (req.url.path.contains('/transactions/pending')) {
-          return http.Response(jsonEncode({'success': true, 'items': []}), 200);
-        }
-        return http.Response(
-          jsonEncode({'success': true, 'items': [], 'cursor': null}),
-          200,
-        );
-      })),
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
       db: testDb(),
     );
 
@@ -62,15 +69,20 @@ void main() {
       tester: tester,
       accounts: [a],
       settings: settings,
-      api: fakeApi(client: MockClient((req) async {
-        if (req.url.path.contains('/transactions/pending')) {
-          return http.Response(jsonEncode({'success': true, 'items': []}), 200);
-        }
-        return http.Response(
-          jsonEncode({'success': true, 'items': [], 'cursor': null}),
-          200,
-        );
-      })),
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
       db: testDb(),
     );
 
@@ -94,18 +106,23 @@ void main() {
     final state = await seededState(
       tester: tester,
       accounts: [a],
-      api: fakeApi(client: MockClient((req) async {
-        if (req.url.path.contains('/transactions/pending')) {
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({
+                'success': true,
+                'items': [pendingJson],
+              }),
+              200,
+            );
+          }
           return http.Response(
-            jsonEncode({'success': true, 'items': [pendingJson]}),
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
             200,
           );
-        }
-        return http.Response(
-          jsonEncode({'success': true, 'items': [], 'cursor': null}),
-          200,
-        );
-      })),
+        }),
+      ),
       db: testDb(),
     );
 
@@ -124,15 +141,20 @@ void main() {
       tester: tester,
       accounts: [a],
       transactions: [tx],
-      api: fakeApi(client: MockClient((req) async {
-        if (req.url.path.contains('/transactions/pending')) {
-          return http.Response(jsonEncode({'success': true, 'items': []}), 200);
-        }
-        return http.Response(
-          jsonEncode({'success': true, 'items': [], 'cursor': null}),
-          200,
-        );
-      })),
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
     );
 
     await _pump(tester, state, a);
@@ -146,15 +168,20 @@ void main() {
     final state = await seededState(
       tester: tester,
       accounts: [a],
-      api: fakeApi(client: MockClient((req) async {
-        if (req.url.path.contains('/transactions/pending')) {
-          return http.Response(jsonEncode({'success': true, 'items': []}), 200);
-        }
-        return http.Response(
-          jsonEncode({'success': true, 'items': [], 'cursor': null}),
-          200,
-        );
-      })),
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
     );
 
     await _pump(tester, state, a);

@@ -1,4 +1,4 @@
-import 'package:fern/screens/account_detail_screen.dart';
+import 'package:fern/screens/account_screen.dart';
 import 'package:fern/screens/overview_screen.dart';
 import 'package:fern/screens/categorize_spending_screen.dart';
 import 'package:fern/state/app_state.dart';
@@ -62,7 +62,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(AccountDetailScreen), findsOneWidget);
+      expect(find.byType(AccountScreen), findsOneWidget);
       expect(find.widgetWithText(AppBar, 'ASB Streamline'), findsOneWidget);
     },
   );

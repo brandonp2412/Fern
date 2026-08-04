@@ -10,18 +10,17 @@ import '../widgets/common.dart';
 import '../widgets/txn_tile.dart';
 import 'txn_detail.dart';
 
-class AccountDetailScreen extends StatefulWidget {
+class AccountScreen extends StatefulWidget {
   final AppState state;
   final Account account;
 
-  const AccountDetailScreen(
-      {super.key, required this.state, required this.account});
+  const AccountScreen({super.key, required this.state, required this.account});
 
   @override
-  State<AccountDetailScreen> createState() => _AccountDetailScreenState();
+  State<AccountScreen> createState() => _AccountScreenState();
 }
 
-class _AccountDetailScreenState extends State<AccountDetailScreen> {
+class _AccountScreenState extends State<AccountScreen> {
   final _scroll = ScrollController();
   List<Transaction> _txns = [];
   List<PendingTransaction> _pending = [];
@@ -40,8 +39,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         .listen(_onTxnRows);
     _load();
     _scroll.addListener(() {
-      if (_scroll.position.pixels >
-              _scroll.position.maxScrollExtent - 200 &&
+      if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 200 &&
           !_loadingMore &&
           _cursor != null) {
         _loadMore();
@@ -98,8 +96,10 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
-      final page = await widget.state.api
-          .getAccountTransactions(widget.account.id, cursor: _cursor);
+      final page = await widget.state.api.getAccountTransactions(
+        widget.account.id,
+        cursor: _cursor,
+      );
       widget.state.cacheTransactions(page.items);
       if (mounted) {
         setState(() {
@@ -116,16 +116,20 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     try {
       await widget.state.api.refresh(widget.account.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Refresh requested — check back shortly')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Refresh requested — check back shortly'),
+          ),
+        );
       }
       await Future.delayed(const Duration(seconds: 5));
       await _load();
       await widget.state.reloadAccounts();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -149,72 +153,73 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && _txns.isEmpty
-              ? ErrorState(error: _error!, onRetry: _load)
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    controller: _scroll,
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _balanceHero(a),
-                      if (_pending.isNotEmpty) ...[
-                        SectionHeader('Pending (${_pending.length})'),
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              children: [
-                                for (final p in _pending) _pendingRow(p),
-                              ],
-                            ),
-                          ),
+          ? ErrorState(error: _error!, onRetry: _load)
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                controller: _scroll,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _balanceHero(a),
+                  if (_pending.isNotEmpty) ...[
+                    SectionHeader('Pending (${_pending.length})'),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [for (final p in _pending) _pendingRow(p)],
                         ),
-                      ],
-                      SectionHeader('Transactions'),
-                      if (_txns.isEmpty)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Text('No transactions found',
-                                style: TextStyle(color: fern.slate)),
-                          ),
-                        )
-                      else
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              children: [
-                                for (final tx in _txns)
-                                  TxnTile(
-                                    tx: tx,
-                                    masked: widget.state.settings.hideBalances,
-                                    categoryGroupOverride: widget.state
-                                        .categoryGroupFor(tx),
-                                    onTap: () => showTxnDetail(
-                                        context, widget.state, tx),
-                                  ),
-                              ],
-                            ),
-                          ),
+                      ),
+                    ),
+                  ],
+                  SectionHeader('Transactions'),
+                  if (_txns.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          'No transactions found',
+                          style: TextStyle(color: fern.slate),
                         ),
-                      if (_loadingMore)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (_cursor == null && _txns.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Center(
-                            child: Text('End of history',
-                                style: TextStyle(
-                                    color: fern.slate, fontSize: 12)),
-                          ),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            for (final tx in _txns)
+                              TxnTile(
+                                tx: tx,
+                                masked: widget.state.settings.hideBalances,
+                                categoryGroupOverride: widget.state
+                                    .categoryGroupFor(tx),
+                                onTap: () =>
+                                    showTxnDetail(context, widget.state, tx),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                ),
+                      ),
+                    ),
+                  if (_loadingMore)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_cursor == null && _txns.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Center(
+                        child: Text(
+                          'End of history',
+                          style: TextStyle(color: fern.slate, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -247,14 +252,20 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(a.connection?.name ?? '',
-                        style: TextStyle(
-                            color: fern.onGreen.withValues(alpha: 0.85),
-                            fontSize: 12.5)),
-                    Text(accountTypeLabel(a.type),
-                        style: TextStyle(
-                            color: fern.onGreen.withValues(alpha: 0.75),
-                            fontSize: 12)),
+                    Text(
+                      a.connection?.name ?? '',
+                      style: TextStyle(
+                        color: fern.onGreen.withValues(alpha: 0.85),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    Text(
+                      accountTypeLabel(a.type),
+                      style: TextStyle(
+                        color: fern.onGreen.withValues(alpha: 0.75),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -265,8 +276,10 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           Text(
             masked
                 ? '••••'
-                : money(a.displayBalance,
-                    currency: a.balance?.currency ?? 'NZD'),
+                : money(
+                    a.displayBalance,
+                    currency: a.balance?.currency ?? 'NZD',
+                  ),
             style: TextStyle(
               color: fern.onGreen,
               fontSize: 32,
@@ -280,33 +293,41 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             children: [
               if (a.balance?.available != null)
                 Text(
-                    masked
-                        ? '•••• available'
-                        : '${money(a.balance!.available)} available',
-                    style: TextStyle(
-                        color: fern.onGreen.withValues(alpha: 0.85),
-                        fontSize: 12.5)),
+                  masked
+                      ? '•••• available'
+                      : '${money(a.balance!.available)} available',
+                  style: TextStyle(
+                    color: fern.onGreen.withValues(alpha: 0.85),
+                    fontSize: 12.5,
+                  ),
+                ),
               if (a.balance?.limit != null)
                 Text(
-                    masked
-                        ? '•••• limit'
-                        : '${money(a.balance!.limit)} limit',
-                    style: TextStyle(
-                        color: fern.onGreen.withValues(alpha: 0.85),
-                        fontSize: 12.5)),
+                  masked ? '•••• limit' : '${money(a.balance!.limit)} limit',
+                  style: TextStyle(
+                    color: fern.onGreen.withValues(alpha: 0.85),
+                    fontSize: 12.5,
+                  ),
+                ),
               if (a.refreshed?.balance != null)
-                Text('Updated ${relativeDate(a.refreshed!.balance)}',
-                    style: TextStyle(
-                        color: fern.onGreen.withValues(alpha: 0.85),
-                        fontSize: 12.5)),
+                Text(
+                  'Updated ${relativeDate(a.refreshed!.balance)}',
+                  style: TextStyle(
+                    color: fern.onGreen.withValues(alpha: 0.85),
+                    fontSize: 12.5,
+                  ),
+                ),
             ],
           ),
           if (a.formattedAccount != null) ...[
             const SizedBox(height: 8),
-            Text(a.formattedAccount!,
-                style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.7),
-                    fontSize: 12)),
+            Text(
+              a.formattedAccount!,
+              style: TextStyle(
+                color: fern.onGreen.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
           ],
         ],
       ),
@@ -337,7 +358,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   '${relativeDate(p.date)} · pending',
@@ -346,8 +369,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
               ],
             ),
           ),
-          AmountText(p.amount,
-              masked: widget.state.settings.hideBalances),
+          AmountText(p.amount, masked: widget.state.settings.hideBalances),
         ],
       ),
     );
