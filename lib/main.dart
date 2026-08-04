@@ -9,7 +9,10 @@ import 'state/app_state.dart';
 import 'theme.dart';
 
 Future<void> _openLink(String url) async {
-  await launchUrl(Uri.parse('https://$url'), mode: LaunchMode.externalApplication);
+  await launchUrl(
+    Uri.parse('https://$url'),
+    mode: LaunchMode.externalApplication,
+  );
 }
 
 void main() {
@@ -168,20 +171,16 @@ class _SetupScreenState extends State<SetupScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: fern.onGreen.withValues(alpha: 0.12),
+                  color: fern.onDeep.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.eco_outlined,
-                  size: 56,
-                  color: fern.onGreen,
-                ),
+                child: Icon(Icons.eco_outlined, size: 56, color: fern.onDeep),
               ),
               const SizedBox(height: 16),
               Text(
                 'Fern',
                 style: TextStyle(
-                  color: fern.onGreen,
+                  color: fern.onDeep,
                   fontSize: 34,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1,
@@ -305,7 +304,8 @@ class _SetupScreenState extends State<SetupScreen> {
                                     prefix: 'Sign up at ',
                                     linkText: 'my.akahu.nz',
                                     linkUrl: 'my.akahu.nz',
-                                    suffix: ' and link one of your bank accounts.',
+                                    suffix:
+                                        ' and link one of your bank accounts.',
                                   ),
                                   _SetupStep(
                                     number: '2',
@@ -381,7 +381,7 @@ class _SetupStep extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: fern.deep,
+                color: fern.green,
               ),
             ),
           ),
@@ -396,7 +396,7 @@ class _SetupStep extends StatelessWidget {
                         TextSpan(
                           text: linkText,
                           style: TextStyle(
-                            color: fern.deep,
+                            color: fern.green,
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.underline,
                           ),
