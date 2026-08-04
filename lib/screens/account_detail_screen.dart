@@ -248,11 +248,12 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(a.connection?.name ?? '',
-                        style:
-                            TextStyle(color: fern.sprout, fontSize: 12.5)),
+                        style: TextStyle(
+                            color: fern.onGreen.withValues(alpha: 0.85),
+                            fontSize: 12.5)),
                     Text(accountTypeLabel(a.type),
                         style: TextStyle(
-                            color: fern.onGreen.withValues(alpha: 0.7),
+                            color: fern.onGreen.withValues(alpha: 0.75),
                             fontSize: 12)),
                   ],
                 ),
@@ -282,23 +283,29 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                     masked
                         ? '•••• available'
                         : '${money(a.balance!.available)} available',
-                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
+                    style: TextStyle(
+                        color: fern.onGreen.withValues(alpha: 0.85),
+                        fontSize: 12.5)),
               if (a.balance?.limit != null)
                 Text(
                     masked
                         ? '•••• limit'
                         : '${money(a.balance!.limit)} limit',
-                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
+                    style: TextStyle(
+                        color: fern.onGreen.withValues(alpha: 0.85),
+                        fontSize: 12.5)),
               if (a.refreshed?.balance != null)
                 Text('Updated ${relativeDate(a.refreshed!.balance)}',
-                    style: TextStyle(color: fern.sprout, fontSize: 12.5)),
+                    style: TextStyle(
+                        color: fern.onGreen.withValues(alpha: 0.85),
+                        fontSize: 12.5)),
             ],
           ),
           if (a.formattedAccount != null) ...[
             const SizedBox(height: 8),
             Text(a.formattedAccount!,
                 style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.54),
+                    color: fern.onGreen.withValues(alpha: 0.7),
                     fontSize: 12)),
           ],
         ],

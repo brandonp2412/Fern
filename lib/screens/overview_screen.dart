@@ -184,7 +184,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
         children: [
           Text(
             'Net position',
-            style: TextStyle(color: fern.sprout, fontSize: 13),
+            style: TextStyle(
+                color: fern.onGreen.withValues(alpha: 0.8), fontSize: 13),
           ),
           const SizedBox(height: 6),
           Text(
@@ -199,14 +200,16 @@ class _OverviewScreenState extends State<OverviewScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _miniStat('Assets', assets, fern.sprout, masked),
+              _miniStat('Assets', assets, fern.onGreen, masked),
               const SizedBox(width: 24),
               if (state.settings.showDebt)
-                _miniStat('Debt', debt.abs(), const Color(0xFFF2B8A0), masked),
+                _miniStat('Debt', debt.abs(), const Color(0xFFFFD9C7), masked),
               const Spacer(),
               Text(
                 '${visible.length} accounts',
-                style: TextStyle(color: fern.sprout, fontSize: 12.5),
+                style: TextStyle(
+                    color: fern.onGreen.withValues(alpha: 0.8),
+                    fontSize: 12.5),
               ),
             ],
           ),
