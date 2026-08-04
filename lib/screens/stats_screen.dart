@@ -9,7 +9,7 @@ import '../theme.dart';
 import '../utils/category_colors.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
-import 'recategorize_screen.dart';
+import 'categorize_spending_screen.dart';
 
 enum _StatsRange { d30, d90, custom, all }
 
@@ -178,14 +178,19 @@ class _StatsScreenState extends State<StatsScreen> {
   List<CategoryTotal> _buildCategoryList() {
     final entries = _categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    return [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
+    return [
+      for (final e in entries) CategoryTotal(name: e.key, amount: e.value),
+    ];
   }
 
   List<WeekTotal> _buildWeeklyList() {
     final keys = _weekly.keys.toList()..sort();
     return [
       for (final k in keys)
-        WeekTotal(label: DateFormat('d MMM').format(DateTime.parse(k)), total: _weekly[k]!),
+        WeekTotal(
+          label: DateFormat('d MMM').format(DateTime.parse(k)),
+          total: _weekly[k]!,
+        ),
     ];
   }
 
@@ -193,7 +198,8 @@ class _StatsScreenState extends State<StatsScreen> {
     final entries = _merchants.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return [
-      for (final e in entries.take(5)) MerchantTotal(name: e.key, amount: e.value),
+      for (final e in entries.take(5))
+        MerchantTotal(name: e.key, amount: e.value),
     ];
   }
 
@@ -274,7 +280,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   }
                 },
                 labelStyle: TextStyle(
-                  color: _range == option ? context.fern.onGreen : context.fern.ink,
+                  color: _range == option
+                      ? context.fern.onGreen
+                      : context.fern.ink,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -459,7 +467,9 @@ class _StatsScreenState extends State<StatsScreen> {
               child: Column(
                 children: [
                   SizedBox(
-                      height: 180, child: _cashFlowChart(context, monthly)),
+                    height: 180,
+                    child: _cashFlowChart(context, monthly),
+                  ),
                   const SizedBox(height: 12),
                   _legendRow(context, [
                     (context.fern.green, 'Income'),
@@ -475,8 +485,7 @@ class _StatsScreenState extends State<StatsScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 20, 16, 16),
-              child:
-                  SizedBox(height: 160, child: _trendChart(context, weekly)),
+              child: SizedBox(height: 160, child: _trendChart(context, weekly)),
             ),
           ),
         ],
@@ -495,12 +504,11 @@ class _StatsScreenState extends State<StatsScreen> {
                 final (start, end) = _rangeBounds();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => RecategorizeScreen(
+                    builder: (_) => CategorizeSpendingScreen(
                       state: widget.state,
                       start: start,
                       end: end,
-                      catFilter:
-                          _catFilter.isNotEmpty ? _catFilter : null,
+                      catFilter: _catFilter.isNotEmpty ? _catFilter : null,
                     ),
                   ),
                 );
@@ -545,12 +553,21 @@ class _StatsScreenState extends State<StatsScreen> {
     return Row(
       children: [
         Expanded(
-          child: _statTile(context, 'Avg monthly income', avgIncome, fern.green),
+          child: _statTile(
+            context,
+            'Avg monthly income',
+            avgIncome,
+            fern.green,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _statTile(
-              context, 'Avg monthly spending', avgExpense, fern.clay),
+            context,
+            'Avg monthly spending',
+            avgExpense,
+            fern.clay,
+          ),
         ),
       ],
     );
@@ -627,13 +644,13 @@ class _StatsScreenState extends State<StatsScreen> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                 BarTooltipItem(
-              money(rod.toY),
-              const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
+                  money(rod.toY),
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
           ),
         ),
         titlesData: FlTitlesData(
@@ -672,15 +689,17 @@ class _StatsScreenState extends State<StatsScreen> {
                   toY: months[i].income,
                   color: fern.green,
                   width: 10,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(4),
+                  ),
                 ),
                 BarChartRodData(
                   toY: months[i].expense,
                   color: fern.clay,
                   width: 10,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(4),
+                  ),
                 ),
               ],
               barsSpace: 4,
@@ -700,8 +719,9 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
       );
     }
-    final maxY =
-        weeks.map((w) => w.total).fold<double>(0, (a, b) => b > a ? b : a);
+    final maxY = weeks
+        .map((w) => w.total)
+        .fold<double>(0, (a, b) => b > a ? b : a);
     return LineChart(
       duration: Duration.zero,
       LineChartData(
@@ -793,8 +813,9 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
     ];
     if (otherTotal > 0) {
-      result.add(_CatEntry(
-          name: 'Other', amount: otherTotal, color: context.fern.slate));
+      result.add(
+        _CatEntry(name: 'Other', amount: otherTotal, color: context.fern.slate),
+      );
     }
     return result;
   }
@@ -842,8 +863,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration:
-                      BoxDecoration(color: c.color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: c.color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -852,7 +875,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Text(
@@ -888,7 +913,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w600),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -909,7 +936,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     masked ? '••••' : money(m.amount),
                     textAlign: TextAlign.right,
                     style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w700),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],

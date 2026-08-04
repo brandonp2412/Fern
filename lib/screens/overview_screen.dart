@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import '../widgets/txn_tile.dart';
-import 'recategorize_screen.dart';
+import 'categorize_spending_screen.dart';
 import 'txn_detail.dart';
 
 class OverviewScreen extends StatefulWidget {
@@ -36,7 +36,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
               if (state.loading) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (state.accounts.isEmpty && txns.isEmpty && state.error != null) {
+              if (state.accounts.isEmpty &&
+                  txns.isEmpty &&
+                  state.error != null) {
                 return ErrorState(
                   error: state.error!,
                   onRetry: () => state.load(),
@@ -66,11 +68,14 @@ class _OverviewScreenState extends State<OverviewScreen> {
                           final now = DateTime.now();
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => RecategorizeScreen(
+                              builder: (_) => CategorizeSpendingScreen(
                                 state: state,
                                 start: DateTime(now.year, now.month, 1),
-                                end: DateTime(now.year, now.month + 1, 1)
-                                    .subtract(const Duration(seconds: 1)),
+                                end: DateTime(
+                                  now.year,
+                                  now.month + 1,
+                                  1,
+                                ).subtract(const Duration(seconds: 1)),
                               ),
                             ),
                           );
@@ -185,7 +190,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Text(
             'Net position',
             style: TextStyle(
-                color: fern.onGreen.withValues(alpha: 0.8), fontSize: 13),
+              color: fern.onGreen.withValues(alpha: 0.8),
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -208,8 +215,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
               Text(
                 '${visible.length} accounts',
                 style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.8),
-                    fontSize: 12.5),
+                  color: fern.onGreen.withValues(alpha: 0.8),
+                  fontSize: 12.5,
+                ),
               ),
             ],
           ),

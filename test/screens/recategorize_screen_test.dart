@@ -1,4 +1,4 @@
-import 'package:fern/screens/recategorize_screen.dart';
+import 'package:fern/screens/categorize_spending_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:flutter/material.dart';
@@ -13,10 +13,12 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: RecategorizeScreen(state: state),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: CategorizeSpendingScreen(state: state),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -44,7 +46,9 @@ void main() {
     expect(find.text('BP'), findsOneWidget);
   });
 
-  testWidgets('shows empty state when no spending transactions', (tester) async {
+  testWidgets('shows empty state when no spending transactions', (
+    tester,
+  ) async {
     final state = await seededState(
       tester: tester,
       accounts: [anzEveryday()],

@@ -9,13 +9,13 @@ import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 
-class RecategorizeScreen extends StatefulWidget {
+class CategorizeSpendingScreen extends StatefulWidget {
   final AppState state;
   final DateTime? start;
   final DateTime? end;
   final Set<String>? catFilter;
 
-  const RecategorizeScreen({
+  const CategorizeSpendingScreen({
     super.key,
     required this.state,
     this.start,
@@ -24,10 +24,11 @@ class RecategorizeScreen extends StatefulWidget {
   });
 
   @override
-  State<RecategorizeScreen> createState() => _RecategorizeScreenState();
+  State<CategorizeSpendingScreen> createState() =>
+      _CategorizeSpendingScreenState();
 }
 
-class _RecategorizeScreenState extends State<RecategorizeScreen> {
+class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
   Timer? _debounce;
@@ -100,7 +101,9 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
       if (!_txMatches(tx)) continue;
       if (!_inDateRange(tx)) continue;
       final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
-      if (_selectedCategories.isNotEmpty && !_selectedCategories.contains(group)) continue;
+      if (_selectedCategories.isNotEmpty &&
+          !_selectedCategories.contains(group))
+        continue;
       groups.putIfAbsent(group, () => []).add(tx);
     }
     final sorted = groups.entries.toList()
@@ -115,7 +118,9 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
   @override
   Widget build(BuildContext context) {
     final grouped = _groupTxns();
-    final txCount = widget.state.transactions.where((tx) => tx.amount < 0).length;
+    final txCount = widget.state.transactions
+        .where((tx) => tx.amount < 0)
+        .length;
     final hasTxns = txCount > 0;
 
     return Scaffold(
@@ -330,13 +335,7 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
             ],
           ),
         ),
-        Card(
-          child: Column(
-            children: [
-              for (final tx in txns) _txnRow(tx),
-            ],
-          ),
-        ),
+        Card(child: Column(children: [for (final tx in txns) _txnRow(tx)])),
       ],
     );
   }
@@ -435,4 +434,3 @@ class _RecategorizeScreenState extends State<RecategorizeScreen> {
     );
   }
 }
-
