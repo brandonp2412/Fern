@@ -1,5 +1,8 @@
 targets:
   $default:
+    sources:
+      - lib/**
+      - swaggers/**
     builders:
       build_web_compilers:entrypoint:
         generate_for:
@@ -12,3 +15,8 @@ targets:
         options:
           databases:
             app_database: lib/db/app_database.dart
+      swagger_dart_code_generator:
+        options:
+          input_folder: swaggers/
+          output_folder: lib/generated/
+          use_path_for_request_names: true

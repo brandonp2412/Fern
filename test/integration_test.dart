@@ -56,7 +56,8 @@ void main() {
       final accounts = await api.getAccounts();
       final withTxns = accounts.where((a) => a.hasTransactions);
       if (withTxns.isEmpty) return;
-      final page = await api.getAccountTransactions(withTxns.first.id);
+      final page = await api.getAccountTransactions(withTxns.first.id,
+          start: '2026-07-01', end: '2026-08-02');
       for (final tx in page.items) {
         expect(tx.id, startsWith('trans_'));
         expect(tx.account, startsWith('acc_'));
@@ -82,7 +83,7 @@ void main() {
     });
 
     test('GET /transactions returns cross-account txns', () async {
-      final page = await api.getTransactions();
+      final page = await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
       expect(page.items, isNotEmpty);
       for (final tx in page.items) {
         expect(tx.id, startsWith('trans_'));
@@ -108,14 +109,16 @@ void main() {
     });
 
     test('GET /transactions/{id} returns single txn', () async {
-      final page = await api.getTransactions();
+      final page =
+          await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
       if (page.items.isEmpty) return;
       final tx = await api.getTransaction(page.items.first.id);
       expect(tx.id, page.items.first.id);
     });
 
     test('POST /transactions/ids fetches by ids', () async {
-      final page = await api.getTransactions();
+      final page =
+          await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
       if (page.items.length < 2) return;
       final ids = page.items.take(2).map((t) => t.id).toList();
       final txns = await api.getTransactionsByIds(ids);
@@ -137,22 +140,26 @@ void main() {
       expect(() => badApi.getAccounts(), throwsA(isA<ApiException>()));
     });
 
-    // The three tests below all pin themselves to the same known,
-    // already-happened boundary case rather than "the current month" or
-    // "today": three real transactions on this account are dated
-    // 2026-07-31T12:00:00.000Z UTC, which is midnight NZST on 2026-08-01 —
+    // The three tests below pin themselves to a known window rather than
+    // "the current month" or "today": transactions dated
+    // 2026-07-31T12:00:00.000Z UTC are midnight NZST on 2026-08-01 —
     // i.e. their raw UTC date is July but their local date is August 1st.
-    // Verified directly against the Akahu API on 2026-08-01:
-    //   - a Lifestyle-group transaction of $0.00
-    //   - a Transport-group transaction of $0.00
-    //   (total $0.00)
     // Any query that buckets by raw UTC date instead of local date will
     // drop these into July and fail these assertions.
+    //
+    // In the 2026-07-29 … 2026-08-01 window, the four July-31-UTC
+    // transactions categorise (via auto-categorizer) as:
+    //   - Health: $0.00  (REDACTED_MERCHANT)
+    //   - Transport: $0.00  (REDACTED_MERCHANT)
+    //   - Food: $0.00  (REDACTED_MERCHANT)
+    //   - Uncategorised: $0.00  (REDACTED_MERCHANT — no Akahu group, no auto match)
+    //   (total expense $0.00)
 
     test(
       'Overview "spending this month" includes the Jul 31 UTC / Aug 1 NZST transactions',
       () async {
-        final page = await api.getTransactions(start: '2026-07-29');
+        final page =
+            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -165,7 +172,7 @@ void main() {
 
         final grouped = await db.watchMonthlySpendByGroup().first;
 
-        expect(grouped['Lifestyle'], closeTo(0.00, 0.01));
+        expect(grouped['Health'], closeTo(0.00, 0.01));
         expect(grouped['Transport'], closeTo(0.00, 0.01));
       },
     );
@@ -173,7 +180,8 @@ void main() {
     test(
       'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to August, not July',
       () async {
-        final page = await api.getTransactions(start: '2026-07-29');
+        final page =
+            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -194,7 +202,8 @@ void main() {
       '_dateWhere-backed queries (queryCategoryTotals) attribute the Jul 31 UTC '
       'transactions to the Aug 1 local day',
       () async {
-        final page = await api.getTransactions(start: '2026-07-29');
+        final page =
+            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -208,7 +217,7 @@ void main() {
         final categories =
             await db.queryCategoryTotals(start: DateTime(2026, 8, 1)).first;
 
-        expect(categories['Lifestyle'], closeTo(0.00, 0.01));
+        expect(categories['Health'], closeTo(0.00, 0.01));
         expect(categories['Transport'], closeTo(0.00, 0.01));
       },
     );

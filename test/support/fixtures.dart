@@ -35,6 +35,7 @@ AppDatabase testDb() {
 
 Account anzEveryday({num balance = 2450.32}) => Account.fromJson({
   '_id': 'acc_anz_everyday',
+  '_authorisation': 'auth_anz',
   'name': 'ANZ Everyday',
   'status': 'ACTIVE',
   'type': 'CHECKING',
@@ -50,6 +51,7 @@ Account anzEveryday({num balance = 2450.32}) => Account.fromJson({
 
 Account asbStreamline({num balance = 8120.11}) => Account.fromJson({
   '_id': 'acc_asb_streamline',
+  '_authorisation': 'auth_asb',
   'name': 'ASB Streamline',
   'status': 'ACTIVE',
   'type': 'SAVINGS',
@@ -65,6 +67,7 @@ Account asbStreamline({num balance = 8120.11}) => Account.fromJson({
 
 Account kiwibankNoticeSaver({num balance = 15302.87}) => Account.fromJson({
   '_id': 'acc_kiwibank_notice_saver',
+  '_authorisation': 'auth_kiwibank',
   'name': 'Kiwibank Notice Saver',
   'status': 'ACTIVE',
   'type': 'SAVINGS',
@@ -80,6 +83,7 @@ Account kiwibankNoticeSaver({num balance = 15302.87}) => Account.fromJson({
 
 Account amexCreditCard({num owing = 512.40}) => Account.fromJson({
   '_id': 'acc_amex_credit_card',
+  '_authorisation': 'auth_amex',
   'name': 'Amex Platinum',
   'status': 'ACTIVE',
   'type': 'CREDITCARD',
@@ -117,10 +121,13 @@ Transaction _tx({
   '_id': id,
   '_account': account,
   '_connection': 'conn_anz',
+  '_user': 'user_test_token',
   'date': date,
   'description': description,
   'amount': amount,
   'type': type,
+  'created_at': date,
+  'updated_at': date,
   if (merchantName != null)
     'merchant': {'_id': 'merch_$id', 'name': merchantName},
   if (categoryName != null)

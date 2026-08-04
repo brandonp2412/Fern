@@ -1,5 +1,8 @@
-import 'dart:convert';
+import 'package:chopper/chopper.dart' as chopper;
 import 'package:http/http.dart' as http;
+
+import '../generated/akahu.enums.swagger.dart' as gen_enums;
+import '../generated/akahu.swagger.dart' as gen;
 import '../models/account.dart';
 import '../models/page.dart';
 import '../models/transaction.dart';
@@ -8,90 +11,63 @@ import '../models/user.dart';
 class AkahuApi {
   static const _baseUrl = 'https://api.akahu.io/v1';
 
-  final String _userToken;
   final String _appToken;
-  final http.Client _client;
+  final gen.Akahu _service;
+  final http.Client _httpClient;
 
-  AkahuApi({
-    required this._userToken,
-    required this._appToken,
+  factory AkahuApi({
+    required String userToken,
+    required String appToken,
     http.Client? client,
-  })  : _client = client ?? http.Client();
-
-  Map<String, String> get _userHeaders => {
-        'Authorization': 'Bearer $_userToken',
-        'X-Akahu-Id': _appToken,
-      };
-
-  Future<Map<String, dynamic>> _request(
-    String method,
-    String path, {
-    Map<String, String>? params,
-    Object? body,
-    bool noAuth = false,
-  }) async {
-    final uri = Uri.parse('$_baseUrl$path')
-        .replace(queryParameters: params != null && params.isNotEmpty ? params : null);
-    final headers = <String, String>{
-      if (!noAuth) ..._userHeaders,
-      if (body != null) 'Content-Type': 'application/json',
-    };
-    final res = await switch (method) {
-      'GET' => _client.get(uri, headers: headers),
-      'POST' => _client.post(uri, headers: headers,
-          body: body != null ? json.encode(body) : null),
-      'PUT' => _client.put(uri, headers: headers,
-          body: body != null ? json.encode(body) : null),
-      'DELETE' => _client.delete(uri, headers: headers),
-      _ => throw ArgumentError('Unsupported method $method'),
-    };
-    return _parseResponse(res);
+  }) {
+    final c = client ?? http.Client();
+    return AkahuApi._(
+      appToken: appToken,
+      client: c,
+      service: gen.Akahu.create(
+        baseUrl: Uri.parse(_baseUrl),
+        httpClient: c,
+        interceptors: [
+          chopper.HeadersInterceptor({'Authorization': 'Bearer $userToken'}),
+        ],
+      ),
+    );
   }
 
-  Future<Map<String, dynamic>> _get(String path,
-          {Map<String, String>? params}) =>
-      _request('GET', path, params: params);
+  AkahuApi._({
+    required String appToken,
+    required http.Client client,
+    required gen.Akahu service,
+  }) : _appToken = appToken,
+       _httpClient = client,
+       _service = service;
 
-  Future<Map<String, dynamic>> _post(String path,
-          {Object? body, bool noAuth = false}) =>
-      _request('POST', path, body: body, noAuth: noAuth);
-
-  Future<Map<String, dynamic>> _delete(String path) =>
-      _request('DELETE', path);
-
-  Map<String, dynamic> _parseResponse(http.Response res) {
-    Map<String, dynamic> data;
-    try {
-      data = json.decode(res.body) as Map<String, dynamic>;
-    } catch (_) {
-      throw ApiException('HTTP ${res.statusCode}: ${res.body}', res.statusCode);
-    }
-    if (res.statusCode >= 200 && res.statusCode < 300 && data['success'] == true) {
-      return data;
+  T _ok<T>(chopper.Response<T> res) {
+    final body = res.body;
+    final code = res.base.statusCode;
+    if (code >= 200 && code < 300 && (body as dynamic).success == true) {
+      return body!;
     }
     throw ApiException(
-        data['message']?.toString() ?? 'HTTP ${res.statusCode}', res.statusCode);
+      (body as dynamic)?.message?.toString() ?? 'HTTP $code',
+      code,
+    );
   }
 
-  static Map<String, String> _range(String? start, String? end,
-          {String? cursor}) {
-    final m = <String, String>{};
-    if (start != null) m['start'] = start;
-    if (end != null) m['end'] = end;
-    if (cursor != null) m['cursor'] = cursor;
-    return m;
+  Future<User> getMe() async {
+    final body = _ok(await _service.meGet(xAkahuId: _appToken));
+    return User.fromJson(body.item!.toJson());
   }
-
-  Future<User> getMe() async =>
-      User.fromJson((await _get('/me'))['item']);
 
   Future<List<Account>> getAccounts() async {
-    final items = (await _get('/accounts'))['items'] as List<dynamic>;
-    return items.map((e) => Account.fromJson(e)).toList();
+    final body = _ok(await _service.accountsGet(xAkahuId: _appToken));
+    return body.items!.map((e) => Account.fromJson(e.toJson())).toList();
   }
 
-  Future<Account> getAccount(String id) async =>
-      Account.fromJson((await _get('/accounts/$id'))['item']);
+  Future<Account> getAccount(String id) async {
+    final body = _ok(await _service.accountsIdGet(xAkahuId: _appToken, id: id));
+    return Account.fromJson(body.item!.toJson());
+  }
 
   Future<Page<Transaction>> getAccountTransactions(
     String accountId, {
@@ -99,62 +75,88 @@ class AkahuApi {
     String? end,
     String? cursor,
   }) async {
-    final data = await _get('/accounts/$accountId/transactions',
-        params: _range(start, end, cursor: cursor));
+    final body = _ok(
+      await _service.accountsIdTransactionsGet(
+        xAkahuId: _appToken,
+        id: accountId,
+        start: start != null ? DateTime.tryParse(start) : null,
+        end: end != null ? DateTime.tryParse(end) : null,
+        cursor: cursor,
+      ),
+    );
     return Page(
-      items: (data['items'] as List<dynamic>)
-          .map((e) => Transaction.fromJson(e))
-          .toList(),
-      nextCursor: data['cursor']?['next'],
+      items: body.items!.map((e) => Transaction.fromJson(e.toJson())).toList(),
+      nextCursor: body.cursor?.next,
     );
   }
 
   Future<List<PendingTransaction>> getAccountPendingTransactions(
-      String accountId) async {
-    final data = await _get('/accounts/$accountId/transactions/pending');
-    return (data['items'] as List<dynamic>)
-        .map((e) => PendingTransaction.fromJson(e))
+    String accountId,
+  ) async {
+    final body = _ok(
+      await _service.accountsIdTransactionsPendingGet(
+        xAkahuId: _appToken,
+        id: accountId,
+      ),
+    );
+    return body.items!
+        .map((e) => PendingTransaction.fromJson(e.toJson()))
         .toList();
   }
 
-  Future<void> deleteAuthorisation(String id) =>
-      _delete('/authorisations/$id').then((_) {});
+  Future<void> deleteAuthorisation(String id) async {
+    _ok(await _service.authorisationsIdDelete(xAkahuId: _appToken, id: id));
+  }
 
   Future<Page<Transaction>> getTransactions({
     String? start,
     String? end,
     String? cursor,
   }) async {
-    final data =
-        await _get('/transactions', params: _range(start, end, cursor: cursor));
+    final body = _ok(
+      await _service.transactionsGet(
+        xAkahuId: _appToken,
+        start: start != null ? DateTime.tryParse(start) : null,
+        end: end != null ? DateTime.tryParse(end) : null,
+        cursor: cursor,
+      ),
+    );
     return Page(
-      items: (data['items'] as List<dynamic>)
-          .map((e) => Transaction.fromJson(e))
-          .toList(),
-      nextCursor: data['cursor']?['next'],
+      items: body.items!.map((e) => Transaction.fromJson(e.toJson())).toList(),
+      nextCursor: body.cursor?.next,
     );
   }
 
-  Future<Transaction> getTransaction(String id) async =>
-      Transaction.fromJson((await _get('/transactions/$id'))['item']);
+  Future<Transaction> getTransaction(String id) async {
+    final body = _ok(
+      await _service.transactionsIdGet(xAkahuId: _appToken, id: id),
+    );
+    return Transaction.fromJson(body.item!.toJson());
+  }
 
   Future<List<PendingTransaction>> getPendingTransactions() async {
-    final data = await _get('/transactions/pending');
-    return (data['items'] as List<dynamic>)
-        .map((e) => PendingTransaction.fromJson(e))
+    final body = _ok(
+      await _service.transactionsPendingGet(xAkahuId: _appToken),
+    );
+    return body.items!
+        .map((e) => PendingTransaction.fromJson(e.toJson()))
         .toList();
   }
 
   Future<List<Transaction>> getTransactionsByIds(List<String> ids) async {
-    final data = await _post('/transactions/ids', body: ids);
-    return (data['items'] as List<dynamic>)
-        .map((e) => Transaction.fromJson(e))
-        .toList();
+    final body = _ok(
+      await _service.transactionsIdsPost(xAkahuId: _appToken, body: ids),
+    );
+    return body.items!.map((e) => Transaction.fromJson(e.toJson())).toList();
   }
 
-  Future<void> refreshAll() => _post('/refresh').then((_) {});
+  Future<void> refreshAll() async {
+    _ok(await _service.refreshPost(xAkahuId: _appToken));
+  }
 
-  Future<void> refresh(String id) => _post('/refresh/$id').then((_) {});
+  Future<void> refresh(String id) async {
+    _ok(await _service.refreshIdPost(xAkahuId: _appToken, id: id));
+  }
 
   Future<void> reportTransaction(
     String transactionId, {
@@ -162,19 +164,31 @@ class AkahuApi {
     String? otherId,
     List<String>? fields,
     String? comment,
-  }) {
-    final body = <String, dynamic>{
-      'type': type,
-    };
-    if (otherId != null) body['other_id'] = otherId;
-    if (fields != null && fields.isNotEmpty) body['fields'] = fields;
-    if (comment != null) body['comment'] = comment;
-    return _post('/support/$transactionId', body: body).then((_) {});
+  }) async {
+    _ok(
+      await _service.supportTransactionIdPost(
+        xAkahuId: _appToken,
+        transactionId: transactionId,
+        body: gen.SupportTransactionIdPost$RequestBody(
+          type: gen_enums.SupportTransactionIdPost$RequestBodyType.values
+              .firstWhere(
+                (e) => e.value == type,
+                orElse: () =>
+                    throw ArgumentError('Unknown support type: $type'),
+              ),
+          otherId: otherId,
+          fields: fields,
+          comment: comment,
+        ),
+      ),
+    );
   }
 
-  Future<void> revokeToken() => _delete('/token').then((_) {});
+  Future<void> revokeToken() async {
+    _ok(await _service.tokenDelete(xAkahuId: _appToken));
+  }
 
-  void close() => _client.close();
+  void close() => _httpClient.close();
 }
 
 class ApiException implements Exception {

@@ -23,9 +23,9 @@ transaction history, and more.
 
 ## The Akahu API spec
 
-The OpenAPI 3.1 spec this app is built against lives in
-[`akahu-openapi.json`](./akahu-openapi.json) at the repo root — see
-[developers.akahu.nz](https://developers.akahu.nz) for the human-readable docs.
+The OpenAPI 3.1 spec this app is built against lives at https://developers.akahu.nz/openapi/api-akahu-apply-spec.yml
+
+See [developers.akahu.nz](https://developers.akahu.nz) for the human-readable docs.
 
 ## Authentication
 

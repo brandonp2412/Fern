@@ -107,6 +107,7 @@ class Transaction {
   final String id;
   final String account;
   final String connection;
+  final String user;
   final String date;
   final String description;
   final num amount;
@@ -124,6 +125,7 @@ class Transaction {
     required this.id,
     required this.account,
     this.connection = '',
+    this.user = '',
     required this.date,
     required this.description,
     required this.amount,
@@ -145,6 +147,7 @@ class Transaction {
       '_id': id,
       '_account': account,
       '_connection': connection,
+      '_user': user,
       'date': date,
       'description': description,
       'amount': amount,
@@ -194,6 +197,7 @@ class Transaction {
       id: json['_id'] ?? '',
       account: json['_account'] ?? '',
       connection: json['_connection'] ?? '',
+      user: json['_user'] ?? '',
       date: json['date'] ?? '',
       description: json['description'] ?? '',
       amount: json['amount'] is num ? json['amount'] : 0,

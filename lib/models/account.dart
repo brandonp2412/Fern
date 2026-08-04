@@ -74,6 +74,8 @@ class Account {
   final AccountBalance? balance;
   final String? holder;
   final AccountRefreshed? refreshed;
+  final String authorisation;
+  final String? migrated;
 
   Account({
     required this.id,
@@ -86,6 +88,8 @@ class Account {
     this.balance,
     this.holder,
     this.refreshed,
+    this.authorisation = '',
+    this.migrated,
   });
 
   bool get isActive => status == 'ACTIVE';
@@ -112,6 +116,8 @@ class Account {
       'type': type,
       'attributes': attributes,
       'formatted_account': formattedAccount,
+      '_authorisation': authorisation,
+      '_migrated': migrated,
       'connection': connection == null
           ? null
           : {
@@ -162,6 +168,8 @@ class Account {
       refreshed: json['refreshed'] != null
           ? AccountRefreshed.fromJson(json['refreshed'])
           : null,
+      authorisation: json['_authorisation'] ?? '',
+      migrated: json['_migrated'],
     );
   }
 }
