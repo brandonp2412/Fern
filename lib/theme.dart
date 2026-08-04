@@ -178,6 +178,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
   final Color clay;
   final Color sand;
   final Color onGreen;
+  final Color onDeep;
 
   const FernPalette({
     required this.ink,
@@ -191,22 +192,27 @@ class FernPalette extends ThemeExtension<FernPalette> {
     required this.clay,
     required this.sand,
     required this.onGreen,
+    required this.onDeep,
   });
 
   factory FernPalette.fromScheme(ColorScheme scheme) {
     final dark = scheme.brightness == Brightness.dark;
+    final deep = Color.lerp(scheme.primary, Colors.black, dark ? 0.65 : 0.5)!;
     return FernPalette(
       ink: scheme.onSurface,
       slate: scheme.onSurfaceVariant,
       mist: scheme.surfaceContainerHighest,
       cream: dark ? scheme.surface : const Color(0xFFF5F7F0),
-      deep: Color.lerp(scheme.primary, Colors.black, dark ? 0.65 : 0.5)!,
+      deep: deep,
       green: scheme.primary,
       moss: Color.lerp(scheme.primary, dark ? Colors.white : Colors.black, 0.2)!,
       sprout: dark ? Color.lerp(scheme.primary, Colors.white, 0.6)! : Color.lerp(scheme.primary, Colors.white, 0.55)!,
       clay: scheme.error,
       sand: dark ? scheme.surfaceContainerHigh : const Color(0xFFEFE9DC),
       onGreen: scheme.onPrimary,
+      onDeep: ThemeData.estimateBrightnessForColor(deep) == Brightness.dark
+          ? Colors.white
+          : Colors.black,
     );
   }
 
@@ -223,6 +229,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
     Color? clay,
     Color? sand,
     Color? onGreen,
+    Color? onDeep,
   }) {
     return FernPalette(
       ink: ink ?? this.ink,
@@ -236,6 +243,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       clay: clay ?? this.clay,
       sand: sand ?? this.sand,
       onGreen: onGreen ?? this.onGreen,
+      onDeep: onDeep ?? this.onDeep,
     );
   }
 
@@ -254,6 +262,7 @@ class FernPalette extends ThemeExtension<FernPalette> {
       clay: Color.lerp(clay, other.clay, t)!,
       sand: Color.lerp(sand, other.sand, t)!,
       onGreen: Color.lerp(onGreen, other.onGreen, t)!,
+      onDeep: Color.lerp(onDeep, other.onDeep, t)!,
     );
   }
 }
