@@ -13,13 +13,13 @@ curl -sSfL -o swaggers/akahu.swagger https://developers.akahu.nz/openapi/api-aka
 dart run build_runner build -d
 
 echo "== formatting =="
-dart format .
+dart format lib test
 
 echo "== applying auto-fixes =="
-dart fix --apply
+dart fix --apply lib test
 
 echo "== analyzing =="
-flutter analyze
+flutter analyze lib test
 
 echo "== testing =="
 flutter test
