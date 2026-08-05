@@ -13,10 +13,12 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: ActivityScreen(state: state),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: ActivityScreen(state: state),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -38,10 +40,7 @@ void main() {
   });
 
   testWidgets('shows empty state when no transactions', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     expect(find.text('No transactions'), findsOneWidget);
@@ -79,35 +78,26 @@ void main() {
     expect(find.textContaining('\$3,200'), findsNothing);
   });
 
-  testWidgets('switches between 30 and 90 day ranges', (tester) async {
+  testWidgets('does not limit activity to a preset date range', (tester) async {
     final now = DateTime.now();
     final oldTx = bpFuel(
-      date: now.subtract(const Duration(days: 60)).toUtc().toIso8601String(),
-    );
-    final recentTx = mcdonaldsBurger(
-      date: now.toUtc().toIso8601String(),
+      date: DateTime(
+        now.year - 2,
+        now.month,
+        now.day,
+      ).toUtc().toIso8601String(),
     );
 
     final state = await seededState(
       tester: tester,
       accounts: [anzEveryday()],
-      transactions: [oldTx, recentTx],
+      transactions: [oldTx],
     );
     await _pump(tester, state);
 
-    await tester.tap(find.text('90 days'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
     expect(find.text('BP'), findsOneWidget);
-    expect(find.text("McDonald's"), findsOneWidget);
-
-    await tester.tap(find.text('30 days'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text("McDonald's"), findsOneWidget);
-    expect(find.text('BP'), findsNothing);
+    expect(find.text('6 months'), findsNothing);
+    expect(find.text('1 year'), findsNothing);
   });
 
   testWidgets('masks amounts when hideBalances is on', (tester) async {

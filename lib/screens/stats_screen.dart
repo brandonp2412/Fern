@@ -11,7 +11,7 @@ import '../utils/format.dart';
 import '../widgets/common.dart';
 import 'categorize_spending_screen.dart';
 
-enum _StatsRange { d30, d90, custom, all }
+enum _StatsRange { m6, y1, custom, all }
 
 class _MonthBucket {
   final String key;
@@ -42,7 +42,7 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  _StatsRange _range = _StatsRange.d90;
+  _StatsRange _range = _StatsRange.m6;
   DateTimeRange? _customRange;
   Set<String> _catFilter = {};
 
@@ -98,10 +98,10 @@ class _StatsScreenState extends State<StatsScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     switch (_range) {
-      case _StatsRange.d30:
-        return (today.subtract(const Duration(days: 30)), null);
-      case _StatsRange.d90:
-        return (today.subtract(const Duration(days: 90)), null);
+      case _StatsRange.m6:
+        return (DateTime(today.year, today.month - 6, today.day), null);
+      case _StatsRange.y1:
+        return (DateTime(today.year - 1, today.month, today.day), null);
       case _StatsRange.custom:
         return (_customRange?.start, _customRange?.end);
       case _StatsRange.all:
@@ -247,8 +247,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Widget _rangeSelector(BuildContext context) {
     final labelFor = {
-      _StatsRange.d30: '30 days',
-      _StatsRange.d90: '90 days',
+      _StatsRange.m6: '6 months',
+      _StatsRange.y1: '1 year',
       _StatsRange.all: 'All time',
       _StatsRange.custom: _customRange == null
           ? 'Custom'
@@ -261,8 +261,8 @@ class _StatsScreenState extends State<StatsScreen> {
         scrollDirection: Axis.horizontal,
         children: [
           for (final option in [
-            _StatsRange.d30,
-            _StatsRange.d90,
+            _StatsRange.m6,
+            _StatsRange.y1,
             _StatsRange.all,
             _StatsRange.custom,
           ])

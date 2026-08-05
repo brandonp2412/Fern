@@ -133,7 +133,20 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [_categoryButton()],
+                    children: [
+                      _categoryChip(
+                        label: 'All',
+                        selected: _selectedCategories.isEmpty,
+                        onSelected: (_) => _setCategories({}),
+                      ),
+                      for (final category in _availableCategories)
+                        _categoryChip(
+                          label: category,
+                          selected: _selectedCategories.contains(category),
+                          onSelected: (selected) =>
+                              _toggleCategory(category, selected),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -158,19 +171,20 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
     );
   }
 
-  Widget _categoryButton() {
-    final count = _selectedCategories.length;
-    final label = count == 0 ? 'Categories' : 'Categories ($count)';
+  Widget _categoryChip({
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
+      child: FilterChip(
         label: Text(label),
-        selected: count > 0,
-        avatar: const Icon(Icons.filter_list, size: 16),
-        onSelected: (_) => _openCategoryModal(),
+        selected: selected,
+        onSelected: onSelected,
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: count > 0 ? context.fern.onGreen : context.fern.ink,
+          color: selected ? context.fern.onGreen : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -178,103 +192,19 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
     );
   }
 
-  void _openCategoryModal() {
-    final cats = _availableCategories;
-    var pending = {..._selectedCategories};
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (cats.isNotEmpty)
-                          TextButton(
-                            onPressed: () => setModalState(() {
-                              pending = pending.length == cats.length
-                                  ? {}
-                                  : cats.toSet();
-                            }),
-                            child: Text(
-                              pending.length == cats.length
-                                  ? 'Clear'
-                                  : 'Select all',
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (cats.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No categories yet'),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final cat in cats)
-                            FilterChip(
-                              label: Text(cat),
-                              selected: pending.contains(cat),
-                              showCheckmark: false,
-                              labelStyle: TextStyle(
-                                color: pending.contains(cat)
-                                    ? context.fern.onGreen
-                                    : context.fern.ink,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              onSelected: (val) {
-                                setModalState(() {
-                                  if (val) {
-                                    pending = {...pending, cat};
-                                  } else {
-                                    pending = {...pending}..remove(cat);
-                                  }
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () {
-                          setState(() => _selectedCategories = pending);
-                          _subscribeToGroups();
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text('Apply'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+  void _setCategories(Set<String> categories) {
+    setState(() => _selectedCategories = categories);
+    _subscribeToGroups();
+  }
+
+  void _toggleCategory(String category, bool selected) {
+    final categories = {..._selectedCategories};
+    if (selected) {
+      categories.add(category);
+    } else {
+      categories.remove(category);
+    }
+    _setCategories(categories);
   }
 
   Widget _groupSection(SpendingGroup group) {
@@ -362,8 +292,6 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                 color: fern.clay,
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.edit_outlined, size: 17, color: fern.slate),
           ],
         ),
       ),

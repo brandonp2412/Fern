@@ -10,8 +10,6 @@ import '../widgets/common.dart';
 import '../widgets/txn_tile.dart';
 import 'txn_detail.dart';
 
-enum _ActivityRange { d30, d90 }
-
 class ActivityScreen extends StatefulWidget {
   final AppState state;
 
@@ -26,7 +24,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
   String _direction = 'all';
-  _ActivityRange _range = _ActivityRange.d90;
   String _sortOrder = 'date_desc';
   Set<String> _selectedCategories = {};
   Timer? _debounce;
@@ -84,16 +81,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
     return cats;
   }
 
-  int get _rangeDays => _range == _ActivityRange.d30 ? 30 : 90;
-
   List<Transaction> get _filtered {
     final catFilter = _selectedCategories;
-    final cutoff = DateTime.now().subtract(Duration(days: _rangeDays));
     return widget.state.transactions.where((tx) {
       if (_direction == 'in' && tx.amount <= 0) return false;
       if (_direction == 'out' && tx.amount >= 0) return false;
-      final txDate = parseDate(tx.date);
-      if (txDate != null && txDate.isBefore(cutoff)) return false;
       if (catFilter.isNotEmpty) {
         final cat = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
         if (!catFilter.contains(cat)) return false;
@@ -255,16 +247,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   _direction == 'out',
                   () => setState(() => _direction = 'out'),
                   icon: Icons.call_made,
-                ),
-                _chip(
-                  '30 days',
-                  _range == _ActivityRange.d30,
-                  () => setState(() => _range = _ActivityRange.d30),
-                ),
-                _chip(
-                  '90 days',
-                  _range == _ActivityRange.d90,
-                  () => setState(() => _range = _ActivityRange.d90),
                 ),
                 _categoryButton(),
                 _sortButton(),
@@ -447,7 +429,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
         onSelected: (_) => _openSortModal(),
         showCheckmark: false,
         labelStyle: TextStyle(
-          color: _sortOrder != 'date_desc' ? context.fern.onGreen : context.fern.ink,
+          color: _sortOrder != 'date_desc'
+              ? context.fern.onGreen
+              : context.fern.ink,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -536,7 +520,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No transactions',
-        message: 'Try widening your filters or date range.',
+        message: 'Try widening your filters.',
       );
     }
     final keys = grouped.keys.toList()

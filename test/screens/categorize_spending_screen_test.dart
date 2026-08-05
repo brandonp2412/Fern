@@ -39,11 +39,37 @@ void main() {
     );
     await _pump(tester, state);
 
-    expect(find.text('Lifestyle'), findsOneWidget);
-    expect(find.text('Transport'), findsOneWidget);
+    expect(find.text('Lifestyle'), findsWidgets);
+    expect(find.text('Transport'), findsWidgets);
     expect(find.text("McDonald's"), findsOneWidget);
     expect(find.text('Uber'), findsOneWidget);
     expect(find.text('BP'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+  });
+
+  testWidgets('filters with inline category chips', (tester) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      transactions: [
+        mcdonaldsBurger(date: now),
+        uberTrip(date: now),
+        bpFuel(date: now),
+      ],
+    );
+    await _pump(tester, state);
+
+    expect(find.widgetWithText(FilterChip, 'Lifestyle'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'Transport'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilterChip, 'Lifestyle'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text("McDonald's"), findsOneWidget);
+    expect(find.text('Uber'), findsNothing);
+    expect(find.text('BP'), findsNothing);
   });
 
   testWidgets('shows empty state when no spending transactions', (

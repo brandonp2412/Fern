@@ -13,10 +13,12 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: StatsScreen(state: state),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: StatsScreen(state: state),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -25,10 +27,7 @@ void main() {
   setUpAll(mockNetworkImages);
 
   testWidgets('shows empty state when no transactions', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     expect(find.text('Nothing to show yet'), findsOneWidget);
@@ -59,10 +58,16 @@ void main() {
     );
     await _pump(tester, state);
 
-    expect(find.text('30 days'), findsOneWidget);
-    expect(find.text('90 days'), findsOneWidget);
+    expect(find.text('6 months'), findsOneWidget);
+    expect(find.text('1 year'), findsOneWidget);
     expect(find.text('All time'), findsOneWidget);
     expect(find.text('Custom'), findsOneWidget);
+    expect(
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '6 months'))
+          .selected,
+      isTrue,
+    );
   });
 
   testWidgets('shows category breakdown from sample data', (tester) async {
@@ -92,7 +97,7 @@ void main() {
     expect(find.textContaining('\$14.90'), findsNothing);
   });
 
-  testWidgets('switches to 90 day range', (tester) async {
+  testWidgets('switches to 1 year range', (tester) async {
     final state = await seededState(
       tester: tester,
       accounts: [anzEveryday()],
@@ -100,7 +105,7 @@ void main() {
     );
     await _pump(tester, state);
 
-    await tester.tap(find.text('90 days'));
+    await tester.tap(find.text('1 year'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
