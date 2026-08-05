@@ -97,8 +97,7 @@ class Account {
   bool get canPayTo => attributes.contains('PAYMENT_TO');
   bool get hasTransactions => attributes.contains('TRANSACTIONS');
 
-  bool get isDebt =>
-      const {'CREDITCARD', 'LOAN'}.contains(type.toUpperCase());
+  bool get isDebt => const {'CREDITCARD', 'LOAN'}.contains(type.toUpperCase());
 
   num? get displayBalance {
     final b = balance;
@@ -153,7 +152,8 @@ class Account {
       name: json['name'] ?? '',
       status: json['status'] ?? 'ACTIVE',
       type: json['type'] ?? '',
-      attributes: (json['attributes'] as List<dynamic>?)
+      attributes:
+          (json['attributes'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],

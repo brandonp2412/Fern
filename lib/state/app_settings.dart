@@ -32,7 +32,9 @@ class AppSettings extends ChangeNotifier {
     swipeTabs = prefs.getBool(_swipeTabsKey) ?? false;
     showDebt = prefs.getBool(_showDebtKey) ?? true;
     final modeIndex = prefs.getInt(_themeModeKey);
-    if (modeIndex != null && modeIndex >= 0 && modeIndex < ThemeMode.values.length) {
+    if (modeIndex != null &&
+        modeIndex >= 0 &&
+        modeIndex < ThemeMode.values.length) {
       themeMode = ThemeMode.values[modeIndex];
     }
     final seedValue = prefs.getInt(_seedColorKey);

@@ -14,10 +14,12 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: OverviewScreen(state: state),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: OverviewScreen(state: state),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -25,7 +27,9 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
 void main() {
   setUpAll(mockNetworkImages);
 
-  testWidgets('tapping a transaction tile opens the detail sheet', (tester) async {
+  testWidgets('tapping a transaction tile opens the detail sheet', (
+    tester,
+  ) async {
     final state = await seededState(
       tester: tester,
       accounts: [anzEveryday()],

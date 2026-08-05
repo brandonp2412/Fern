@@ -10,36 +10,42 @@ void main() {
   });
 
   group('load defaults', () {
-    test('defaults hideBalances/swipeTabs off, showDebt on, Fern green seed', () async {
-      final settings = AppSettings();
-      expect(settings.loaded, isFalse);
-      await settings.load();
+    test(
+      'defaults hideBalances/swipeTabs off, showDebt on, Fern green seed',
+      () async {
+        final settings = AppSettings();
+        expect(settings.loaded, isFalse);
+        await settings.load();
 
-      expect(settings.loaded, isTrue);
-      expect(settings.hideBalances, isFalse);
-      expect(settings.swipeTabs, isFalse);
-      expect(settings.showDebt, isTrue);
-      expect(settings.themeMode, ThemeMode.system);
-      expect(settings.seedColor, Fern.green);
-    });
+        expect(settings.loaded, isTrue);
+        expect(settings.hideBalances, isFalse);
+        expect(settings.swipeTabs, isFalse);
+        expect(settings.showDebt, isTrue);
+        expect(settings.themeMode, ThemeMode.system);
+        expect(settings.seedColor, Fern.green);
+      },
+    );
   });
 
   group('setHideBalances', () {
-    test('flips the "Hide account balances" preference and persists it', () async {
-      final settings = AppSettings();
-      await settings.load();
+    test(
+      'flips the "Hide account balances" preference and persists it',
+      () async {
+        final settings = AppSettings();
+        await settings.load();
 
-      var notified = false;
-      settings.addListener(() => notified = true);
-      await settings.setHideBalances(true);
+        var notified = false;
+        settings.addListener(() => notified = true);
+        await settings.setHideBalances(true);
 
-      expect(settings.hideBalances, isTrue);
-      expect(notified, isTrue);
+        expect(settings.hideBalances, isTrue);
+        expect(notified, isTrue);
 
-      final reloaded = AppSettings();
-      await reloaded.load();
-      expect(reloaded.hideBalances, isTrue);
-    });
+        final reloaded = AppSettings();
+        await reloaded.load();
+        expect(reloaded.hideBalances, isTrue);
+      },
+    );
   });
 
   group('setSwipeTabs', () {

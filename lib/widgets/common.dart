@@ -69,9 +69,7 @@ class LogoAvatar extends StatelessWidget {
       child: filePath != null && filePath!.isNotEmpty
           ? Image.file(
               File(filePath!),
-              key: ValueKey(
-                '$filePath-${_fileStamp(filePath!)}',
-              ),
+              key: ValueKey('$filePath-${_fileStamp(filePath!)}'),
               width: size,
               height: size,
               fit: BoxFit.cover,
@@ -93,8 +91,8 @@ class LogoAvatar extends StatelessWidget {
   }
 
   Widget _icon(FernPalette fern) => Center(
-        child: Icon(fallback, color: color ?? fern.green, size: size * 0.55),
-      );
+    child: Icon(fallback, color: color ?? fern.green, size: size * 0.55),
+  );
 
   int _fileStamp(String path) {
     try {
@@ -110,10 +108,13 @@ class AppBarSpinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(14),
-        child: SizedBox(
-            width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-      );
+    padding: EdgeInsets.all(14),
+    child: SizedBox(
+      width: 18,
+      height: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    ),
+  );
 }
 
 class StatusChip extends StatelessWidget {
@@ -203,9 +204,10 @@ class EmptyState extends StatelessWidget {
               child: Icon(icon, color: fern.green, size: 36),
             ),
             const SizedBox(height: 16),
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
             if (message != null) ...[
               const SizedBox(height: 6),
               Text(
@@ -261,7 +263,12 @@ class AmountText extends StatelessWidget {
   final double size;
   final bool masked;
 
-  const AmountText(this.value, {super.key, this.size = 14, this.masked = false});
+  const AmountText(
+    this.value, {
+    super.key,
+    this.size = 14,
+    this.masked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +313,9 @@ class _CategoryPickerState extends State<CategoryPicker> {
   @override
   void initState() {
     super.initState();
-    _searchCtrl.addListener(() => setState(() => _q = _searchCtrl.text.toLowerCase()));
+    _searchCtrl.addListener(
+      () => setState(() => _q = _searchCtrl.text.toLowerCase()),
+    );
   }
 
   @override
@@ -351,7 +360,10 @@ class _CategoryPickerState extends State<CategoryPicker> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
               ),
             ),
           ),
@@ -364,7 +376,10 @@ class _CategoryPickerState extends State<CategoryPicker> {
               onChanged: (v) => setState(() => _applyToFuture = v ?? false),
               title: Text(
                 'Auto-categorize future "${widget.matchLabel}" transactions',
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           Expanded(
@@ -435,10 +450,8 @@ class _CategoryPickerState extends State<CategoryPicker> {
         trailing: selected
             ? Icon(Icons.check, size: 18, color: fern.green)
             : null,
-        onTap: () => widget.onPick(
-          name,
-          name != 'Uncategorised' && _applyToFuture,
-        ),
+        onTap: () =>
+            widget.onPick(name, name != 'Uncategorised' && _applyToFuture),
       ),
     );
   }

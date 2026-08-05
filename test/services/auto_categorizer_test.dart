@@ -7,7 +7,8 @@ import '../support/fixtures.dart';
 // Rebuilds a transaction fixture with a different description (and no
 // merchant, so the description string alone drives categorisation), keeping
 // everything else (amount, account, type) the same.
-Transaction _withDescription(Transaction tx, String description) => Transaction.fromJson({
+Transaction _withDescription(Transaction tx, String description) =>
+    Transaction.fromJson({
       ...tx.toJson(),
       'description': description,
       'merchant': null,
@@ -39,29 +40,41 @@ void main() {
       expect(result?.group, 'Lifestyle');
     });
 
-    test('Mercury Energy is categorised as Electricity services / Utilities', () {
-      final result = AutoCategorizer.categorize(mercuryEnergyBill());
-      expect(result?.name, 'Electricity services');
-      expect(result?.group, 'Utilities');
-    });
+    test(
+      'Mercury Energy is categorised as Electricity services / Utilities',
+      () {
+        final result = AutoCategorizer.categorize(mercuryEnergyBill());
+        expect(result?.name, 'Electricity services');
+        expect(result?.group, 'Utilities');
+      },
+    );
 
-    test('a 2degrees mobile bill is categorised as Telecommunication services / Utilities', () {
-      final tx = mercuryEnergyBill();
-      final result = AutoCategorizer.categorize(_withDescription(tx, '2DEGREES MOBILE'));
-      expect(result?.name, 'Telecommunication services');
-      expect(result?.group, 'Utilities');
-    });
+    test(
+      'a 2degrees mobile bill is categorised as Telecommunication services / Utilities',
+      () {
+        final tx = mercuryEnergyBill();
+        final result = AutoCategorizer.categorize(
+          _withDescription(tx, '2DEGREES MOBILE'),
+        );
+        expect(result?.name, 'Telecommunication services');
+        expect(result?.group, 'Utilities');
+      },
+    );
 
     test('an AT HOP topup is categorised as rideshare/transport services', () {
       final tx = uberTrip();
-      final result = AutoCategorizer.categorize(_withDescription(tx, 'AT HOP TOPUP'));
+      final result = AutoCategorizer.categorize(
+        _withDescription(tx, 'AT HOP TOPUP'),
+      );
       expect(result?.name, 'Taxi, rideshare, and on-demand transport services');
       expect(result?.group, 'Transport');
     });
 
     test('a New World supermarket shop is categorised as Food', () {
       final tx = mcdonaldsBurger();
-      final result = AutoCategorizer.categorize(_withDescription(tx, 'NEW WORLD PONSONBY'));
+      final result = AutoCategorizer.categorize(
+        _withDescription(tx, 'NEW WORLD PONSONBY'),
+      );
       expect(result?.name, 'Supermarkets and grocery stores');
       expect(result?.group, 'Food');
     });
@@ -78,10 +91,13 @@ void main() {
       expect(result?.group, 'Income');
     });
 
-    test('a negative DIRECT CREDIT (e.g. a reversal) does not fall back to Income', () {
-      final result = AutoCategorizer.categorize(payday(amount: -50.00));
-      expect(result, isNull);
-    });
+    test(
+      'a negative DIRECT CREDIT (e.g. a reversal) does not fall back to Income',
+      () {
+        final result = AutoCategorizer.categorize(payday(amount: -50.00));
+        expect(result, isNull);
+      },
+    );
 
     test('an uncategorisable transaction returns null', () {
       final tx = _withDescription(mcdonaldsBurger(), 'JOHN SMITH 123456');
@@ -112,7 +128,10 @@ void main() {
     test('groups categories under their real group names, sorted', () {
       final byGroup = AutoCategorizer.categoriesByGroup;
       expect(byGroup['Transport'], contains('Fuel stations'));
-      expect(byGroup['Transport'], contains('Taxi, rideshare, and on-demand transport services'));
+      expect(
+        byGroup['Transport'],
+        contains('Taxi, rideshare, and on-demand transport services'),
+      );
       final transport = byGroup['Transport']!;
       expect(transport, orderedEquals(transport.toList()..sort()));
     });

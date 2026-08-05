@@ -30,9 +30,14 @@ class TransactionCategory {
   final String name;
   final Map<String, CategoryGroup> groups;
 
-  TransactionCategory({required this.id, required this.name, this.groups = const {}});
+  TransactionCategory({
+    required this.id,
+    required this.name,
+    this.groups = const {},
+  });
 
-  String? get groupName => groups['personal_finance']?.name ??
+  String? get groupName =>
+      groups['personal_finance']?.name ??
       (groups.isNotEmpty ? groups.values.first.name : null);
 
   factory TransactionCategory.fromJson(Map<String, dynamic> json) {
@@ -140,7 +145,8 @@ class Transaction {
     this.autoCategoryGroup,
   });
 
-  String get title => merchant?.name ?? (description.isNotEmpty ? description : type);
+  String get title =>
+      merchant?.name ?? (description.isNotEmpty ? description : type);
 
   Map<String, dynamic> toJson() {
     return {
@@ -211,7 +217,9 @@ class Transaction {
       category: json['category'] != null
           ? TransactionCategory.fromJson(json['category'])
           : null,
-      meta: json['meta'] != null ? TransactionMeta.fromJson(json['meta']) : null,
+      meta: json['meta'] != null
+          ? TransactionMeta.fromJson(json['meta'])
+          : null,
     );
   }
 }
@@ -243,7 +251,9 @@ class PendingTransaction {
       description: json['description'] ?? '',
       amount: json['amount'] is num ? json['amount'] : 0,
       type: json['type'] ?? '',
-      meta: json['meta'] != null ? TransactionMeta.fromJson(json['meta']) : null,
+      meta: json['meta'] != null
+          ? TransactionMeta.fromJson(json['meta'])
+          : null,
     );
   }
 }

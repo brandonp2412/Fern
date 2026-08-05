@@ -26,16 +26,16 @@ void main() {
   final userToken = Platform.environment['AKAHU_ACCESS_TOKEN'];
   final appToken = Platform.environment['AKAHU_APP_ID_TOKEN'];
   final hasCreds =
-      userToken != null && userToken.isNotEmpty && appToken != null && appToken.isNotEmpty;
+      userToken != null &&
+      userToken.isNotEmpty &&
+      appToken != null &&
+      appToken.isNotEmpty;
 
   group('Akahu API integration', skip: hasCreds ? null : 'no credentials', () {
     late AkahuApi api;
 
     setUp(() {
-      api = AkahuApi(
-        userToken: userToken!,
-        appToken: appToken!,
-      );
+      api = AkahuApi(userToken: userToken!, appToken: appToken!);
     });
 
     test('GET /me returns user', () async {
@@ -70,16 +70,21 @@ void main() {
       final accounts = await api.getAccounts();
       final withTxns = accounts.where((a) => a.hasTransactions);
       if (withTxns.isEmpty) return;
-      final page = await api.getAccountTransactions(withTxns.first.id,
-          start: '2026-07-01', end: '2026-08-02');
+      final page = await api.getAccountTransactions(
+        withTxns.first.id,
+        start: '2026-07-01',
+        end: '2026-08-02',
+      );
       for (final tx in page.items) {
         expect(tx.id, startsWith('trans_'));
         expect(tx.account, startsWith('acc_'));
         expect(tx.date, isNotEmpty);
       }
       if (page.hasMore) {
-        final page2 = await api.getAccountTransactions(withTxns.first.id,
-            cursor: page.nextCursor);
+        final page2 = await api.getAccountTransactions(
+          withTxns.first.id,
+          cursor: page.nextCursor,
+        );
         expect(page2.items, isNotEmpty);
       }
     });
@@ -88,8 +93,9 @@ void main() {
       final accounts = await api.getAccounts();
       final withTxns = accounts.where((a) => a.hasTransactions);
       if (withTxns.isEmpty) return;
-      final pending =
-          await api.getAccountPendingTransactions(withTxns.first.id);
+      final pending = await api.getAccountPendingTransactions(
+        withTxns.first.id,
+      );
       for (final p in pending) {
         expect(p.description, isNotEmpty);
         expect(p.type, isNotEmpty);
@@ -97,7 +103,10 @@ void main() {
     });
 
     test('GET /transactions returns cross-account txns', () async {
-      final page = await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
+      final page = await api.getTransactions(
+        start: '2026-07-01',
+        end: '2026-08-02',
+      );
       expect(page.items, isNotEmpty);
       for (final tx in page.items) {
         expect(tx.id, startsWith('trans_'));
@@ -112,8 +121,10 @@ void main() {
       final page = await api.getTransactions(start: start);
       for (final tx in page.items) {
         final date = DateTime.parse(tx.date);
-        expect(date.isAfter(DateTime.parse(start).subtract(const Duration(days: 1))),
-            isTrue);
+        expect(
+          date.isAfter(DateTime.parse(start).subtract(const Duration(days: 1))),
+          isTrue,
+        );
       }
     });
 
@@ -123,16 +134,20 @@ void main() {
     });
 
     test('GET /transactions/{id} returns single txn', () async {
-      final page =
-          await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
+      final page = await api.getTransactions(
+        start: '2026-07-01',
+        end: '2026-08-02',
+      );
       if (page.items.isEmpty) return;
       final tx = await api.getTransaction(page.items.first.id);
       expect(tx.id, page.items.first.id);
     });
 
     test('POST /transactions/ids fetches by ids', () async {
-      final page =
-          await api.getTransactions(start: '2026-07-01', end: '2026-08-02');
+      final page = await api.getTransactions(
+        start: '2026-07-01',
+        end: '2026-08-02',
+      );
       if (page.items.length < 2) return;
       final ids = page.items.take(2).map((t) => t.id).toList();
       final txns = await api.getTransactionsByIds(ids);
@@ -171,8 +186,10 @@ void main() {
     test(
       'Overview "spending this month" includes the Jul 31 UTC / Aug 1 NZST transactions',
       () async {
-        final page =
-            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
+        final page = await api.getTransactions(
+          start: '2026-07-29',
+          end: '2026-08-01',
+        );
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -193,8 +210,11 @@ void main() {
           if (group == 'Transfers') continue;
           expected[group] = (expected[group] ?? 0) + t.amount.abs();
         }
-        expect(expected, isNotEmpty,
-            reason: 'no local-current-month transactions in the fetched window');
+        expect(
+          expected,
+          isNotEmpty,
+          reason: 'no local-current-month transactions in the fetched window',
+        );
 
         final grouped = await db.watchMonthlySpendByGroup().first;
 
@@ -207,8 +227,10 @@ void main() {
     test(
       'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to their local month',
       () async {
-        final page =
-            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
+        final page = await api.getTransactions(
+          start: '2026-07-29',
+          end: '2026-08-01',
+        );
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -247,8 +269,10 @@ void main() {
       '_dateWhere-backed queries (queryCategoryTotals) attribute the Jul 31 UTC '
       'transactions to the Aug 1 local day',
       () async {
-        final page =
-            await api.getTransactions(start: '2026-07-29', end: '2026-08-01');
+        final page = await api.getTransactions(
+          start: '2026-07-29',
+          end: '2026-08-01',
+        );
 
         final db = AppDatabase.forTesting(
           DatabaseConnection(
@@ -269,11 +293,13 @@ void main() {
           final group = _categoryGroupOf(t);
           expected[group] = (expected[group] ?? 0) + t.amount.abs();
         }
-        expect(expected, isNotEmpty,
-            reason: 'no transactions on/after the Aug 1 local cutoff');
+        expect(
+          expected,
+          isNotEmpty,
+          reason: 'no transactions on/after the Aug 1 local cutoff',
+        );
 
-        final categories =
-            await db.queryCategoryTotals(start: cutoff).first;
+        final categories = await db.queryCategoryTotals(start: cutoff).first;
 
         for (final entry in expected.entries) {
           expect(categories[entry.key], closeTo(entry.value, 0.01));

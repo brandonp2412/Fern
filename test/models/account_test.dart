@@ -17,7 +17,9 @@ void main() {
       expect(account.connection?.name, 'ANZ');
       expect(account.balance?.current, 2450.32);
 
-      final roundTripped = Account.fromJson(json.decode(json.encode(account.toJson())));
+      final roundTripped = Account.fromJson(
+        json.decode(json.encode(account.toJson())),
+      );
       expect(roundTripped.name, 'ANZ Everyday');
       expect(roundTripped.connection?.name, 'ANZ');
       expect(roundTripped.balance?.current, 2450.32);
@@ -50,18 +52,24 @@ void main() {
       expect(amex.displayBalance, -512.40);
     });
 
-    test('ASB Streamline savings account is not debt and shows balance as-is', () {
-      final asb = asbStreamline(balance: 8120.11);
-      expect(asb.isDebt, isFalse);
-      expect(asb.displayBalance, 8120.11);
-    });
+    test(
+      'ASB Streamline savings account is not debt and shows balance as-is',
+      () {
+        final asb = asbStreamline(balance: 8120.11);
+        expect(asb.isDebt, isFalse);
+        expect(asb.displayBalance, 8120.11);
+      },
+    );
 
-    test('a paid-off Amex Platinum (zero or negative current) is not negated', () {
-      final json = amexCreditCard().toJson();
-      json['balance']['current'] = -200.0;
-      final amex = Account.fromJson(json);
-      expect(amex.displayBalance, -200.0);
-    });
+    test(
+      'a paid-off Amex Platinum (zero or negative current) is not negated',
+      () {
+        final json = amexCreditCard().toJson();
+        json['balance']['current'] = -200.0;
+        final amex = Account.fromJson(json);
+        expect(amex.displayBalance, -200.0);
+      },
+    );
   });
 
   group('canPayFrom / canPayTo', () {

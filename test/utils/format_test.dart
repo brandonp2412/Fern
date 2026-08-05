@@ -13,9 +13,12 @@ void main() {
       expect(money(3200.00, sign: true), '+\$3,200.00');
     });
 
-    test('formats a large Kiwibank savings balance with thousands separators', () {
-      expect(money(15302.87), '\$15,302.87');
-    });
+    test(
+      'formats a large Kiwibank savings balance with thousands separators',
+      () {
+        expect(money(15302.87), '\$15,302.87');
+      },
+    );
 
     test('formats a foreign currency amount with its currency code', () {
       expect(money(42.50, currency: 'USD'), 'USD 42.50');
@@ -45,17 +48,26 @@ void main() {
   group('shortDate / longDate / dateTime', () {
     test('formats an ANZ transaction date as "d MMM"', () {
       final d = DateTime.parse('2026-07-20T12:15:00.000Z').toLocal();
-      expect(shortDate('2026-07-20T12:15:00.000Z'), DateFormat('d MMM').format(d));
+      expect(
+        shortDate('2026-07-20T12:15:00.000Z'),
+        DateFormat('d MMM').format(d),
+      );
     });
 
     test('formats a long date including weekday and year', () {
       final d = DateTime.parse('2026-07-20T12:15:00.000Z').toLocal();
-      expect(longDate('2026-07-20T12:15:00.000Z'), DateFormat('EEE d MMM y').format(d));
+      expect(
+        longDate('2026-07-20T12:15:00.000Z'),
+        DateFormat('EEE d MMM y').format(d),
+      );
     });
 
     test('formats date and time together', () {
       final d = DateTime.parse('2026-07-20T12:15:00.000Z').toLocal();
-      expect(dateTime('2026-07-20T12:15:00.000Z'), DateFormat('d MMM y, h:mm a').format(d));
+      expect(
+        dateTime('2026-07-20T12:15:00.000Z'),
+        DateFormat('d MMM y, h:mm a').format(d),
+      );
     });
 
     test('all three return empty strings for a missing date', () {
@@ -72,18 +84,27 @@ void main() {
     });
 
     test('a transaction from yesterday reads "Yesterday"', () {
-      final iso = DateTime.now().toUtc().subtract(const Duration(days: 1)).toIso8601String();
+      final iso = DateTime.now()
+          .toUtc()
+          .subtract(const Duration(days: 1))
+          .toIso8601String();
       expect(relativeDate(iso), 'Yesterday');
     });
 
     test('a transaction from three days ago shows the weekday name', () {
       final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
-      final iso = DateTime.now().toUtc().subtract(const Duration(days: 3)).toIso8601String();
+      final iso = DateTime.now()
+          .toUtc()
+          .subtract(const Duration(days: 3))
+          .toIso8601String();
       expect(relativeDate(iso), DateFormat('EEEE').format(threeDaysAgo));
     });
 
     test('an older transaction (Mercury Energy bill) shows a short date', () {
-      final iso = DateTime.now().toUtc().subtract(const Duration(days: 30)).toIso8601String();
+      final iso = DateTime.now()
+          .toUtc()
+          .subtract(const Duration(days: 30))
+          .toIso8601String();
       final d = DateTime.parse(iso).toLocal();
       expect(relativeDate(iso), DateFormat('d MMM').format(d));
     });
@@ -106,7 +127,10 @@ void main() {
   group('accountTypeLabel / accountTypeIcon', () {
     test('ANZ Everyday (CHECKING) is labelled "Everyday"', () {
       expect(accountTypeLabel('CHECKING'), 'Everyday');
-      expect(accountTypeIcon('CHECKING'), Icons.account_balance_wallet_outlined);
+      expect(
+        accountTypeIcon('CHECKING'),
+        Icons.account_balance_wallet_outlined,
+      );
     });
 
     test('Amex Platinum (CREDITCARD) is labelled "Credit card"', () {
@@ -120,7 +144,10 @@ void main() {
 
     test('an unknown account type falls back to itself', () {
       expect(accountTypeLabel('MORTGAGE_OFFSET'), 'MORTGAGE_OFFSET');
-      expect(accountTypeIcon('MORTGAGE_OFFSET'), Icons.account_balance_outlined);
+      expect(
+        accountTypeIcon('MORTGAGE_OFFSET'),
+        Icons.account_balance_outlined,
+      );
     });
   });
 

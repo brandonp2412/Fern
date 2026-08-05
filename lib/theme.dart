@@ -17,7 +17,10 @@ class Fern {
     required Brightness brightness,
     Color seed = green,
   }) {
-    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
+    final scheme = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: brightness,
+    );
     final palette = FernPalette.fromScheme(scheme);
     final base = ThemeData(brightness: brightness, useMaterial3: true);
     final text = base.textTheme.apply(
@@ -59,15 +62,24 @@ class Fern {
         indicatorColor: palette.mist,
         elevation: 0,
         height: 68,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-              fontSize: 11,
-              fontWeight:
-                  states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-              color: states.contains(WidgetState.selected) ? palette.green : palette.slate,
-            )),
-        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-              color: states.contains(WidgetState.selected) ? palette.green : palette.slate,
-            )),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? palette.green
+                : palette.slate,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? palette.green
+                : palette.slate,
+          ),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -107,8 +119,10 @@ class Fern {
           borderSide: BorderSide(color: palette.green, width: 1.6),
         ),
         labelStyle: TextStyle(color: palette.slate),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: palette.mist,
@@ -157,9 +171,10 @@ enum FernSeed {
   final Color color;
   const FernSeed(this.label, this.color);
 
-  static FernSeed fromColor(Color color) =>
-      FernSeed.values.firstWhere((s) => s.color.toARGB32() == color.toARGB32(),
-          orElse: () => FernSeed.green);
+  static FernSeed fromColor(Color color) => FernSeed.values.firstWhere(
+    (s) => s.color.toARGB32() == color.toARGB32(),
+    orElse: () => FernSeed.green,
+  );
 }
 
 /// Semantic palette derived from the active [ColorScheme], so custom widgets
@@ -205,8 +220,14 @@ class FernPalette extends ThemeExtension<FernPalette> {
       cream: dark ? scheme.surface : const Color(0xFFF5F7F0),
       deep: deep,
       green: scheme.primary,
-      moss: Color.lerp(scheme.primary, dark ? Colors.white : Colors.black, 0.2)!,
-      sprout: dark ? Color.lerp(scheme.primary, Colors.white, 0.6)! : Color.lerp(scheme.primary, Colors.white, 0.55)!,
+      moss: Color.lerp(
+        scheme.primary,
+        dark ? Colors.white : Colors.black,
+        0.2,
+      )!,
+      sprout: dark
+          ? Color.lerp(scheme.primary, Colors.white, 0.6)!
+          : Color.lerp(scheme.primary, Colors.white, 0.55)!,
       clay: scheme.error,
       sand: dark ? scheme.surfaceContainerHigh : const Color(0xFFEFE9DC),
       onGreen: scheme.onPrimary,

@@ -105,9 +105,7 @@ class TxnTile extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: selected
-          ? Icon(Icons.check, color: fern.onGreen, size: 20)
-          : null,
+      child: selected ? Icon(Icons.check, color: fern.onGreen, size: 20) : null,
     );
   }
 

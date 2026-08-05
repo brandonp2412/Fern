@@ -112,11 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.person,
-                        color: fern.onGreen,
-                        size: 26,
-                      ),
+                      child: Icon(Icons.person, color: fern.onGreen, size: 26),
                     ),
                     const SizedBox(width: 14),
                     Expanded(

@@ -13,10 +13,12 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-    home: HomeShell(state: state),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      home: HomeShell(state: state),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -25,20 +27,14 @@ void main() {
   setUpAll(mockNetworkImages);
 
   testWidgets('renders the overview screen by default', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     expect(find.text('Fern'), findsOneWidget);
   });
 
   testWidgets('navigation bar has four destinations', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     expect(find.text('Overview'), findsOneWidget);
@@ -48,10 +44,7 @@ void main() {
   });
 
   testWidgets('switches to Activity tab', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     await tester.tap(find.text('Activity'));
@@ -62,10 +55,7 @@ void main() {
   });
 
   testWidgets('switches to Stats tab', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     await tester.tap(find.text('Stats'));
@@ -76,10 +66,7 @@ void main() {
   });
 
   testWidgets('switches to Settings tab', (tester) async {
-    final state = await seededState(
-      tester: tester,
-      accounts: [anzEveryday()],
-    );
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     await _pump(tester, state);
 
     await tester.tap(find.text('Settings'));

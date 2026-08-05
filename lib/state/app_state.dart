@@ -15,7 +15,11 @@ class MonthTotal {
   final String label;
   final double income;
   final double expense;
-  const MonthTotal({required this.label, required this.income, required this.expense});
+  const MonthTotal({
+    required this.label,
+    required this.income,
+    required this.expense,
+  });
 }
 
 class CategoryTotal {
@@ -81,14 +85,16 @@ class AppState extends ChangeNotifier {
   List<MerchantTotal> aggMerchants = [];
 
   AppState(this.api, this.settings, {AppDatabase? db})
-      : db = db ?? AppDatabase() {
+    : db = db ?? AppDatabase() {
     settings.addListener(notifyListeners);
     _loadCategoryOverrides();
     _loadCategoryRules();
     _loadImageRules();
     _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
     _subscribeTransactions();
-    _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(_onSpendByGroup);
+    _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(
+      _onSpendByGroup,
+    );
     _monthlySub = this.db.watchMonthlyTotals(_monthCount).listen(_onMonthly);
     _catSub = this.db.watchCategoryTotals().listen(_onCategories);
     _weeklySub = this.db.watchWeeklyTrend(_windowDays).listen(_onWeekly);
@@ -100,7 +106,8 @@ class AppState extends ChangeNotifier {
     final map = <String, CategoryOverride>{};
     for (final o in rows.values) {
       if (o.categoryGroup == null) {
-        final group = AutoCategorizer.lookupGroup(o.categoryName) ?? o.categoryName;
+        final group =
+            AutoCategorizer.lookupGroup(o.categoryName) ?? o.categoryName;
         map[o.transactionId] = CategoryOverride(
           transactionId: o.transactionId,
           categoryName: o.categoryName,
@@ -125,8 +132,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  static String _hay(Transaction t) =>
-      [t.merchant?.name, t.description].where((s) => s != null && s.isNotEmpty).join(' ').toLowerCase();
+  static String _hay(Transaction t) => [
+    t.merchant?.name,
+    t.description,
+  ].where((s) => s != null && s.isNotEmpty).join(' ').toLowerCase();
 
   String matchTextFor(Transaction t) => _hay(t);
 
@@ -187,7 +196,9 @@ class AppState extends ChangeNotifier {
 
   void _subscribeTransactions() {
     unawaited(_txnsSub?.cancel());
-    _txnsSub = db.watchTransactions(limit: _txnLimit).listen(_onTransactionsRows);
+    _txnsSub = db
+        .watchTransactions(limit: _txnLimit)
+        .listen(_onTransactionsRows);
   }
 
   void _onTransactionsRows(List<Transaction> rows) {
@@ -215,7 +226,9 @@ class AppState extends ChangeNotifier {
   void _onCategories(Map<String, double> data) {
     final entries = data.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    aggCategories = [for (final e in entries) CategoryTotal(name: e.key, amount: e.value)];
+    aggCategories = [
+      for (final e in entries) CategoryTotal(name: e.key, amount: e.value),
+    ];
     notifyListeners();
   }
 
@@ -223,7 +236,10 @@ class AppState extends ChangeNotifier {
     final keys = data.keys.toList()..sort();
     aggWeekly = [
       for (final k in keys)
-        WeekTotal(label: DateFormat('d MMM').format(DateTime.parse(k)), total: data[k]!),
+        WeekTotal(
+          label: DateFormat('d MMM').format(DateTime.parse(k)),
+          total: data[k]!,
+        ),
     ];
     notifyListeners();
   }
@@ -232,7 +248,8 @@ class AppState extends ChangeNotifier {
     final entries = data.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     aggMerchants = [
-      for (final e in entries.take(5)) MerchantTotal(name: e.key, amount: e.value),
+      for (final e in entries.take(5))
+        MerchantTotal(name: e.key, amount: e.value),
     ];
     notifyListeners();
   }
@@ -251,7 +268,9 @@ class AppState extends ChangeNotifier {
   Future<void> load({bool force = false}) async {
     if (_inFlight != null) return _inFlight;
 
-    if (!force && lastSync != null && DateTime.now().difference(lastSync!) < _staleAfter) {
+    if (!force &&
+        lastSync != null &&
+        DateTime.now().difference(lastSync!) < _staleAfter) {
       return;
     }
 
@@ -297,7 +316,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> _fetchTransactions() async {
     final now = DateTime.now();
-    final start = isoDay(DateTime(now.year, now.month, now.day).subtract(const Duration(days: _windowDays)));
+    final start = isoDay(
+      DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: _windowDays)),
+    );
     String? cursor;
     for (var i = 0; i < _maxPages; i++) {
       final page = await api.getTransactions(start: start, cursor: cursor);
@@ -316,7 +341,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       final now = DateTime.now();
-      final start = isoDay(DateTime(now.year, now.month, now.day).subtract(const Duration(days: _windowDays)));
+      final start = isoDay(
+        DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(days: _windowDays)),
+      );
       final page = await api.getTransactions(start: start, cursor: txnCursor);
       cacheTransactions(page.items);
       _txnLimit += page.items.length;
@@ -392,7 +423,8 @@ class AppState extends ChangeNotifier {
       t.category == null &&
       t.autoCategoryName != null;
 
-  bool hasOverride(String transactionId) => _categoryOverrides.containsKey(transactionId);
+  bool hasOverride(String transactionId) =>
+      _categoryOverrides.containsKey(transactionId);
 
   Future<void> saveCategoryOverride(
     String txnId,
@@ -409,7 +441,10 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> saveCategoryOverrides(List<String> txnIds, String catName) async {
+  Future<void> saveCategoryOverrides(
+    List<String> txnIds,
+    String catName,
+  ) async {
     final group = AutoCategorizer.lookupGroup(catName) ?? catName;
     await db.saveCategoryOverrides(txnIds, catName, group);
     await _loadCategoryOverrides();
@@ -454,7 +489,8 @@ class _MonthKey {
   final String label;
   _MonthKey(this.key, this.label);
   factory _MonthKey.from(DateTime d) {
-    final key = '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
+    final key =
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
     return _MonthKey(key, DateFormat('MMM').format(d));
   }
 }

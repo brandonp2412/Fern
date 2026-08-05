@@ -13,8 +13,7 @@ Future<void> writeBackupSettingsFile({
 }) async {
   final dir = await getApplicationDocumentsDirectory();
   final file = File(p.join(dir.path, 'backup_settings.json'));
-  await file.writeAsString(jsonEncode({
-    'automaticBackups': automaticBackups,
-    'backupUri': backupUri,
-  }));
+  await file.writeAsString(
+    jsonEncode({'automaticBackups': automaticBackups, 'backupUri': backupUri}),
+  );
 }
