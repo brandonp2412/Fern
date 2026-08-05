@@ -16,7 +16,7 @@ echo "== formatting =="
 dart format lib test
 
 echo "== applying auto-fixes =="
-dart fix --apply lib test
+dart fix --apply
 
 echo "== analyzing =="
 flutter analyze lib test
