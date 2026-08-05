@@ -16,9 +16,7 @@ String _categoryGroupOf(Transaction t) {
   final categoryGroup = t.category?.groupName;
   if (categoryGroup != null) return categoryGroup;
   var autoGroup = t.autoCategoryGroup;
-  if (autoGroup == null) {
-    autoGroup = AutoCategorizer.categorize(t)?.group;
-  }
+  autoGroup ??= AutoCategorizer.categorize(t)?.group;
   return autoGroup ?? 'Uncategorised';
 }
 

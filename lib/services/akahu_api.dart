@@ -35,12 +35,10 @@ class AkahuApi {
   }
 
   AkahuApi._({
-    required String appToken,
+    required this._appToken,
     required http.Client client,
-    required gen.Akahu service,
-  }) : _appToken = appToken,
-       _httpClient = client,
-       _service = service;
+    required this._service,
+  }) : _httpClient = client;
 
   T _ok<T>(chopper.Response<T> res) {
     final body = res.body;
