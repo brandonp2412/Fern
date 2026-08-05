@@ -3115,6 +3115,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CategoryOverridesTable(this);
   late final $CategoryRulesTable categoryRules = $CategoryRulesTable(this);
   late final $ImageRulesTable imageRules = $ImageRulesTable(this);
+  late final Index transactionsDate = Index(
+    'transactions_date',
+    'CREATE INDEX transactions_date ON transactions (date DESC)',
+  );
+  late final Index transactionsAccountDate = Index(
+    'transactions_account_date',
+    'CREATE INDEX transactions_account_date ON transactions (account_id, date DESC)',
+  );
+  late final Index transactionsSpendingDate = Index(
+    'transactions_spending_date',
+    'CREATE INDEX transactions_spending_date ON transactions (date DESC) WHERE amount < 0',
+  );
+  late final Index categoryRulesCreatedAt = Index(
+    'category_rules_created_at',
+    'CREATE INDEX category_rules_created_at ON category_rules (created_at DESC)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3125,6 +3141,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     categoryOverrides,
     categoryRules,
     imageRules,
+    transactionsDate,
+    transactionsAccountDate,
+    transactionsSpendingDate,
+    categoryRulesCreatedAt,
   ];
 }
 

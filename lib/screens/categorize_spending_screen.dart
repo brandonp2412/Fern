@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../db/app_database.dart';
 import '../models/transaction.dart';
 import '../services/auto_categorizer.dart';
 import '../state/app_state.dart';
@@ -33,17 +34,29 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
   String _query = '';
   Timer? _debounce;
   late Set<String> _selectedCategories;
+  StreamSubscription<List<SpendingGroup>>? _groupsSub;
+  StreamSubscription<List<String>>? _categoriesSub;
+  List<SpendingGroup> _groups = const [];
+  List<String> _availableCategories = const [];
 
   @override
   void initState() {
     super.initState();
     _selectedCategories = {...?widget.catFilter};
     widget.state.addListener(_onChange);
+    _subscribeToGroups();
+    _categoriesSub = widget.state.db
+        .watchSpendingCategories(start: widget.start, end: widget.end)
+        .listen((categories) {
+          if (mounted) setState(() => _availableCategories = categories);
+        });
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    unawaited(_groupsSub?.cancel());
+    unawaited(_categoriesSub?.cancel());
     _searchCtrl.dispose();
     widget.state.removeListener(_onChange);
     super.dispose();
@@ -58,66 +71,26 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
     _debounce = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
       setState(() => _query = v.trim());
+      _subscribeToGroups();
     });
   }
 
-  bool _txMatches(Transaction tx) {
-    if (_query.isEmpty) return true;
-    final q = _query.toLowerCase();
-    final hay = [
-      tx.title,
-      tx.description,
-      tx.category?.name ?? '',
-      tx.category?.groupName ?? '',
-    ].join(' ').toLowerCase();
-    return hay.contains(q);
-  }
-
-  bool _inDateRange(Transaction tx) {
-    if (widget.start == null && widget.end == null) return true;
-    final parsed = DateTime.tryParse(tx.date);
-    if (parsed == null) return true;
-    final local = parsed.toLocal();
-    final d = DateTime(local.year, local.month, local.day);
-    if (widget.start != null && d.isBefore(widget.start!)) return false;
-    if (widget.end != null && d.isAfter(widget.end!)) return false;
-    return true;
-  }
-
-  Set<String> get _availableCategories {
-    final cats = <String>{};
-    for (final tx in widget.state.transactions) {
-      if (tx.amount >= 0) continue;
-      if (!_inDateRange(tx)) continue;
-      cats.add(widget.state.categoryGroupFor(tx) ?? 'Uncategorised');
-    }
-    return cats;
-  }
-
-  Map<String, List<Transaction>> _groupTxns() {
-    final groups = <String, List<Transaction>>{};
-    for (final tx in widget.state.transactions) {
-      if (tx.amount >= 0) continue;
-      if (!_txMatches(tx)) continue;
-      if (!_inDateRange(tx)) continue;
-      final group = widget.state.categoryGroupFor(tx) ?? 'Uncategorised';
-      if (_selectedCategories.isNotEmpty &&
-          !_selectedCategories.contains(group))
-        continue;
-      groups.putIfAbsent(group, () => []).add(tx);
-    }
-    final sorted = groups.entries.toList()
-      ..sort((a, b) {
-        final aTotal = a.value.fold<double>(0, (s, t) => s + t.amount.abs());
-        final bTotal = b.value.fold<double>(0, (s, t) => s + t.amount.abs());
-        return bTotal.compareTo(aTotal);
-      });
-    return {for (final e in sorted) e.key: e.value};
+  void _subscribeToGroups() {
+    unawaited(_groupsSub?.cancel());
+    _groupsSub = widget.state.db
+        .watchSpendingGroups(
+          start: widget.start,
+          end: widget.end,
+          query: _query,
+          categoryFilter: _selectedCategories,
+        )
+        .listen((groups) {
+          if (mounted) setState(() => _groups = groups);
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    final grouped = _groupTxns();
     final txCount = widget.state.transactions
         .where((tx) => tx.amount < 0)
         .length;
@@ -148,6 +121,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                                 _searchCtrl.clear();
                                 _debounce?.cancel();
                                 setState(() => _query = '');
+                                _subscribeToGroups();
                               },
                             )
                           : null,
@@ -164,7 +138,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: grouped.isEmpty
+                  child: _groups.isEmpty
                       ? const EmptyState(
                           icon: Icons.search_off,
                           title: 'No matches',
@@ -173,8 +147,8 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           children: [
-                            for (final e in grouped.entries) ...[
-                              _groupSection(e.key, e.value),
+                            for (final group in _groups) ...[
+                              _groupSection(group),
                             ],
                           ],
                         ),
@@ -205,12 +179,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
   }
 
   void _openCategoryModal() {
-    final cats = _availableCategories.toList()
-      ..sort((a, b) {
-        if (a == 'Uncategorised') return 1;
-        if (b == 'Uncategorised') return -1;
-        return a.compareTo(b);
-      });
+    final cats = _availableCategories;
     var pending = {..._selectedCategories};
     showModalBottomSheet(
       context: context,
@@ -292,6 +261,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                       child: FilledButton(
                         onPressed: () {
                           setState(() => _selectedCategories = pending);
+                          _subscribeToGroups();
                           Navigator.of(ctx).pop();
                         },
                         child: const Text('Apply'),
@@ -307,8 +277,14 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
     );
   }
 
-  Widget _groupSection(String group, List<Transaction> txns) {
-    final total = txns.fold<double>(0, (s, t) => s + t.amount.abs());
+  Widget _groupSection(SpendingGroup group) {
+    final transactionsById = {
+      for (final tx in widget.state.transactions) tx.id: tx,
+    };
+    final txns = group.transactionIds
+        .map((id) => transactionsById[id])
+        .whereType<Transaction>()
+        .toList();
     final fern = context.fern;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +295,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
             children: [
               Expanded(
                 child: Text(
-                  group,
+                  group.name,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -329,7 +305,7 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                 ),
               ),
               Text(
-                '${txns.length} txns · ${money(total)}',
+                '${group.transactionCount} txns · ${money(group.total)}',
                 style: TextStyle(fontSize: 12, color: fern.slate),
               ),
             ],

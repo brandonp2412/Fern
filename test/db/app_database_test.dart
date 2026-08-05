@@ -68,6 +68,54 @@ void main() {
     });
   });
 
+  group('spending groups', () {
+    test(
+      'SQL groups, sums, and orders spending by effective category',
+      () async {
+        final mcdonalds = mcdonaldsBurger();
+        final uber = uberTrip();
+        final bp = bpFuel();
+        final netflix = netflixSubscription();
+        await db.saveTransactions([mcdonalds, uber, bp, netflix, payday()]);
+
+        final groups = await db.watchSpendingGroups().first;
+
+        expect(groups.map((group) => group.name), ['Transport', 'Lifestyle']);
+        expect(groups[0].total, closeTo(110.70, 0.001));
+        expect(groups[0].transactionCount, 2);
+        expect(groups[0].transactionIds, containsAll([uber.id, bp.id]));
+        expect(groups[1].total, closeTo(37.89, 0.001));
+        expect(groups[1].transactionCount, 2);
+      },
+    );
+
+    test('SQL applies search, date, category, and override filters', () async {
+      final mcdonalds = mcdonaldsBurger();
+      final uber = uberTrip();
+      await db.saveTransactions([mcdonalds, uber]);
+      await db.saveCategoryOverride(
+        mcdonalds.id,
+        'Public transport',
+        'Transport',
+      );
+
+      final searched = await db.watchSpendingGroups(query: 'public').first;
+      expect(searched, hasLength(1));
+      expect(searched.single.name, 'Transport');
+      expect(searched.single.transactionIds, [mcdonalds.id]);
+
+      final filtered = await db
+          .watchSpendingGroups(
+            start: DateTime(2026, 7, 20),
+            categoryFilter: {'Transport'},
+          )
+          .first;
+      expect(filtered, hasLength(1));
+      expect(filtered.single.transactionIds, [mcdonalds.id]);
+      expect(filtered.single.total, closeTo(14.90, 0.001));
+    });
+  });
+
   group('category overrides', () {
     test('saveCategoryOverride then loadCategoryOverrides returns the real category name', () async {
       final tx = mcdonaldsBurger();

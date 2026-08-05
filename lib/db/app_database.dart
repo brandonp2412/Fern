@@ -10,6 +10,20 @@ import 'connection/connection.dart';
 
 part 'app_database.g.dart';
 
+class SpendingGroup {
+  final String name;
+  final double total;
+  final int transactionCount;
+  final List<String> transactionIds;
+
+  const SpendingGroup({
+    required this.name,
+    required this.total,
+    required this.transactionCount,
+    required this.transactionIds,
+  });
+}
+
 @DataClassName('AccountRow')
 class Accounts extends Table {
   TextColumn get id => text()();
@@ -38,6 +52,21 @@ class Accounts extends Table {
 }
 
 @DataClassName('TransactionRow')
+@TableIndex(
+  name: 'transactions_date',
+  columns: {IndexedColumn(#date, orderBy: OrderingMode.desc)},
+)
+@TableIndex(
+  name: 'transactions_account_date',
+  columns: {
+    #accountId,
+    IndexedColumn(#date, orderBy: OrderingMode.desc),
+  },
+)
+@TableIndex.sql(
+  'CREATE INDEX transactions_spending_date '
+  'ON transactions (date DESC) WHERE amount < 0',
+)
 class Transactions extends Table {
   TextColumn get id => text()();
   TextColumn get accountId => text()();
@@ -70,6 +99,10 @@ class CategoryOverrides extends Table {
 }
 
 @DataClassName('CategoryRule')
+@TableIndex(
+  name: 'category_rules_created_at',
+  columns: {IndexedColumn(#createdAt, orderBy: OrderingMode.desc)},
+)
 class CategoryRules extends Table {
   TextColumn get id => text()();
   TextColumn get matchText => text()();
@@ -107,7 +140,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -157,6 +190,12 @@ class AppDatabase extends _$AppDatabase {
           JOIN transactions t ON t.id = ti.transaction_id
         ''');
         await m.deleteTable('transaction_images');
+      },
+      from7To8: (m, schema) async {
+        await m.createIndex(schema.transactionsDate);
+        await m.createIndex(schema.transactionsAccountDate);
+        await m.createIndex(schema.transactionsSpendingDate);
+        await m.createIndex(schema.categoryRulesCreatedAt);
       },
     ),
   );
@@ -382,16 +421,21 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<List<CategoryRule>> loadCategoryRules() {
-    return (select(categoryRules)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
+    return (select(
+      categoryRules,
+    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
   }
 
-  Future<void> saveImageRule(String matchText, bool exact, String imagePath) async {
+  Future<void> saveImageRule(
+    String matchText,
+    bool exact,
+    String imagePath,
+  ) async {
     final normalized = matchText.trim();
     await (delete(
-      imageRules,
-    )..where((t) => t.matchText.equals(normalized) & t.exact.equals(exact))).go();
+          imageRules,
+        )..where((t) => t.matchText.equals(normalized) & t.exact.equals(exact)))
+        .go();
     await into(imageRules).insert(
       ImageRulesCompanion.insert(
         id: '${DateTime.now().microsecondsSinceEpoch}',
@@ -649,6 +693,155 @@ class AppDatabase extends _$AppDatabase {
     ).map((rows) {
       return {for (final r in rows) r.str('k'): r.dbl('total')};
     });
+  }
+
+  String get _effectiveSpendingCte => '''
+    WITH effective_spending AS (
+      SELECT
+        t.id,
+        t.date,
+        t.amount,
+        t.description,
+        t.merchant_name,
+        COALESCE(
+          ov.category_name,
+          (SELECT r.category_name
+             FROM category_rules r
+            WHERE instr(
+              lower(COALESCE(t.merchant_name, '') || ' ' || t.description),
+              lower(r.match_text)
+            ) > 0
+            ORDER BY r.created_at DESC
+            LIMIT 1),
+          t.category_name,
+          t.auto_category_name
+        ) AS effective_category_name,
+        COALESCE(
+          ov.category_group,
+          ov.category_name,
+          (SELECT COALESCE(r.category_group, r.category_name)
+             FROM category_rules r
+            WHERE instr(
+              lower(COALESCE(t.merchant_name, '') || ' ' || t.description),
+              lower(r.match_text)
+            ) > 0
+            ORDER BY r.created_at DESC
+            LIMIT 1),
+          t.category_group,
+          t.auto_category_group,
+          'Uncategorised'
+        ) AS effective_category_group
+      FROM transactions t
+      LEFT JOIN category_overrides ov ON ov.transaction_id = t.id
+      WHERE t.amount < 0
+    )
+  ''';
+
+  String _spendingDateWhere({DateTime? start, DateTime? end}) {
+    final parts = <String>[];
+    if (start != null) {
+      parts.add(
+        "(date(date, 'localtime') IS NULL OR date(date, 'localtime') >= ?)",
+      );
+    }
+    if (end != null) {
+      parts.add(
+        "(date(date, 'localtime') IS NULL OR date(date, 'localtime') <= ?)",
+      );
+    }
+    return parts.isEmpty ? '1 = 1' : parts.join(' AND ');
+  }
+
+  List<Variable<String>> _spendingDateVariables({
+    DateTime? start,
+    DateTime? end,
+  }) => [
+    if (start != null) Variable(_fmtDate(start)),
+    if (end != null) Variable(_fmtDate(end)),
+  ];
+
+  Stream<List<SpendingGroup>> watchSpendingGroups({
+    DateTime? start,
+    DateTime? end,
+    String query = '',
+    Set<String> categoryFilter = const {},
+  }) {
+    final variables = _spendingDateVariables(start: start, end: end);
+    final where = <String>[_spendingDateWhere(start: start, end: end)];
+    if (query.isNotEmpty) {
+      where.add('''
+        instr(
+          lower(
+            COALESCE(merchant_name, description) || ' ' ||
+            description || ' ' ||
+            COALESCE(effective_category_name, '') || ' ' ||
+            effective_category_group
+          ),
+          lower(?)
+        ) > 0
+      ''');
+      variables.add(Variable(query));
+    }
+    if (categoryFilter.isNotEmpty) {
+      where.add(
+        'effective_category_group IN '
+        '(${List.filled(categoryFilter.length, '?').join(', ')})',
+      );
+      variables.addAll(categoryFilter.map(Variable.new));
+    }
+
+    return customSelect(
+      '''
+        $_effectiveSpendingCte,
+        filtered_spending AS (
+          SELECT *
+          FROM effective_spending
+          WHERE ${where.join(' AND ')}
+          ORDER BY date DESC
+        )
+        SELECT
+          effective_category_group AS category_group,
+          COALESCE(SUM(ABS(CAST(amount AS REAL))), 0) AS total,
+          COUNT(*) AS transaction_count,
+          json_group_array(id) AS transaction_ids
+        FROM filtered_spending
+        GROUP BY effective_category_group
+        ORDER BY total DESC, effective_category_group
+      ''',
+      variables: variables,
+      readsFrom: {transactions, categoryOverrides, categoryRules},
+    ).watch().map((rows) {
+      return rows.map((row) {
+        final ids = json.decode(row.read<String>('transaction_ids')) as List;
+        return SpendingGroup(
+          name: row.read<String>('category_group'),
+          total: row.read<double>('total'),
+          transactionCount: row.read<int>('transaction_count'),
+          transactionIds: ids.cast<String>(),
+        );
+      }).toList();
+    });
+  }
+
+  Stream<List<String>> watchSpendingCategories({
+    DateTime? start,
+    DateTime? end,
+  }) {
+    return customSelect(
+      '''
+        $_effectiveSpendingCte
+        SELECT effective_category_group AS category_group
+        FROM effective_spending
+        WHERE ${_spendingDateWhere(start: start, end: end)}
+        GROUP BY effective_category_group
+        ORDER BY effective_category_group = 'Uncategorised',
+                 effective_category_group
+      ''',
+      variables: _spendingDateVariables(start: start, end: end),
+      readsFrom: {transactions, categoryOverrides, categoryRules},
+    ).watch().map(
+      (rows) => [for (final row in rows) row.read<String>('category_group')],
+    );
   }
 
   Future<void> clearAll() async {
