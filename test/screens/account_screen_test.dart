@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:fern/models/account.dart';
+import 'package:fern/models/transaction.dart';
 import 'package:fern/screens/account_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
+import 'package:fern/widgets/txn_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -187,5 +189,48 @@ void main() {
     await _pump(tester, state, a);
 
     expect(find.text('No transactions found'), findsOneWidget);
+  });
+
+  testWidgets('lazily builds a large transaction history', (tester) async {
+    final a = anzEveryday();
+    final transactions = List.generate(
+      500,
+      (index) => Transaction(
+        id: 'txn_$index',
+        account: a.id,
+        date: DateTime.utc(
+          2026,
+          7,
+          31,
+        ).subtract(Duration(hours: index)).toIso8601String(),
+        description: 'Transaction $index',
+        amount: -index,
+        type: 'EFTPOS',
+      ),
+    );
+    final state = await seededState(
+      tester: tester,
+      accounts: [a],
+      transactions: transactions,
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
+    );
+
+    await _pump(tester, state, a);
+
+    expect(find.byType(TxnTile), findsWidgets);
+    expect(find.byType(TxnTile).evaluate().length, lessThan(100));
   });
 }

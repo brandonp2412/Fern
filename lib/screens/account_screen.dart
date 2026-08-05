@@ -150,76 +150,127 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null && _txns.isEmpty
-          ? ErrorState(error: _error!, onRetry: _load)
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                controller: _scroll,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _balanceHero(a),
-                  if (_pending.isNotEmpty) ...[
-                    SectionHeader('Pending (${_pending.length})'),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [for (final p in _pending) _pendingRow(p)],
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: CustomScrollView(
+          controller: _scroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(child: _balanceHero(a)),
+            ),
+            if (_pending.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      SectionHeader('Pending (${_pending.length})'),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: [
+                              for (final p in _pending) _pendingRow(p),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                  SectionHeader('Transactions'),
-                  if (_txns.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'No transactions found',
-                          style: TextStyle(color: fern.slate),
-                        ),
-                      ),
-                    )
-                  else
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            for (final tx in _txns)
-                              TxnTile(
-                                tx: tx,
-                                masked: widget.state.settings.hideBalances,
-                                categoryGroupOverride: widget.state
-                                    .categoryGroupFor(tx),
-                                onTap: () =>
-                                    showTxnDetail(context, widget.state, tx),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  if (_loadingMore)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (_cursor == null && _txns.isNotEmpty)
-                    Padding(
+                    ],
+                  ),
+                ),
+              ),
+            const SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(child: SectionHeader('Transactions')),
+            ),
+            if (_loading)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_error != null && _txns.isEmpty)
+              SliverToBoxAdapter(
+                child: ErrorState(error: _error!, onRetry: _load),
+              )
+            else if (_txns.isEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverToBoxAdapter(
+                  child: Card(
+                    child: Padding(
                       padding: const EdgeInsets.all(20),
-                      child: Center(
-                        child: Text(
-                          'End of history',
-                          style: TextStyle(color: fern.slate, fontSize: 12),
-                        ),
+                      child: Text(
+                        'No transactions found',
+                        style: TextStyle(color: fern.slate),
                       ),
                     ),
-                ],
+                  ),
+                ),
+              )
+            else
+              _transactionList(),
+            if (_loadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_cursor == null && _txns.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: Text(
+                      'End of history',
+                      style: TextStyle(color: fern.slate, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _transactionList() {
+    final cardColor =
+        Theme.of(context).cardTheme.color ??
+        Theme.of(context).colorScheme.surface;
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverList.builder(
+        itemCount: _txns.length,
+        itemBuilder: (context, index) {
+          final tx = _txns[index];
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.vertical(
+                top: index == 0 ? const Radius.circular(12) : Radius.zero,
+                bottom: index == _txns.length - 1
+                    ? const Radius.circular(12)
+                    : Radius.zero,
               ),
             ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TxnTile(
+                tx: tx,
+                masked: widget.state.settings.hideBalances,
+                categoryGroupOverride: widget.state.categoryGroupFor(tx),
+                onTap: () => showTxnDetail(context, widget.state, tx),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
