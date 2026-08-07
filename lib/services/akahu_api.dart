@@ -8,7 +8,42 @@ import '../models/page.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
 
-class AkahuApi {
+abstract interface class AkahuClient {
+  Future<User> getMe();
+  Future<List<Account>> getAccounts();
+  Future<Account> getAccount(String id);
+  Future<Page<Transaction>> getAccountTransactions(
+    String accountId, {
+    String? start,
+    String? end,
+    String? cursor,
+  });
+  Future<List<PendingTransaction>> getAccountPendingTransactions(
+    String accountId,
+  );
+  Future<void> deleteAuthorisation(String id);
+  Future<Page<Transaction>> getTransactions({
+    String? start,
+    String? end,
+    String? cursor,
+  });
+  Future<Transaction> getTransaction(String id);
+  Future<List<PendingTransaction>> getPendingTransactions();
+  Future<List<Transaction>> getTransactionsByIds(List<String> ids);
+  Future<void> refreshAll();
+  Future<void> refresh(String id);
+  Future<void> reportTransaction(
+    String transactionId, {
+    required String type,
+    String? otherId,
+    List<String>? fields,
+    String? comment,
+  });
+  Future<void> revokeToken();
+  void close();
+}
+
+class AkahuApi implements AkahuClient {
   static const _baseUrl = 'https://api.akahu.io/v1';
 
   final String _appToken;
@@ -52,21 +87,25 @@ class AkahuApi {
     );
   }
 
+  @override
   Future<User> getMe() async {
     final body = _ok(await _service.meGet(xAkahuId: _appToken));
     return User.fromJson(body.item!.toJson());
   }
 
+  @override
   Future<List<Account>> getAccounts() async {
     final body = _ok(await _service.accountsGet(xAkahuId: _appToken));
     return body.items!.map((e) => Account.fromJson(e.toJson())).toList();
   }
 
+  @override
   Future<Account> getAccount(String id) async {
     final body = _ok(await _service.accountsIdGet(xAkahuId: _appToken, id: id));
     return Account.fromJson(body.item!.toJson());
   }
 
+  @override
   Future<Page<Transaction>> getAccountTransactions(
     String accountId, {
     String? start,
@@ -88,6 +127,7 @@ class AkahuApi {
     );
   }
 
+  @override
   Future<List<PendingTransaction>> getAccountPendingTransactions(
     String accountId,
   ) async {
@@ -102,10 +142,12 @@ class AkahuApi {
         .toList();
   }
 
+  @override
   Future<void> deleteAuthorisation(String id) async {
     _ok(await _service.authorisationsIdDelete(xAkahuId: _appToken, id: id));
   }
 
+  @override
   Future<Page<Transaction>> getTransactions({
     String? start,
     String? end,
@@ -125,6 +167,7 @@ class AkahuApi {
     );
   }
 
+  @override
   Future<Transaction> getTransaction(String id) async {
     final body = _ok(
       await _service.transactionsIdGet(xAkahuId: _appToken, id: id),
@@ -132,6 +175,7 @@ class AkahuApi {
     return Transaction.fromJson(body.item!.toJson());
   }
 
+  @override
   Future<List<PendingTransaction>> getPendingTransactions() async {
     final body = _ok(
       await _service.transactionsPendingGet(xAkahuId: _appToken),
@@ -141,6 +185,7 @@ class AkahuApi {
         .toList();
   }
 
+  @override
   Future<List<Transaction>> getTransactionsByIds(List<String> ids) async {
     final body = _ok(
       await _service.transactionsIdsPost(xAkahuId: _appToken, body: ids),
@@ -148,14 +193,17 @@ class AkahuApi {
     return body.items!.map((e) => Transaction.fromJson(e.toJson())).toList();
   }
 
+  @override
   Future<void> refreshAll() async {
     _ok(await _service.refreshPost(xAkahuId: _appToken));
   }
 
+  @override
   Future<void> refresh(String id) async {
     _ok(await _service.refreshIdPost(xAkahuId: _appToken, id: id));
   }
 
+  @override
   Future<void> reportTransaction(
     String transactionId, {
     required String type,
@@ -182,10 +230,12 @@ class AkahuApi {
     );
   }
 
+  @override
   Future<void> revokeToken() async {
     _ok(await _service.tokenDelete(xAkahuId: _appToken));
   }
 
+  @override
   void close() => _httpClient.close();
 }
 

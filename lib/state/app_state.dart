@@ -41,7 +41,7 @@ class MerchantTotal {
 }
 
 class AppState extends ChangeNotifier {
-  final AkahuApi api;
+  final AkahuClient api;
   final AppSettings settings;
   final AppDatabase db;
 

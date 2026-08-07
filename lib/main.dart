@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'screens/home_shell.dart';
 import 'services/akahu_api.dart';
+import 'services/demo_akahu_api.dart';
 import 'services/secure_store.dart';
 import 'state/app_settings.dart';
 import 'state/app_state.dart';
@@ -149,6 +150,10 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
+  void _openDemo() {
+    widget.onConnected(AppState(DemoAkahuApi(), widget.settings));
+  }
+
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
@@ -270,6 +275,12 @@ class _SetupScreenState extends State<SetupScreen> {
                                               ),
                                             )
                                           : const Text('Connect'),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    OutlinedButton.icon(
+                                      onPressed: _connecting ? null : _openDemo,
+                                      icon: const Icon(Icons.explore_outlined),
+                                      label: const Text('Explore demo'),
                                     ),
                                   ],
                                 ),

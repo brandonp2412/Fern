@@ -383,7 +383,7 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
 }
 
 class _ReportDialog extends StatefulWidget {
-  final AkahuApi api;
+  final AkahuClient api;
   final Transaction tx;
 
   const _ReportDialog({required this.api, required this.tx});
