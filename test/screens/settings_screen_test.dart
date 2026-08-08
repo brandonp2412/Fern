@@ -115,11 +115,8 @@ void main() {
 
     await _pump(tester, state);
 
-    await tester.scrollUntilVisible(
-      find.text('Disconnect & revoke access'),
-      200,
-    );
-    await tester.tap(find.text('Disconnect & revoke access'));
+    await tester.scrollUntilVisible(find.text('Disconnect'), 200);
+    await tester.tap(find.text('Disconnect'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 

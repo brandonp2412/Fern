@@ -73,7 +73,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Disconnect & revoke access'), findsOneWidget);
+    expect(find.text('Disconnect'), findsOneWidget);
   });
 
   testWidgets('swipe tabs works when enabled', (tester) async {

@@ -33,9 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Disconnect?'),
-        content: const Text(
-          'This revokes your Akahu access token and signs you out of Fern.',
-        ),
+        content: const Text('This signs you out of Fern.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -53,9 +51,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    try {
-      await widget.state.api.revokeToken();
-    } catch (_) {}
     await SecureStore.clear();
     await widget.state.db.clearAll();
     if (!mounted) return;
@@ -291,10 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             OutlinedButton.icon(
               onPressed: _disconnect,
               icon: Icon(Icons.logout, size: 18, color: fern.clay),
-              label: Text(
-                'Disconnect & revoke access',
-                style: TextStyle(color: fern.clay),
-              ),
+              label: Text('Disconnect', style: TextStyle(color: fern.clay)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: fern.clay),
               ),
