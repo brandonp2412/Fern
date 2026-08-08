@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fern/screens/account_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/account.dart';
@@ -19,6 +20,22 @@ class OverviewScreen extends StatefulWidget {
 }
 
 class _OverviewScreenState extends State<OverviewScreen> {
+  Map<String, double> _spendByGroup = {};
+  StreamSubscription<Map<String, double>>? _spendSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _spendSub = widget.state.db.watchMonthlySpendByGroup().listen((data) {
+      setState(() => _spendByGroup = data);
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_spendSub?.cancel());
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
@@ -82,7 +99,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         },
                       ),
                     ),
-                    _spendCard(context, state.spendByGroup),
+                    _spendCard(context, _spendByGroup),
                     const SectionHeader('Recent activity'),
                     Card(
                       child: Padding(

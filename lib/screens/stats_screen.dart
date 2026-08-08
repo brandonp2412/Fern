@@ -60,6 +60,14 @@ class _StatsScreenState extends State<StatsScreen> {
   void initState() {
     super.initState();
     _subscribe();
+    _loadMoreIfNeeded();
+  }
+
+  void _loadMoreIfNeeded() {
+    final (start, _) = _rangeBounds();
+    if (start != null) {
+      widget.state.ensureDataSince(start);
+    }
   }
 
   void _subscribe() {
@@ -128,11 +136,13 @@ class _StatsScreenState extends State<StatsScreen> {
       _customRange = picked;
     });
     _subscribe();
+    _loadMoreIfNeeded();
   }
 
   void _setRange(_StatsRange option) {
     setState(() => _range = option);
     _subscribe();
+    _loadMoreIfNeeded();
   }
 
   Set<String> get _availableCategories {
@@ -208,7 +218,10 @@ class _StatsScreenState extends State<StatsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Stats'),
-        actions: [if (widget.state.refreshing) const AppBarSpinner()],
+        actions: [
+          if (widget.state.refreshing || widget.state.loadingOlder)
+            const AppBarSpinner(),
+        ],
       ),
       body: SafeArea(
         child: ListenableBuilder(

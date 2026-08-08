@@ -81,9 +81,6 @@ Future<AppState> _seedState() async {
   while (state.transactions.length < 3 && DateTime.now().isBefore(deadline)) {
     await Future.delayed(const Duration(milliseconds: 20));
   }
-  while (state.spendByGroup.length < 3 && DateTime.now().isBefore(deadline)) {
-    await Future.delayed(const Duration(milliseconds: 20));
-  }
   return state;
 }
 

@@ -28,6 +28,23 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _syncing = false;
+
+  Future<void> _loadHistory() async {
+    if (widget.state.loadingOlder || _syncing) return;
+    setState(() => _syncing = true);
+    try {
+      while (widget.state.txnCursor != null && mounted) {
+        final before = widget.state.oldestTxnDate;
+        await widget.state.loadOlder();
+        final after = widget.state.oldestTxnDate;
+        if (before == after) break;
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
   Future<void> _disconnect() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -179,6 +196,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Card(
               child: Column(
                 children: [
+                  ListTile(
+                    title: const Text(
+                      'Sync history',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _syncing
+                          ? 'Loading older transactions...'
+                          : state.oldestTxnDate != null
+                          ? 'Oldest synced: ${relativeDate(state.oldestTxnDate!.toIso8601String())}'
+                          : 'Tap to load more transaction history',
+                      style: TextStyle(fontSize: 12, color: fern.slate),
+                    ),
+                    trailing: _syncing
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: fern.green,
+                            ),
+                          )
+                        : const Icon(Icons.chevron_right),
+                    onTap: _syncing ? null : _loadHistory,
+                  ),
+                  const Divider(height: 1),
                   ExportData(state: state),
                   const Divider(height: 1),
                   ImportData(state: state),

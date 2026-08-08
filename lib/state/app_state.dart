@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import '../db/app_database.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
@@ -57,6 +56,7 @@ class AppState extends ChangeNotifier {
   String? txnCursor;
   Future<void>? _inFlight;
   bool _loadingOlder = false;
+  bool get loadingOlder => _loadingOlder;
   bool _accountsLoaded = false;
   bool _transactionsLoaded = false;
   int _txnLimit = 2000;
@@ -64,25 +64,13 @@ class AppState extends ChangeNotifier {
   static const _windowDays = 182;
   static const _maxPages = 1;
   static const _staleAfter = Duration(minutes: 2);
-  static const _monthCount = 6;
 
   Map<String, CategoryOverride> _categoryOverrides = {};
   List<CategoryRule> categoryRules = [];
   List<ImageRule> imageRules = [];
 
-  Map<String, double> _spendByGroup = {};
   StreamSubscription<List<Account>>? _accountsSub;
   StreamSubscription<List<Transaction>>? _txnsSub;
-  StreamSubscription<Map<String, double>>? _spendByGroupSub;
-  StreamSubscription<Map<String, (double, double)>>? _monthlySub;
-  StreamSubscription<Map<String, double>>? _catSub;
-  StreamSubscription<Map<String, double>>? _weeklySub;
-  StreamSubscription<Map<String, double>>? _merchantsSub;
-
-  List<MonthTotal> aggMonthly = [];
-  List<CategoryTotal> aggCategories = [];
-  List<WeekTotal> aggWeekly = [];
-  List<MerchantTotal> aggMerchants = [];
 
   AppState(this.api, this.settings, {AppDatabase? db})
     : db = db ?? AppDatabase() {
@@ -92,13 +80,6 @@ class AppState extends ChangeNotifier {
     _loadImageRules();
     _accountsSub = this.db.watchAccounts().listen(_onAccountsRows);
     _subscribeTransactions();
-    _spendByGroupSub = this.db.watchMonthlySpendByGroup().listen(
-      _onSpendByGroup,
-    );
-    _monthlySub = this.db.watchMonthlyTotals(_monthCount).listen(_onMonthly);
-    _catSub = this.db.watchCategoryTotals().listen(_onCategories);
-    _weeklySub = this.db.watchWeeklyTrend(_windowDays).listen(_onWeekly);
-    _merchantsSub = this.db.watchTopMerchants(5).listen(_onMerchants);
   }
 
   Future<void> _loadCategoryOverrides() async {
@@ -203,54 +184,8 @@ class AppState extends ChangeNotifier {
 
   void _onTransactionsRows(List<Transaction> rows) {
     transactions = rows;
-    _recomputeAll();
     _transactionsLoaded = true;
     if (_accountsLoaded) loading = false;
-    notifyListeners();
-  }
-
-  void _onSpendByGroup(Map<String, double> data) {
-    _spendByGroup = data;
-    notifyListeners();
-  }
-
-  void _onMonthly(Map<String, (double, double)> data) {
-    final months = _lastMonths(_monthCount);
-    aggMonthly = months.map((m) {
-      final vals = data[m.key] ?? (0.0, 0.0);
-      return MonthTotal(label: m.label, income: vals.$1, expense: vals.$2);
-    }).toList();
-    notifyListeners();
-  }
-
-  void _onCategories(Map<String, double> data) {
-    final entries = data.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    aggCategories = [
-      for (final e in entries) CategoryTotal(name: e.key, amount: e.value),
-    ];
-    notifyListeners();
-  }
-
-  void _onWeekly(Map<String, double> data) {
-    final keys = data.keys.toList()..sort();
-    aggWeekly = [
-      for (final k in keys)
-        WeekTotal(
-          label: DateFormat('d MMM').format(DateTime.parse(k)),
-          total: data[k]!,
-        ),
-    ];
-    notifyListeners();
-  }
-
-  void _onMerchants(Map<String, double> data) {
-    final entries = data.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    aggMerchants = [
-      for (final e in entries.take(5))
-        MerchantTotal(name: e.key, amount: e.value),
-    ];
     notifyListeners();
   }
 
@@ -292,7 +227,7 @@ class AppState extends ChangeNotifier {
       offline = false;
       error = null;
       lastSync = DateTime.now();
-      unawaited(db.saveAccounts(fetchedAccounts));
+      await db.saveAccounts(fetchedAccounts);
     } catch (e) {
       refreshing = false;
       offline = true;
@@ -326,13 +261,34 @@ class AppState extends ChangeNotifier {
     String? cursor;
     for (var i = 0; i < _maxPages; i++) {
       final page = await api.getTransactions(start: start, cursor: cursor);
-      cacheTransactions(page.items);
+      await cacheTransactions(page.items);
       _txnLimit += page.items.length;
       cursor = page.nextCursor;
       if (cursor == null) break;
     }
     txnCursor = cursor;
     _subscribeTransactions();
+  }
+
+  DateTime? get oldestTxnDate {
+    if (transactions.isEmpty) return null;
+    return transactions
+        .map((t) => DateTime.parse(t.date))
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+  }
+
+  Future<void> ensureDataSince(DateTime start) async {
+    if (_loadingOlder) return;
+    final oldest = oldestTxnDate;
+    if (oldest != null && oldest.isBefore(start)) return;
+    var prevCursor = txnCursor;
+    for (var i = 0; i < 20; i++) {
+      await loadOlder();
+      final cur = oldestTxnDate;
+      if (cur != null && cur.isBefore(start)) break;
+      if (txnCursor == null || txnCursor == prevCursor) break;
+      prevCursor = txnCursor;
+    }
   }
 
   Future<void> loadOlder() async {
@@ -349,7 +305,7 @@ class AppState extends ChangeNotifier {
         ).subtract(const Duration(days: _windowDays)),
       );
       final page = await api.getTransactions(start: start, cursor: txnCursor);
-      cacheTransactions(page.items);
+      await cacheTransactions(page.items);
       _txnLimit += page.items.length;
       txnCursor = page.nextCursor;
       _subscribeTransactions();
@@ -361,16 +317,8 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _recomputeAll() {
-    _recomputeSpendByGroup();
-  }
-
-  void _recomputeSpendByGroup() {}
-
-  Map<String, double> get spendByGroup => _spendByGroup;
-
-  void cacheTransactions(List<Transaction> txns) {
-    unawaited(db.saveTransactions(txns));
+  Future<void> cacheTransactions(List<Transaction> txns) async {
+    await db.saveTransactions(txns);
   }
 
   Account? accountById(String id) {
@@ -387,7 +335,7 @@ class AppState extends ChangeNotifier {
       final fetched = await api.getAccounts();
       error = null;
       offline = false;
-      unawaited(db.saveAccounts(fetched));
+      await db.saveAccounts(fetched);
     } catch (e) {
       error = e.toString();
     }
@@ -460,37 +408,13 @@ class AppState extends ChangeNotifier {
     await _loadCategoryOverrides();
   }
 
-  List<_MonthKey> _lastMonths(int count) {
-    final now = DateTime.now();
-    return [
-      for (var i = count - 1; i >= 0; i--)
-        _MonthKey.from(DateTime(now.year, now.month - i, 1)),
-    ];
-  }
-
   @override
   void dispose() {
     settings.removeListener(notifyListeners);
     unawaited(_accountsSub?.cancel());
     unawaited(_txnsSub?.cancel());
-    unawaited(_spendByGroupSub?.cancel());
-    unawaited(_monthlySub?.cancel());
-    unawaited(_catSub?.cancel());
-    unawaited(_weeklySub?.cancel());
-    unawaited(_merchantsSub?.cancel());
     api.close();
     db.close();
     super.dispose();
-  }
-}
-
-class _MonthKey {
-  final String key;
-  final String label;
-  _MonthKey(this.key, this.label);
-  factory _MonthKey.from(DateTime d) {
-    final key =
-        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
-    return _MonthKey(key, DateFormat('MMM').format(d));
   }
 }
