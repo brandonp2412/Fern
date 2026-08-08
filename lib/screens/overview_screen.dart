@@ -36,6 +36,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     unawaited(_spendSub?.cancel());
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
