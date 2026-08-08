@@ -642,11 +642,14 @@ class _StatsScreenState extends State<StatsScreen> {
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (group) => Theme.of(context).colorScheme.primary,
+            fitInsideVertically: true,
+            fitInsideHorizontally: true,
             getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                 BarTooltipItem(
                   money(rod.toY),
-                  const TextStyle(
-                    color: Colors.white,
+                  TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -737,12 +740,15 @@ class _StatsScreenState extends State<StatsScreen> {
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
+            fitInsideVertically: true,
+            fitInsideHorizontally: true,
+            getTooltipColor: (group) => Theme.of(context).colorScheme.primary,
             getTooltipItems: (spots) => spots
                 .map(
                   (s) => LineTooltipItem(
                     money(s.y),
-                    const TextStyle(
-                      color: Colors.white,
+                    TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
