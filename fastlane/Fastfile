@@ -1,0 +1,39 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build a signed Android App Bundle"
+  lane :build do
+    sh("flutter", "build", "appbundle", "--release")
+  end
+
+  private_lane :upload_bundle do |options|
+    aab_path = options[:aab] || "build/app/outputs/bundle/release/app-release.aab"
+    track = options[:track] || "internal"
+
+    UI.user_error!("Android App Bundle not found: #{aab_path}") unless File.exist?(aab_path)
+
+    upload_to_play_store(
+      aab: aab_path,
+      track: track,
+      release_status: options[:release_status] || "completed",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build and upload an AAB to production"
+  lane :production do
+    build
+    upload_bundle(track: "production")
+  end
+
+  desc "Upload existing Play Store listing metadata and images"
+  lane :metadata do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true
+    )
+  end
+end

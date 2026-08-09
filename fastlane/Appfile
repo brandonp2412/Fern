@@ -1,0 +1,5 @@
+package_name("com.fernmoney.fern_money")
+
+# Allow CI to provide its own service-account key, while retaining the local
+# credential location used for manual releases.
+json_key_file(ENV.fetch("GOOGLE_PLAY_JSON_KEY", File.expand_path("~/.config/googlePlay.json")))

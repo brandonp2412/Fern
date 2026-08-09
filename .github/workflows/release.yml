@@ -79,6 +79,44 @@ jobs:
           name: fern-apk
           path: build/app/outputs/flutter-apk/fern.apk
 
+  deploy-android:
+    needs: [test, version-bump]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-bump.outputs.commit_sha }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Configure Android release signing
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}"
+          } > android/key.properties
+
+      - name: Configure Google Play credentials
+        run: |
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/google-play.json"
+
+      - run: flutter pub get
+      - run: dart run build_runner build -d
+
+      - name: Deploy to Google Play production
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ runner.temp }}/google-play.json
+        run: bundle exec fastlane android production
+
   deploy-web:
     needs: version-bump
     runs-on: ubuntu-latest
