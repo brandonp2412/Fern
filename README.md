@@ -18,12 +18,8 @@ Fern connects to your bank accounts through Akahu and gives you a full
 dashboard: balances, net position, spending breakdowns, searchable
 transaction history, and more.
 
-<p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.fernmoney.fern_money"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80" /></a>
-  <a href="https://github.com/brandonp2412/fern/releases/latest/download/fern.apk">
-    <img src="assets/badges/get-apk.svg" alt="Get the APK" height="80"/>
-  </a>
-</p>
+<a href="https://play.google.com/store/apps/details?id=com.fernmoney.fern_money"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" style="height: 80px !important" /></a>
+<a href="https://github.com/brandonp2412/fern/releases/latest/download/fern.apk"><img src="assets/badges/get-apk.svg" alt="Get the APK" style="height: 80px !important" /></a>
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" width="380" />
