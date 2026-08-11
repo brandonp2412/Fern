@@ -70,6 +70,7 @@ class LogoAvatar extends StatelessWidget {
           ? Image.file(
               File(filePath!),
               key: ValueKey('$filePath-${_fileStamp(filePath!)}'),
+              cacheWidth: 64,
               width: size,
               height: size,
               fit: BoxFit.cover,
