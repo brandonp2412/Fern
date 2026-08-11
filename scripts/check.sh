@@ -10,7 +10,7 @@ cd "$repo_root"
 
 flutter pub get
 curl -sSfL -o swaggers/akahu.swagger https://developers.akahu.nz/openapi/api-akahu-io-spec.yml
-dart run build_runner build -d
+dart run build_runner build
 
 echo "== formatting =="
 dart format lib test
