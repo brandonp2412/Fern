@@ -2,7 +2,7 @@ name: fern
 description: "A personal-finance dashboard for New Zealand banks, built on the Akahu API."
 publish_to: 'none'
 
-version: 1.0.6+7
+version: 1.0.7+8
 
 environment:
   sdk: ^3.12.2
