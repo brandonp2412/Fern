@@ -47,7 +47,7 @@ class TxnTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Row(
             children: [
-              _leading(fern),
+              _leading(context, fern),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -82,7 +82,7 @@ class TxnTile extends StatelessWidget {
     );
   }
 
-  Widget _leading(FernPalette fern) {
+  Widget _leading(BuildContext context, FernPalette fern) {
     if (!selectionMode) {
       return LogoAvatar(
         url: tx.meta?.logo,
@@ -90,6 +90,7 @@ class TxnTile extends StatelessWidget {
         fallback: _iconFor(tx.type),
         color: colorForCategory(
           categoryGroupOverride ?? tx.category?.groupName ?? 'Uncategorised',
+          Theme.of(context).colorScheme,
         ),
         size: 38,
       );

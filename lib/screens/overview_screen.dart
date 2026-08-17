@@ -228,7 +228,12 @@ class _OverviewScreenState extends State<OverviewScreen> {
               _miniStat('Assets', assets, fern.onGreen, masked),
               const SizedBox(width: 24),
               if (state.settings.showDebt)
-                _miniStat('Debt', debt.abs(), const Color(0xFFFFD9C7), masked),
+                _miniStat(
+                  'Debt',
+                  debt.abs(),
+                  Theme.of(context).colorScheme.errorContainer,
+                  masked,
+                ),
               const Spacer(),
               Text(
                 '${visible.length} accounts',

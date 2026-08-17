@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 
-/// Shared category accent palette, also used for the Stats pie chart.
-const kCategoryColors = [
-  Color(0xFF2A78D6),
-  Color(0xFFEB6834),
-  Color(0xFF1BAF7A),
-  Color(0xFFEDA100),
-  Color(0xFFE87BA4),
-  Color(0xFF008300),
-  Color(0xFF4A3AA7),
+const categoryColorCount = 7;
+
+/// Category accents derived from the active theme rather than a fixed rainbow.
+///
+/// The Material seed generates primary, secondary, tertiary and error families;
+/// the intermediate accents keep charts distinguishable while following the
+/// selected seed and brightness.
+List<Color> categoryColors(ColorScheme scheme) => [
+  scheme.primary,
+  scheme.tertiary,
+  scheme.secondary,
+  Color.lerp(scheme.primary, scheme.tertiary, 0.5)!,
+  Color.lerp(scheme.tertiary, scheme.error, 0.35)!,
+  Color.lerp(scheme.secondary, scheme.primary, 0.5)!,
+  scheme.error,
 ];
 
 /// Deterministic color for a category/group name, stable across the app.
-Color colorForCategory(String name) {
-  if (name.isEmpty) return kCategoryColors[0];
-  return kCategoryColors[name.hashCode.abs() % kCategoryColors.length];
+Color colorForCategory(String name, ColorScheme scheme) {
+  final colors = categoryColors(scheme);
+  if (name.isEmpty) return colors.first;
+  return colors[name.hashCode.abs() % colors.length];
 }
+
+Color onCategoryColor(Color color) =>
+    ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+    ? Colors.white
+    : Colors.black;

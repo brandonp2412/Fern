@@ -394,8 +394,8 @@ class _AccountScreenState extends State<AccountScreen> {
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFFB8860B),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.tertiary,
               shape: BoxShape.circle,
             ),
           ),

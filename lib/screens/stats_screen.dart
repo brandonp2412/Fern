@@ -820,16 +820,13 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   List<_CatEntry> _buildCategoryEntries(List<CategoryTotal> cats) {
-    final top = cats.take(kCategoryColors.length).toList();
-    final rest = cats.skip(kCategoryColors.length);
+    final colors = categoryColors(Theme.of(context).colorScheme);
+    final top = cats.take(categoryColorCount).toList();
+    final rest = cats.skip(categoryColorCount);
     final otherTotal = rest.fold<double>(0, (s, c) => s + c.amount);
     final result = [
       for (var i = 0; i < top.length; i++)
-        _CatEntry(
-          name: top[i].name,
-          amount: top[i].amount,
-          color: kCategoryColors[i],
-        ),
+        _CatEntry(name: top[i].name, amount: top[i].amount, color: colors[i]),
     ];
     if (otherTotal > 0) {
       result.add(
@@ -857,10 +854,10 @@ class _StatsScreenState extends State<StatsScreen> {
               title: total == 0
                   ? ''
                   : '${(entries[i].amount / total * 100).round()}%',
-              titleStyle: const TextStyle(
+              titleStyle: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: onCategoryColor(entries[i].color),
               ),
             ),
         ],

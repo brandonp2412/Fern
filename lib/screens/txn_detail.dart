@@ -175,7 +175,10 @@ class _TxnDetailSheetState extends State<TxnDetailSheet> {
                     LogoAvatar(
                       url: meta?.logo,
                       filePath: state.imagePathFor(tx),
-                      color: colorForCategory(categoryGroup ?? 'Uncategorised'),
+                      color: colorForCategory(
+                        categoryGroup ?? 'Uncategorised',
+                        Theme.of(context).colorScheme,
+                      ),
                       size: 46,
                     ),
                     Positioned(
