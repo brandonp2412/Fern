@@ -8,13 +8,18 @@ void main() {
     app.main();
     await $.pumpAndSettle();
 
-    expect($('Explore demo'), findsOneWidget);
-    await $('Explore demo').tap();
+    final exploreDemo = await $('Explore demo').waitUntilVisible(
+      timeout: const Duration(seconds: 15),
+    );
+    expect(exploreDemo, findsOneWidget);
+    await exploreDemo.tap();
     await $.pumpAndSettle();
 
+    await $('Overview').waitUntilVisible(timeout: const Duration(seconds: 15));
     expect($('Overview'), findsWidgets);
     await $('Activity').tap();
     await $.pumpAndSettle();
+    await $('Activity').waitUntilVisible(timeout: const Duration(seconds: 15));
     expect($('Activity'), findsWidgets);
 
     // Exercise Patrol's native lifecycle controls as well as Flutter UI.
