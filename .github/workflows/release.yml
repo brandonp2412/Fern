@@ -116,7 +116,9 @@ jobs:
 
   version-bump:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    needs: [test, screenshots, patrol]
+    # Store/Android release artifacts should not be blocked by optional
+    # emulator screenshot or Patrol QA jobs.
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: write
