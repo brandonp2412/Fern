@@ -116,9 +116,7 @@ jobs:
 
   version-bump:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    # Store/Android release artifacts should not be blocked by optional
-    # emulator screenshot or Patrol QA jobs.
-    needs: [test]
+    needs: [test, screenshots, patrol]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -217,6 +215,10 @@ jobs:
     needs: [version-bump, build-msix]
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-bump.outputs.commit_sha }}
+
       - uses: actions/download-artifact@v4
         with:
           name: fern-msix
@@ -234,7 +236,12 @@ jobs:
         run: msstore reconfigure --tenantId ${{ secrets.AZURE_TENANT_ID }} --clientId ${{ secrets.AZURE_CLIENT_ID }} --clientSecret ${{ secrets.AZURE_CLIENT_SECRET }} --sellerId ${{ secrets.SELLER_ID }}
 
       - name: Publish to Microsoft Store
-        run: msstore publish --inputDirectory build/windows/x64/runner/Release --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
+        run: |
+          $package = Get-ChildItem build/windows/x64/runner/Release -Filter *.msix | Select-Object -First 1
+          if (-not $package) {
+            throw "No MSIX package found"
+          }
+          msstore publish . --inputFile $package.FullName --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
 
   deploy-android:
     needs: [test, version-bump]
