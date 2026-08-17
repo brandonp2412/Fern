@@ -7,7 +7,7 @@ platform :android do
   end
 
   private_lane :upload_bundle do |options|
-    aab_path = options[:aab] || "build/app/outputs/bundle/release/app-release.aab"
+    aab_path = options[:aab] || File.expand_path("../build/app/outputs/bundle/release/app-release.aab", __dir__)
     track = options[:track] || "internal"
 
     UI.user_error!("Android App Bundle not found: #{aab_path}") unless File.exist?(aab_path)
