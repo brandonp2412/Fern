@@ -4,13 +4,6 @@ targets:
       - lib/**
       - swaggers/**
     builders:
-      build_web_compilers:entrypoint:
-        generate_for:
-          - web/**.dart
-        options:
-          compiler: dart2js
-          dart2js_args:
-            - -O4
       drift_dev:
         options:
           databases:

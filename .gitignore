@@ -50,17 +50,8 @@ fastlane/report.xml
 # FVM Version Cache
 .fvm/
 
-# ChromeDriver files (too large for git)
-chromedriver.zip
-chromedriver-win64/
-
 coverage/
 vendor/bundle/
-
-# Build output committed by accident
-/web/drift_worker.dart.js
-/web/drift_worker.dart.js.map
-/web/drift_worker.dart.js.deps
 
 # Environment files
 .env

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -228,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ExportData(state: state),
                   const Divider(height: 1),
                   ImportData(state: state),
-                  if (!kIsWeb && Platform.isAndroid) ...[
+                  if (Platform.isAndroid) ...[
                     const Divider(height: 1),
                     SwitchListTile(
                       title: const Text(

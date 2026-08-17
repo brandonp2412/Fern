@@ -19,7 +19,7 @@ watchdog_pid=""
 watch_args=()
 
 # Usage: screenshots-waydroid.sh [device-type] [screenshot] [--show|--headed] [--watch]
-# device-type: phoneScreenshots | sevenInchScreenshots | tenInchScreenshots | desktop
+# device-type: phoneScreenshots | sevenInchScreenshots | tenInchScreenshots
 # screenshot:  screenshot number (e.g. 1) or test name (e.g. Overview)
 device_type_filter=""
 only=""
@@ -336,42 +336,28 @@ main() {
     printf 'qemu.hw.mainkeys=1\n' | sudo tee -a "$BASE_PROP" >/dev/null
 
     local device_types=(phoneScreenshots sevenInchScreenshots tenInchScreenshots)
-    if [ -n "$device_type_filter" ] && [ "$device_type_filter" != "desktop" ]; then
+    if [ -n "$device_type_filter" ]; then
         case "$device_type_filter" in
             phoneScreenshots|sevenInchScreenshots|tenInchScreenshots) device_types=("$device_type_filter") ;;
             *)
-                log "ERROR: unknown device type '$device_type_filter' (expected phoneScreenshots, sevenInchScreenshots, tenInchScreenshots, or desktop)"
+                log "ERROR: unknown device type '$device_type_filter' (expected phoneScreenshots, sevenInchScreenshots, or tenInchScreenshots)"
                 exit 1
                 ;;
         esac
     fi
 
-    if [ -z "$device_type_filter" ] || [ "$device_type_filter" != "desktop" ]; then
-        for device_type in "${device_types[@]}"; do
-            case "$device_type" in
-                phoneScreenshots)     width=1080; height=2424 ;;
-                sevenInchScreenshots) width=1920; height=1080 ;;
-                tenInchScreenshots)   width=2560; height=1600 ;;
-            esac
+    for device_type in "${device_types[@]}"; do
+        case "$device_type" in
+            phoneScreenshots)     width=1080; height=2424 ;;
+            sevenInchScreenshots) width=1920; height=1080 ;;
+            tenInchScreenshots)   width=2560; height=1600 ;;
+        esac
 
-            if ! run_device_type "$device_type" "$width" "$height" "$only"; then
-                log "Aborting: could not generate $device_type screenshots."
-                exit 1
-            fi
-        done
-    fi
-
-    if [ -z "$device_type_filter" ] || [ "$device_type_filter" = "desktop" ]; then
-        log "=== Running desktop screenshots with Chrome ==="
-        local chrome_args=(desktop)
-        [ "$show" -eq 1 ] && chrome_args+=(--show)
-        [ -n "$only" ] && chrome_args+=("$only")
-        cd "$PROJECT_DIR" && "$SCRIPT_DIR/screenshots-chrome.sh" "${chrome_args[@]}" 2>&1 | add_timestamps
-        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-            log "ERROR: Chrome screenshots failed."
+        if ! run_device_type "$device_type" "$width" "$height" "$only"; then
+            log "Aborting: could not generate $device_type screenshots."
             exit 1
         fi
-    fi
+    done
 
     log "All screenshots generated successfully!"
 }

@@ -3,26 +3,17 @@ import 'dart:io';
 import 'package:integration_test/integration_test_driver_extended.dart';
 
 Future<void> main() async => await integrationDriver(
-      onScreenshot: (name, image, [args]) async {
-        final deviceType = Platform.environment["FERN_DEVICE_TYPE"];
-        if (deviceType == null || deviceType.isEmpty) {
-          throw "FERN_DEVICE_TYPE must be set, so integration driver knows where to save screenshots.";
-        }
+  onScreenshot: (name, image, [args]) async {
+    final deviceType = Platform.environment["FERN_DEVICE_TYPE"];
+    if (deviceType == null || deviceType.isEmpty) {
+      throw "FERN_DEVICE_TYPE must be set, so integration driver knows where to save screenshots.";
+    }
 
-        final isWeb = Platform.environment["FERN_WEB"] == "true";
-
-        File imgFile;
-        if (isWeb) {
-          imgFile = await File(
-            'fastlane/screenshots/$deviceType-$name.png',
-          ).create(recursive: true);
-        } else {
-          imgFile = await File(
-            'fastlane/metadata/android/en-US/images/$deviceType/$name.png',
-          ).create(recursive: true);
-        }
-        await imgFile.writeAsBytes(image);
-        return true;
-      },
-      writeResponseOnFailure: true,
-    );
+    final imgFile = await File(
+      'fastlane/metadata/android/en-US/images/$deviceType/$name.png',
+    ).create(recursive: true);
+    await imgFile.writeAsBytes(image);
+    return true;
+  },
+  writeResponseOnFailure: true,
+);
