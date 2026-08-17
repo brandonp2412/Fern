@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   test:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: "github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,7 +115,7 @@ jobs:
           script: patrol test -t patrol_test/smoke_test.dart
 
   version-bump:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: "github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')"
     needs: [test, screenshots, patrol]
     runs-on: ubuntu-latest
     permissions:
