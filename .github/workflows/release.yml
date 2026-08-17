@@ -41,8 +41,10 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
           NEW_VERSION_NAME="$MAJOR.$MINOR.$((PATCH + 1))"
           NEW_VERSION="$NEW_VERSION_NAME+$((BUILD_NUMBER + 1))"
+          NEW_MSIX_VERSION="$NEW_VERSION_NAME.$((BUILD_NUMBER + 1))"
 
           sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          sed -i "s/^  msix_version: .*/  msix_version: $NEW_MSIX_VERSION/" pubspec.yaml
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -78,6 +80,62 @@ jobs:
         with:
           name: fern-apk
           path: build/app/outputs/flutter-apk/fern.apk
+
+  build-msix:
+    needs: version-bump
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-bump.outputs.commit_sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build -d
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Create MSIX
+        run: flutter pub run msix:create
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fern-msix
+          path: build/windows/x64/runner/Release/*.msix
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-windows-store:
+    needs: [version-bump, build-msix]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: fern-msix
+          path: build/windows/x64/runner/Release
+
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Setup Microsoft Store CLI
+        uses: microsoft/setup-msstore-cli@v1
+
+      - name: Configure Microsoft Store CLI
+        run: msstore reconfigure --tenantId ${{ secrets.AZURE_TENANT_ID }} --clientId ${{ secrets.AZURE_CLIENT_ID }} --clientSecret ${{ secrets.AZURE_CLIENT_SECRET }} --sellerId ${{ secrets.SELLER_ID }}
+
+      - name: Publish to Microsoft Store
+        run: msstore publish --inputDirectory build/windows/x64/runner/Release --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
 
   deploy-android:
     needs: [test, version-bump]
@@ -118,7 +176,7 @@ jobs:
         run: bundle exec fastlane android production
 
   create-release:
-    needs: [version-bump, build-apk]
+    needs: [version-bump, build-apk, build-msix]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -127,12 +185,17 @@ jobs:
         with:
           name: fern-apk
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: fern-msix
+
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "v${{ needs.version-bump.outputs.version }}" \
             fern.apk \
+            ./*.msix \
             --repo "${{ github.repository }}" \
             --title "v${{ needs.version-bump.outputs.version }}" \
             --generate-notes

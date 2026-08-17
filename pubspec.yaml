@@ -35,6 +35,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  patrol: ^4.9.0
 
   flutter_lints: ^6.0.0
   test: ^1.31.0
@@ -44,6 +45,16 @@ dev_dependencies:
   chopper_generator: ^8.0.3
   json_serializable: ^6.8.0
   swagger_dart_code_generator: ^4.1.1
+  msix:
+    git:
+      url: https://github.com/insertjokehere/msix.git
+      ref: msvc_redist
+
+patrol:
+  app_name: Fern
+  test_directory: patrol_test
+  android:
+    package_name: com.fernmoney.fern_money
 
 flutter_launcher_icons:
   android: true
@@ -59,6 +70,17 @@ flutter_launcher_icons:
     generate: true
     image_path: "assets/icon/icon_master_1024.png"
     icon_size: 256
+
+msix_config:
+  msstore_appId: 9NST4F2TQ00Q
+  display_name: Fern - Personal Finance
+  publisher_display_name: Brandon Dick
+  identity_name: FrisbeeSoftware.Fern-PersonalFinance
+  msix_version: 1.0.7.8
+  logo_path: assets/icon/icon_master_1024.png
+  trim_logo: false
+  publisher: CN=BB0811CB-EED5-441C-BE1B-D31F391F76DE
+  store: true
 
 flutter:
   uses-material-design: true
