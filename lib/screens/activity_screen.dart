@@ -254,6 +254,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ),
           ),
           const SizedBox(height: 8),
+          _totalSummary(),
           Expanded(child: _body()),
         ],
       ),
@@ -435,6 +436,51 @@ class _ActivityScreenState extends State<ActivityScreen> {
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+
+  Widget _totalSummary() {
+    final transactions = _filtered;
+    final net = transactions.fold<num>(0, (total, tx) => total + tx.amount);
+    final income = transactions
+        .where((tx) => tx.amount > 0)
+        .fold<num>(0, (total, tx) => total + tx.amount);
+    final spending = transactions
+        .where((tx) => tx.amount < 0)
+        .fold<num>(0, (total, tx) => total + tx.amount.abs());
+    final masked = widget.state.settings.hideBalances;
+
+    final (label, amount, sign) = switch (_direction) {
+      'in' => ('Income', income, true),
+      'out' => ('Spending', spending, false),
+      _ => ('Net total', net, true),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Row(
+        children: [
+          Text(
+            '$label · ${transactions.length} ${transactions.length == 1 ? 'transaction' : 'transactions'}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.fern.slate,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            masked ? '••••' : money(amount, sign: sign),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _direction == 'out' || amount < 0
+                  ? context.fern.slate
+                  : context.fern.green,
+            ),
+          ),
+        ],
       ),
     );
   }

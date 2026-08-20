@@ -60,6 +60,8 @@ void main() {
 
     expect(find.textContaining('+'), findsWidgets);
     expect(find.text("McDonald's"), findsNothing);
+    expect(find.text('Income · 1 transaction'), findsOneWidget);
+    expect(find.text(r'+$3,200.00'), findsWidgets);
   });
 
   testWidgets('filters by Money out direction', (tester) async {
@@ -76,6 +78,22 @@ void main() {
 
     expect(find.text("McDonald's"), findsOneWidget);
     expect(find.textContaining('\$3,200'), findsNothing);
+    expect(find.text('Spending · 1 transaction'), findsOneWidget);
+    expect(find.text('\$14.90'), findsOneWidget);
+  });
+
+  testWidgets('shows a net total for all filtered transactions', (
+    tester,
+  ) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      transactions: [payday(), mcdonaldsBurger()],
+    );
+    await _pump(tester, state);
+
+    expect(find.text('Net total · 2 transactions'), findsOneWidget);
+    expect(find.text(r'+$3,185.10'), findsOneWidget);
   });
 
   testWidgets('does not limit activity to a preset date range', (tester) async {

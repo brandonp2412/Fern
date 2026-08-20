@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/export_data.dart';
 import '../data/import_data.dart';
@@ -96,6 +97,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await androidChannel.invokeMethod('pick', {'dbPath': dbPath});
   }
 
+  Future<void> _openExternalLink(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
@@ -151,6 +156,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SectionHeader('About'),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.code),
+                    title: const Text(
+                      'Source code',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'View Fern on GitHub',
+                      style: TextStyle(fontSize: 12, color: fern.slate),
+                    ),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => _openExternalLink(
+                      'https://github.com/brandonp2412/Fern',
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.volunteer_activism_outlined),
+                    title: const Text(
+                      'Donate',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Support the development of Fern',
+                      style: TextStyle(fontSize: 12, color: fern.slate),
+                    ),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => _openExternalLink(
+                      'https://github.com/sponsors/brandonp2412',
+                    ),
+                  ),
+                ],
               ),
             ),
             const SectionHeader('Privacy'),

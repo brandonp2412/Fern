@@ -63,6 +63,21 @@ void main() {
     expect(find.text('Show debt accounts'), findsOneWidget);
   });
 
+  testWidgets('shows source code and donate links', (tester) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      api: _userApi(),
+      db: testDb(),
+    );
+
+    await _pump(tester, state);
+
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Source code'), findsOneWidget);
+    expect(find.text('Donate'), findsOneWidget);
+  });
+
   testWidgets('shows navigation toggle', (tester) async {
     final state = await seededState(
       tester: tester,
