@@ -247,7 +247,7 @@ jobs:
           if (-not $package) {
             throw "No MSIX package found"
           }
-          msstore publish . --inputFile $package.FullName --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
+          msstore publish . --inputDirectory $package.DirectoryName --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
 
   deploy-android:
     needs: [test, version-bump]
