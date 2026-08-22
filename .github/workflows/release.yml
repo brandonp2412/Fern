@@ -248,7 +248,29 @@ jobs:
           if (-not $package) {
             throw "No MSIX package found"
           }
-          msstore publish . --inputDirectory $package.DirectoryName --appId 9NST4F2TQ00Q --packageRolloutPercentage 100
+
+          # Store uploads occasionally fail while transferring to Azure Blob.
+          # The CLI reuses the draft it created, so retrying is safe.
+          $attempts = 3
+          for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+            msstore publish . `
+              --inputDirectory $package.DirectoryName `
+              --appId 9NST4F2TQ00Q `
+              --packageRolloutPercentage 100 `
+              --uploadTimeout 600 `
+              --verbose
+
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            if ($attempt -lt $attempts) {
+              Write-Warning "Microsoft Store publish attempt $attempt failed; retrying in 30 seconds"
+              Start-Sleep -Seconds 30
+            }
+          }
+
+          throw "Microsoft Store publish failed after $attempts attempts"
 
   deploy-android:
     needs: [test, version-bump]
