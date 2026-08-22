@@ -144,7 +144,8 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
           NEW_VERSION_NAME="$MAJOR.$MINOR.$((PATCH + 1))"
           NEW_VERSION="$NEW_VERSION_NAME+$((BUILD_NUMBER + 1))"
-          NEW_MSIX_VERSION="$NEW_VERSION_NAME.$((BUILD_NUMBER + 1))"
+          # Microsoft Store requires the fourth (revision) component to be 0.
+          NEW_MSIX_VERSION="$NEW_VERSION_NAME.0"
 
           sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           sed -i "s/^  msix_version: .*/  msix_version: $NEW_MSIX_VERSION/" pubspec.yaml
