@@ -2,7 +2,7 @@ name: fern
 description: "A personal-finance dashboard for New Zealand banks, built on the Akahu API."
 publish_to: 'none'
 
-version: 1.0.15+16
+version: 1.0.16+17
 
 environment:
   sdk: ^3.12.2
@@ -76,7 +76,7 @@ msix_config:
   display_name: Fern - Personal Finance
   publisher_display_name: Brandon Dick
   identity_name: FrisbeeSoftware.Fern-PersonalFinance
-  msix_version: 1.0.15.0
+  msix_version: 1.0.16.0
   logo_path: assets/icon/icon_master_1024.png
   trim_logo: false
   publisher: CN=BB0811CB-EED5-441C-BE1B-D31F391F76DE
