@@ -259,9 +259,15 @@ jobs:
 
       - name: Setup Microsoft Store CLI
         uses: microsoft/setup-msstore-cli@v1
+        with:
+          version: v0.4.1
 
       - name: Configure Microsoft Store CLI
         run: msstore reconfigure --tenantId ${{ secrets.AZURE_TENANT_ID }} --clientId ${{ secrets.AZURE_CLIENT_ID }} --clientSecret ${{ secrets.AZURE_CLIENT_SECRET }} --sellerId ${{ secrets.SELLER_ID }}
+
+      - name: Finalize previous completed rollout
+        shell: pwsh
+        run: ./scripts/finalize-msstore-rollout.ps1
 
       - name: Publish to Microsoft Store
         run: |
@@ -277,6 +283,7 @@ jobs:
             msstore publish . `
               --inputDirectory $package.DirectoryName `
               --appId 9NST4F2TQ00Q `
+              --packageRolloutPercentage 100 `
               --uploadTimeout 600 `
               --verbose
 
