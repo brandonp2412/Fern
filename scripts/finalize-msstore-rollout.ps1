@@ -1,8 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 $productId = "9NST4F2TQ00Q"
+$ErrorActionPreference = "Continue"
 $output = @(& msstore submission rollout get $productId 2>&1)
 $commandExitCode = $LASTEXITCODE
+$ErrorActionPreference = "Stop"
 $outputText = $output -join [Environment]::NewLine
 
 if ($commandExitCode -ne 0) {
