@@ -14,7 +14,9 @@ concurrency:
 
 jobs:
   finalize:
-    runs-on: ubuntu-latest
+    # The Store CLI is nominally cross-platform, but `reconfigure` currently
+    # fails with service-principal credentials on GitHub's Linux runner.
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
