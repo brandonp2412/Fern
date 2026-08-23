@@ -137,6 +137,24 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Download phone screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: screenshots-phoneScreenshots
+          path: fastlane/metadata/android/en-US/images/phoneScreenshots
+
+      - name: Download seven-inch screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: screenshots-sevenInchScreenshots
+          path: fastlane/metadata/android/en-US/images/sevenInchScreenshots
+
+      - name: Download ten-inch screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: screenshots-tenInchScreenshots
+          path: fastlane/metadata/android/en-US/images/tenInchScreenshots
+
       - name: Bump version and tag
         id: bump
         run: |
@@ -155,7 +173,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pubspec.yaml
+          git add pubspec.yaml fastlane/metadata/android/en-US/images
           git commit -m "Release $NEW_VERSION_NAME [skip ci]"
           git tag "v$NEW_VERSION_NAME"
           git push origin HEAD:main
