@@ -1,11 +1,12 @@
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 $productId = "9NST4F2TQ00Q"
 $ErrorActionPreference = "Continue"
 $output = @(& msstore submission rollout get $productId 2>&1)
 $commandExitCode = $LASTEXITCODE
+$outputText = ($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
 $ErrorActionPreference = "Stop"
-$outputText = $output -join [Environment]::NewLine
 
 if ($commandExitCode -ne 0) {
   # The rollout endpoint rejects submissions that are still in certification,
@@ -17,22 +18,12 @@ if ($commandExitCode -ne 0) {
 }
 
 $plainOutput = $outputText -replace "`e\[[0-?]*[ -/]*[@-~]", ""
-$jsonMatch = [regex]::Match(
-  $plainOutput,
-  '(?s)\{\s*"IsPackageRollout".*\}\s*$'
-)
+$isFullRollout = $plainOutput -match '"PackageRolloutPercentage"\s*:\s*100(?:\.0+)?'
+$isInProgress = $plainOutput -match '"PackageRolloutStatus"\s*:\s*"PackageRolloutInProgress"'
 
-if (-not $jsonMatch.Success) {
-  throw "Microsoft Store CLI returned rollout data without a JSON result: $outputText"
-}
-
-$rollout = $jsonMatch.Value | ConvertFrom-Json
-Write-Host "Rollout status: $($rollout.PackageRolloutStatus); percentage: $($rollout.PackageRolloutPercentage)"
-
-if (-not $rollout.IsPackageRollout -or
-    $rollout.PackageRolloutStatus -ne "PackageRolloutInProgress" -or
-    [double]$rollout.PackageRolloutPercentage -lt 100) {
+if (-not $isFullRollout -or -not $isInProgress) {
   Write-Host "The rollout is not an in-progress 100% rollout; leaving it unchanged."
+  Write-Host $plainOutput
   exit 0
 }
 
