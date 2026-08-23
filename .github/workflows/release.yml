@@ -277,7 +277,6 @@ jobs:
             msstore publish . `
               --inputDirectory $package.DirectoryName `
               --appId 9NST4F2TQ00Q `
-              --packageRolloutPercentage 100 `
               --uploadTimeout 600 `
               --verbose
 
