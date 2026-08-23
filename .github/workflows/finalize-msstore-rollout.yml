@@ -29,7 +29,13 @@ jobs:
           version: v0.4.1
 
       - name: Configure Microsoft Store CLI
-        run: msstore reconfigure --tenantId ${{ secrets.AZURE_TENANT_ID }} --clientId ${{ secrets.AZURE_CLIENT_ID }} --clientSecret ${{ secrets.AZURE_CLIENT_SECRET }} --sellerId ${{ secrets.SELLER_ID }}
+        shell: pwsh
+        env:
+          MSSTORE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          MSSTORE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          MSSTORE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          MSSTORE_SELLER_ID: ${{ secrets.SELLER_ID }}
+        run: msstore reconfigure --tenantId $env:MSSTORE_TENANT_ID --clientId $env:MSSTORE_CLIENT_ID --clientSecret $env:MSSTORE_CLIENT_SECRET --sellerId $env:MSSTORE_SELLER_ID
 
       - name: Finalize completed rollout
         shell: pwsh
