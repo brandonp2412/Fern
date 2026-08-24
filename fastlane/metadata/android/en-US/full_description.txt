@@ -1,0 +1,23 @@
+See your New Zealand bank accounts, spending, and transactions in one calm, private dashboard.
+
+Fern is a personal finance and money-tracking app for New Zealand. Connect eligible bank accounts through Akahu to view balances, your overall position, recent activity, spending categories, and merchants in one place.
+
+UNDERSTAND YOUR MONEY
+
+• View account balances and your overall net position
+• Browse and search recent transactions
+• Explore spending breakdowns, trends, categories, and top merchants
+• Automatically categorise common New Zealand merchants
+• Create your own category overrides and reusable rules
+• Attach receipt images to transactions
+• Export and import your data
+
+PRIVATE BY DESIGN
+
+Fern connects directly to Akahu using the access token and app token you provide. Your credentials and financial data are stored locally on your device. Fern has no developer-operated server, advertising, analytics, or data sales.
+
+TRY IT FIRST
+
+Use Explore demo to browse the complete dashboard with sample data before connecting an account.
+
+Fern is an independent personal-finance tool. It does not provide financial advice, banking services, or investment recommendations. Akahu is a trademark of Akahu Limited; Fern is not affiliated with or endorsed by Akahu.

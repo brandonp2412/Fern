@@ -25,6 +25,7 @@ platform :android do
   desc "Build and upload an AAB to production"
   lane :production do
     build
+    metadata(track: "production")
     upload_bundle(track: "production")
   end
 
@@ -33,7 +34,10 @@ platform :android do
     upload_to_play_store(
       skip_upload_apk: true,
       skip_upload_aab: true,
-      skip_upload_changelogs: true
+      skip_upload_changelogs: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
     )
   end
 end
