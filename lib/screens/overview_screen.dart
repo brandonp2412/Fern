@@ -184,6 +184,17 @@ class _OverviewScreenState extends State<OverviewScreen> {
 
   Widget _balanceCard(BuildContext context, AppState state) {
     final fern = context.fern;
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    final foreground = dark ? scheme.onPrimaryContainer : fern.onGreen;
+    final gradientColors = dark
+        ? [
+            fern.deep,
+            scheme.primaryContainer,
+            Color.lerp(scheme.primaryContainer, fern.deep, 0.25)!,
+          ]
+        : [fern.deep, fern.green, fern.moss];
+    final debtColor = dark ? scheme.error : scheme.errorContainer;
     final masked = state.settings.hideBalances;
     final visible = state.visibleAccounts;
     final assets = visible
@@ -198,7 +209,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [fern.deep, fern.green, fern.moss],
+          colors: gradientColors,
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -208,7 +219,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Text(
             'Net position',
             style: TextStyle(
-              color: fern.onGreen.withValues(alpha: 0.8),
+              color: foreground.withValues(alpha: 0.82),
               fontSize: 13,
             ),
           ),
@@ -216,7 +227,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Text(
             masked ? '••••' : money(state.totalBalance),
             style: TextStyle(
-              color: fern.onGreen,
+              color: foreground,
               fontSize: 36,
               fontWeight: FontWeight.w800,
               letterSpacing: -1,
@@ -225,20 +236,15 @@ class _OverviewScreenState extends State<OverviewScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _miniStat('Assets', assets, fern.onGreen, masked),
+              _miniStat('Assets', assets, foreground, masked),
               const SizedBox(width: 24),
               if (state.settings.showDebt)
-                _miniStat(
-                  'Debt',
-                  debt.abs(),
-                  Theme.of(context).colorScheme.errorContainer,
-                  masked,
-                ),
+                _miniStat('Debt', debt.abs(), debtColor, masked),
               const Spacer(),
               Text(
                 '${visible.length} accounts',
                 style: TextStyle(
-                  color: fern.onGreen.withValues(alpha: 0.8),
+                  color: foreground.withValues(alpha: 0.82),
                   fontSize: 12.5,
                 ),
               ),
