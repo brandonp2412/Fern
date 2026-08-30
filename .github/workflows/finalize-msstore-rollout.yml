@@ -1,12 +1,13 @@
 name: Finalize Microsoft Store rollout
 
 on:
-  workflow_run:
-    workflows: [Release]
-    types: [completed]
   schedule:
-    - cron: "17,47 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
 
 concurrency:
   group: fern-msstore-rollout
@@ -40,5 +41,18 @@ jobs:
         run: msstore reconfigure --tenantId $env:MSSTORE_TENANT_ID --clientId $env:MSSTORE_CLIENT_ID --clientSecret $env:MSSTORE_CLIENT_SECRET --sellerId $env:MSSTORE_SELLER_ID
 
       - name: Finalize completed rollout
+        id: finalize
         shell: pwsh
         run: ./scripts/finalize-msstore-rollout.ps1
+
+      - name: Disable finalization checks until the next Store publish
+        if: steps.finalize.outputs.finalized == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.disableWorkflow({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'finalize-msstore-rollout.yml',
+            });
