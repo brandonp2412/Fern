@@ -5,9 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: fern-release-main
-  # A newer main commit supersedes an in-progress release.  Keeping an older
+  # A newer main commit supersedes an in-progress release. Keeping an older
   # run alive can make its version-bump push race the newer commit.
   cancel-in-progress: true
 
@@ -16,9 +19,11 @@ jobs:
     if: "github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
 
@@ -38,14 +43,16 @@ jobs:
           - device_type: tenInchScreenshots
             profile: Nexus 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: zulu
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           cache: true
@@ -60,7 +67,7 @@ jobs:
 
       - name: Generate ${{ matrix.device_type }} screenshots
         timeout-minutes: 25
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         env:
           FERN_DEVICE_TYPE: ${{ matrix.device_type }}
         with:
@@ -73,7 +80,7 @@ jobs:
             ./scripts/ci-screenshots.sh ||
             { adb reconnect offline || true; adb wait-for-device; ./scripts/ci-screenshots.sh; }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: screenshots-${{ matrix.device_type }}
           path: fastlane/metadata/android/en-US/images/${{ matrix.device_type }}
@@ -84,14 +91,16 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: zulu
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           cache: true
@@ -110,7 +119,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run Patrol E2E tests
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 35
           target: google_apis
@@ -129,34 +138,36 @@ jobs:
       version: ${{ steps.bump.outputs.version }}
       commit_sha: ${{ steps.bump.outputs.commit_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           # Release the newest main commit, not the event SHA that may have
           # become stale while test, screenshot, and Patrol jobs were running.
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download phone screenshots
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: screenshots-phoneScreenshots
           path: fastlane/metadata/android/en-US/images/phoneScreenshots
 
       - name: Download seven-inch screenshots
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: screenshots-sevenInchScreenshots
           path: fastlane/metadata/android/en-US/images/sevenInchScreenshots
 
       - name: Download ten-inch screenshots
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: screenshots-tenInchScreenshots
           path: fastlane/metadata/android/en-US/images/tenInchScreenshots
 
       - name: Bump version and tag
         id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           CURRENT=$(grep '^version:' pubspec.yaml | sed 's/version: //')
@@ -176,6 +187,7 @@ jobs:
           git add pubspec.yaml fastlane/metadata/android/en-US/images
           git commit -m "Release $NEW_VERSION_NAME [skip ci]"
           git tag "v$NEW_VERSION_NAME"
+          gh auth setup-git
           git push origin HEAD:main
           git push origin "v$NEW_VERSION_NAME"
 
@@ -186,11 +198,12 @@ jobs:
     needs: version-bump
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.version-bump.outputs.commit_sha }}
+          persist-credentials: false
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
 
@@ -201,7 +214,7 @@ jobs:
       - name: Rename APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/fern.apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: fern-apk
           path: build/app/outputs/flutter-apk/fern.apk
@@ -210,12 +223,12 @@ jobs:
     needs: version-bump
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.version-bump.outputs.commit_sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
 
@@ -232,7 +245,7 @@ jobs:
         run: flutter pub run msix:create
 
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: fern-msix
           path: build/windows/x64/runner/Release/*.msix
@@ -246,22 +259,23 @@ jobs:
       actions: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.version-bump.outputs.commit_sha }}
+          persist-credentials: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: fern-msix
           path: build/windows/x64/runner/Release
 
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: "9.0.x"
 
       - name: Setup Microsoft Store CLI
-        uses: microsoft/setup-msstore-cli@v1
+        uses: microsoft/setup-msstore-cli@3b2ec9136230357ce9abc02b9d056626fb248d3f # v1
         with:
           version: v0.4.1
 
@@ -309,7 +323,7 @@ jobs:
           throw "Microsoft Store publish failed after $attempts attempts"
 
       - name: Start Microsoft Store finalization checks
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -330,32 +344,39 @@ jobs:
     needs: [test, version-bump]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.version-bump.outputs.commit_sha }}
+          persist-credentials: false
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1
         with:
           ruby-version: "3.3"
           bundler-cache: true
 
       - name: Configure Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           {
             echo "storeFile=upload-keystore.jks"
-            echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
-            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
-            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
           } > android/key.properties
 
       - name: Configure Google Play credentials
-        run: |
-          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/google-play.json"
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}
+        run: printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64" | base64 --decode > "$RUNNER_TEMP/google-play.json"
 
       - run: flutter pub get
       - run: dart run build_runner build -d
@@ -371,21 +392,23 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: fern-apk
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: fern-msix
 
       - name: Create GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.version-bump.outputs.version }}
         run: |
-          gh release create "v${{ needs.version-bump.outputs.version }}" \
+          gh release create "v${RELEASE_VERSION}" \
             fern.apk \
             ./*.msix \
-            --repo "${{ github.repository }}" \
-            --title "v${{ needs.version-bump.outputs.version }}" \
+            --repo "$REPOSITORY" \
+            --title "v${RELEASE_VERSION}" \
             --generate-notes
