@@ -38,6 +38,32 @@ function ConvertFrom-StoreJson($Output, [string]$Description) {
 
 Set-FinalizedOutput $false
 
+$pollResult = Invoke-StoreCommand @(
+  "submission", "poll", $ProductId, "--verbose"
+)
+
+if ($pollResult.ExitCode -ne 0) {
+  $pollText = ($pollResult.Output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+  $failedStatuses = @(
+    "CommitFailed",
+    "PreProcessingFailed",
+    "CertificationFailed",
+    "ReleaseFailed",
+    "PublishFailed",
+    "FAILED"
+  )
+  $knownFailure = $failedStatuses | Where-Object {
+    $pollText -match [regex]::Escape($_)
+  }
+
+  if ($knownFailure) {
+    Write-Warning "Existing Microsoft Store submission is failed; the next publish can replace it."
+  } else {
+    Write-Error "Could not wait for the existing Microsoft Store submission to finish."
+    exit $pollResult.ExitCode
+  }
+}
+
 $appResult = Invoke-StoreCommand @(
   "apps", "get", $ProductId, "--verbose"
 )
@@ -56,8 +82,9 @@ try {
 
 $submissionId = $application.LastPublishedApplicationSubmission.Id
 if (-not $submissionId) {
-  Write-Error "Microsoft Store returned no last published submission ID."
-  exit 1
+  Set-FinalizedOutput $true
+  Write-Host "No published Microsoft Store submission exists yet; there is no rollout to finalize."
+  exit 0
 }
 
 $getResult = Invoke-StoreCommand @(
@@ -86,11 +113,6 @@ if (
   exit 0
 }
 
-if ([double]$rollout.packageRolloutPercentage -lt 100) {
-  Write-Host "Package rollout is at $($rollout.packageRolloutPercentage)%; waiting for 100%."
-  exit 0
-}
-
 $finalizeResult = Invoke-StoreCommand @(
   "submission", "rollout", "finalize", $ProductId,
   "--submissionId", $submissionId, "--verbose"
@@ -102,5 +124,5 @@ if ($finalizeResult.ExitCode -ne 0) {
 }
 
 Set-FinalizedOutput $true
-Write-Host "Finalized the completed Microsoft Store package rollout."
+Write-Host "Finalized the active Microsoft Store package rollout."
 exit 0
