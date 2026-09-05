@@ -179,47 +179,71 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? message;
+  final String? actionLabel;
+  final IconData actionIcon;
+  final VoidCallback? onAction;
 
   const EmptyState({
     super.key,
     required this.icon,
     required this.title,
     this.message,
+    this.actionLabel,
+    this.actionIcon = Icons.arrow_forward_rounded,
+    this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: fern.mist,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: fern.green, size: 36),
-            ),
-            const SizedBox(height: 16),
+    final content = Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: fern.mist, shape: BoxShape.circle),
+            child: Icon(icon, color: fern.green, size: 48),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          if (message != null) ...[
+            const SizedBox(height: 7),
             Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              message!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: fern.slate, fontSize: 13.5),
             ),
-            if (message != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                message!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: fern.slate, fontSize: 13.5),
-              ),
-            ],
           ],
-        ),
+          if (onAction != null && actionLabel != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onAction,
+              icon: Icon(actionIcon),
+              label: Text(actionLabel!),
+            ),
+          ],
+        ],
       ),
+    );
+
+    return Center(
+      child: onAction == null
+          ? content
+          : Semantics(
+              button: true,
+              label: actionLabel ?? title,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: onAction,
+                child: content,
+              ),
+            ),
     );
   }
 }

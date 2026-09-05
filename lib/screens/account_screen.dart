@@ -197,18 +197,16 @@ class _AccountScreenState extends State<AccountScreen> {
                 child: ErrorState(error: _error!, onRetry: _load),
               )
             else if (_txns.isEmpty)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverToBoxAdapter(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        'No transactions found',
-                        style: TextStyle(color: fern.slate),
-                      ),
-                    ),
-                  ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'No transactions found',
+                  message:
+                      'There are no transactions to show for this account yet.',
+                  actionLabel: 'Refresh',
+                  actionIcon: Icons.refresh_rounded,
+                  onAction: _load,
                 ),
               )
             else

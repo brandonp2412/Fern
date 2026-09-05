@@ -99,10 +99,13 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Categorize spending')),
       body: !hasTxns
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.category_outlined,
               title: 'Nothing to categorize',
               message: 'No spending transactions yet.',
+              actionLabel: 'Refresh',
+              actionIcon: Icons.refresh_rounded,
+              onAction: () => widget.state.load(force: true),
             )
           : Column(
               children: [
@@ -152,10 +155,18 @@ class _CategorizeSpendingScreenState extends State<CategorizeSpendingScreen> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: _groups.isEmpty
-                      ? const EmptyState(
-                          icon: Icons.search_off,
+                      ? EmptyState(
+                          icon: Icons.search_off_rounded,
                           title: 'No matches',
-                          message: 'Try a different search.',
+                          message:
+                              'Try a different search or clear your filters.',
+                          actionLabel: 'Clear filters',
+                          actionIcon: Icons.filter_alt_off_rounded,
+                          onAction: () {
+                            _searchCtrl.clear();
+                            _setQuery('');
+                            _setCategories({});
+                          },
                         )
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

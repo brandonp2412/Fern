@@ -241,11 +241,14 @@ class _StatsScreenState extends State<StatsScreen> {
               );
             }
             if (state.transactions.isEmpty) {
-              return const EmptyState(
+              return EmptyState(
                 icon: Icons.bar_chart_outlined,
                 title: 'Nothing to show yet',
                 message:
                     'Once you have some transaction history, your spending trends will appear here.',
+                actionLabel: 'Refresh',
+                actionIcon: Icons.refresh_rounded,
+                onAction: () => state.load(force: true),
               );
             }
             return RefreshIndicator(
@@ -458,11 +461,14 @@ class _StatsScreenState extends State<StatsScreen> {
         categories.isEmpty &&
         weekly.isEmpty &&
         merchants.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.bar_chart_outlined,
         title: 'Nothing to show yet',
         message:
             'Once you have some transaction history, your spending trends will appear here.',
+        actionLabel: 'Refresh',
+        actionIcon: Icons.refresh_rounded,
+        onAction: () => widget.state.load(force: true),
       );
     }
 

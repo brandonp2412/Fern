@@ -563,10 +563,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
     final grouped = _grouped;
     if (grouped.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.receipt_long_outlined,
         title: 'No transactions',
         message: 'Try widening your filters.',
+        actionLabel: 'Clear filters',
+        actionIcon: Icons.filter_alt_off_rounded,
+        onAction: () => setState(() {
+          _searchCtrl.clear();
+          _query = '';
+          _direction = 'all';
+          _selectedCategories = {};
+        }),
       );
     }
     final keys = grouped.keys.toList()
