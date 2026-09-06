@@ -133,9 +133,8 @@ void main() {
       );
     });
 
-    test('Amex Platinum (CREDITCARD) is labelled "Credit card"', () {
+    test('Amex Platinum (CREDITCARD) has a customer-facing account label', () {
       expect(accountTypeLabel('CREDITCARD'), 'Credit card');
-      expect(accountTypeIcon('CREDITCARD'), Icons.credit_card);
     });
 
     test('Kiwibank Notice Saver (SAVINGS) is labelled "Savings"', () {

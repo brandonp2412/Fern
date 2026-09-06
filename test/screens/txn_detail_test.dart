@@ -1,5 +1,4 @@
 import 'package:fern/screens/overview_screen.dart';
-import 'package:fern/screens/txn_detail.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:flutter/material.dart';
@@ -41,10 +40,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byType(TxnDetailSheet), findsOneWidget);
+    expect(find.text('Merchant'), findsOneWidget);
   });
 
-  testWidgets('shows transaction amount and date', (tester) async {
+  testWidgets('shows transaction amount and type', (tester) async {
     final state = await seededState(
       tester: tester,
       accounts: [anzEveryday()],
@@ -56,8 +55,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byType(TxnDetailSheet), findsOneWidget);
-    expect(find.text("McDonald's"), findsWidgets);
+    expect(find.text('-\$14.90'), findsWidgets);
+    expect(find.textContaining('EFTPOS'), findsOneWidget);
   });
 
   testWidgets('shows merchant and statement description', (tester) async {

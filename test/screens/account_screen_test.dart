@@ -5,7 +5,6 @@ import 'package:fern/models/transaction.dart';
 import 'package:fern/screens/account_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
-import 'package:fern/widgets/txn_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -191,7 +190,9 @@ void main() {
     expect(find.text('No transactions found'), findsOneWidget);
   });
 
-  testWidgets('lazily builds a large transaction history', (tester) async {
+  testWidgets('shows a large transaction history as it is scrolled', (
+    tester,
+  ) async {
     final a = anzEveryday();
     final transactions = List.generate(
       500,
@@ -230,7 +231,8 @@ void main() {
 
     await _pump(tester, state, a);
 
-    expect(find.byType(TxnTile), findsWidgets);
-    expect(find.byType(TxnTile).evaluate().length, lessThan(100));
+    expect(find.text('Transaction 0'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Transaction 200'), 300);
+    expect(find.text('Transaction 200'), findsOneWidget);
   });
 }

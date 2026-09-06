@@ -75,6 +75,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     SectionHeader(
                       'Spending this month',
                       trailing: IconButton(
+                        tooltip: 'Categorize spending',
                         icon: Icon(
                           Icons.settings_outlined,
                           size: 18,

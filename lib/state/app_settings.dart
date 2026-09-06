@@ -3,9 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/backup_settings_file.dart';
 import '../theme.dart';
 
-/// Persisted, app-wide user preferences. Follows the same hand-rolled
-/// ChangeNotifier pattern as [AppState] rather than pulling in a state
-/// management package.
 class AppSettings extends ChangeNotifier {
   static const _hideBalancesKey = 'settings_hide_balances';
   static const _swipeTabsKey = 'settings_swipe_tabs';

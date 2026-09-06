@@ -86,6 +86,10 @@ void main() {
     );
     await _pump(tester, state);
 
-    expect(find.byType(PageView), findsOneWidget);
+    await tester.dragFrom(const Offset(400, 1000), const Offset(-400, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('No transactions'), findsOneWidget);
   });
 }

@@ -1,6 +1,4 @@
-import 'package:fern/screens/account_screen.dart';
 import 'package:fern/screens/overview_screen.dart';
-import 'package:fern/screens/categorize_spending_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +47,7 @@ void main() {
   );
 
   testWidgets(
-    'tapping the ASB Streamline account card opens its AccountDetailScreen',
+    'tapping the ASB Streamline account card shows its transaction history',
     (tester) async {
       final state = await seededState(
         tester: tester,
@@ -62,29 +60,28 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(AccountScreen), findsOneWidget);
-      expect(find.widgetWithText(AppBar, 'ASB Streamline'), findsOneWidget);
+      expect(find.text('ASB Streamline'), findsOneWidget);
+      expect(find.text('Transactions'), findsOneWidget);
     },
   );
 
-  testWidgets(
-    'tapping the settings icon on "Spending this month" opens RecategorizeScreen',
-    (tester) async {
-      final state = await seededState(
-        tester: tester,
-        accounts: [anzEveryday()],
-        transactions: [mcdonaldsBurger()],
-      );
-      await _pump(tester, state);
+  testWidgets('opening Spending this month shows categorization controls', (
+    tester,
+  ) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      transactions: [mcdonaldsBurger()],
+    );
+    await _pump(tester, state);
 
-      expect(find.text('Spending this month'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.settings_outlined));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Spending this month'), findsOneWidget);
+    await tester.tap(find.byTooltip('Categorize spending'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(CategorizeSpendingScreen), findsOneWidget);
-    },
-  );
+    expect(find.text('Categorize spending'), findsOneWidget);
+  });
 
   testWidgets(
     'a transaction just after local midnight on the 1st still counts as spending this month',

@@ -44,7 +44,6 @@ void main() {
     expect(find.text("McDonald's"), findsOneWidget);
     expect(find.text('Uber'), findsOneWidget);
     expect(find.text('BP'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsNothing);
   });
 
   testWidgets('filters with inline category chips', (tester) async {

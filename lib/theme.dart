@@ -157,7 +157,6 @@ class Fern {
   }
 }
 
-/// Named seed colors offered in the settings color picker.
 enum FernSeed {
   green('Fern green', Fern.green),
   moss('Moss', Fern.moss),
