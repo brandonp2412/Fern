@@ -238,10 +238,6 @@ List<Transaction> sampleTransactions() => [
   internalTransfer(),
 ];
 
-// ---------------------------------------------------------------------------
-// App-level test doubles
-// ---------------------------------------------------------------------------
-
 AkahuApi fakeApi({MockClient? client}) => AkahuApi(
   userToken: 'user_test_token',
   appToken: 'app_test_token',

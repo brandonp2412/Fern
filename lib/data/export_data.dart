@@ -31,8 +31,9 @@ class ExportData extends StatelessWidget {
       type: FileType.custom,
       allowedExtensions: ['sqlite'],
     );
-    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-      if (result != null) await file.copy(result);
+    if (result != null &&
+        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      await file.copy(result);
     }
   }
 

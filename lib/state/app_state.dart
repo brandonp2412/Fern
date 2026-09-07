@@ -128,9 +128,9 @@ class AppState extends ChangeNotifier {
       final needle = rule.matchText.toLowerCase();
       if (rule.exact) {
         if (hay == needle) return rule.imagePath;
-      } else if (contains == null && hay.contains(needle)) {
-        contains = rule;
+        continue;
       }
+      if (contains == null && hay.contains(needle)) contains = rule;
     }
     return contains?.imagePath;
   }
