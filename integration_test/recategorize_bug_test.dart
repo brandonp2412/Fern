@@ -6,7 +6,6 @@ import 'package:fern/services/akahu_api.dart';
 import 'package:fern/state/app_settings.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
-import 'package:fern/widgets/common.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,7 +117,6 @@ void main() {
       final state = await _seedState();
       await _pumpApp(tester, state);
 
-      // Overview: "Spending this month" shows all 3 seeded categories.
       await tester.scrollUntilVisible(
         find.text('Spending this month'),
         200,
@@ -128,16 +126,7 @@ void main() {
       expect(find.text('Transport'), findsOneWidget);
       expect(find.text('Entertainment'), findsOneWidget);
 
-      // Tap the cog on the "Spending this month" section header (not the
-      // bottom-nav Settings tab, which uses the same icon).
-      final cog = find.descendant(
-        of: find.ancestor(
-          of: find.text('Spending this month'),
-          matching: find.byType(SectionHeader),
-        ),
-        matching: find.byIcon(Icons.settings_outlined),
-      );
-      await tester.tap(cog);
+      await tester.tap(find.byTooltip('Categorize spending'));
       await tester.pumpAndSettle();
 
       expect(find.text('Categorize spending'), findsOneWidget);

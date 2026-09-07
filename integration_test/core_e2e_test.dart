@@ -5,7 +5,6 @@ import 'package:fern/services/demo_akahu_api.dart';
 import 'package:fern/state/app_settings.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
-import 'package:fern/widgets/common.dart';
 import 'package:fern/widgets/txn_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,7 +54,6 @@ void main() {
   ) async {
     final state = await _pumpDemoApp(tester);
 
-    // Overview: real AppState load, database cache, balances and recent activity.
     expect(find.text('Net position'), findsOneWidget);
     expect(find.text('Everyday'), findsOneWidget);
     expect(find.text('Rainy Day Savings'), findsOneWidget);
@@ -69,7 +67,6 @@ void main() {
     expect(state.accounts, hasLength(3));
     expect(state.transactions, isNotEmpty);
 
-    // Account detail calls the account-specific API path and renders its cache.
     await tester.scrollUntilVisible(
       find.text('Everyday'),
       -200,
@@ -86,7 +83,6 @@ void main() {
     );
     expect(find.text('End of history'), findsOneWidget);
 
-    // Transaction detail and Akahu report dialog.
     await tester.tap(find.byType(TxnTile).first);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
@@ -108,7 +104,6 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Activity: text search, direction filtering, category modal and sort modal.
     await _tab(tester, 'Activity');
     expect(find.text('Activity'), findsWidgets);
     final search = find.byType(TextField).first;
@@ -148,7 +143,6 @@ void main() {
     expect(tester.takeException(), isNull, reason: 'activity sort sheet');
     expect(find.text('Highest'), findsOneWidget);
 
-    // Stats: range changes and category filter modal on the actual Linux device.
     await _tab(tester, 'Stats');
     expect(find.text('Income vs spending'), findsOneWidget);
     await tester.tap(find.text('1 year'));
@@ -163,7 +157,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'stats category sheet');
 
-    // Settings: persisted app settings propagate back through the shell.
     await _tab(tester, 'Settings');
     expect(find.text('Hide account balances'), findsOneWidget);
     expect(find.text('Show debt accounts'), findsOneWidget);
@@ -205,21 +198,13 @@ void main() {
     expect(find.text('Rewards Card'), findsNothing);
     expect(tester.takeException(), isNull, reason: 'settings privacy toggles');
 
-    // Categorize-spending route and search use the same cached state.
     final spendingHeader = find.text('Spending this month');
     await tester.scrollUntilVisible(
       spendingHeader,
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    final cog = find.descendant(
-      of: find.ancestor(
-        of: spendingHeader,
-        matching: find.byType(SectionHeader),
-      ),
-      matching: find.byIcon(Icons.settings_outlined),
-    );
-    await tester.tap(cog);
+    await tester.tap(find.byTooltip('Categorize spending'));
     await tester.pumpAndSettle();
     expect(find.text('Categorize spending'), findsOneWidget);
     final categorizeSearch = find.byType(TextField).first;
@@ -230,7 +215,6 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Appearance and swipe navigation.
     await _tab(tester, 'Settings');
     final settingsScroll = find.byType(Scrollable).last;
     await tester.scrollUntilVisible(

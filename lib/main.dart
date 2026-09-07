@@ -46,8 +46,8 @@ class _FernAppState extends State<FernApp> {
   Future<void> _restore() async {
     final userToken = await SecureStore.userToken ?? '';
     final appToken = await SecureStore.appToken ?? '';
+    if (!mounted) return;
     if (userToken.isEmpty || appToken.isEmpty) {
-      if (!mounted) return;
       setState(() => _checkedCredentials = true);
       return;
     }
