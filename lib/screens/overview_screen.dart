@@ -187,7 +187,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     final fern = context.fern;
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
-    final foreground = dark ? scheme.onPrimaryContainer : fern.onGreen;
+    final foreground = dark ? fern.onDeep : fern.onGreen;
     final gradientColors = dark
         ? [
             fern.deep,
@@ -220,7 +220,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Text(
             'Net position',
             style: TextStyle(
-              color: foreground.withValues(alpha: 0.82),
+              color: foreground.withValues(alpha: 0.9),
               fontSize: 13,
             ),
           ),
