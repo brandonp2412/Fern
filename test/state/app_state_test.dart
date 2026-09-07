@@ -211,6 +211,64 @@ void main() {
     );
 
     test(
+      'load() reconciles an account removed upstream and its cached history',
+      () async {
+        final anz = anzEveryday();
+        final asb = asbStreamline();
+        final anzTxn = mcdonaldsBurger(account: anz.id);
+        final asbTxn = netflixSubscription(account: asb.id);
+        final client = MockClient((req) async {
+          if (req.url.path == '/v1/me') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'item': {
+                  '_id': 'user_2n2crlefk9enq9dp8dv3f',
+                  'email': 'test@example.com',
+                },
+              }),
+              200,
+            );
+          }
+          if (req.url.path == '/v1/accounts') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'items': [anz.toJson()],
+              }),
+              200,
+            );
+          }
+          if (req.url.path == '/v1/transactions') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'items': [anzTxn.toJson()],
+                'cursor': {'next': null},
+              }),
+              200,
+            );
+          }
+          return http.Response(json.encode({'success': false}), 404);
+        });
+        final state = await seededState(
+          accounts: [anz, asb],
+          transactions: [anzTxn, asbTxn],
+          api: fakeApi(client: client),
+        );
+
+        await state.load();
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+
+        expect(state.accounts.map((account) => account.id), [anz.id]);
+        expect(state.transactions.map((transaction) => transaction.id), [
+          anzTxn.id,
+        ]);
+      },
+    );
+
+    test(
       'load() marks offline and keeps an error message when the fake API fails',
       () async {
         final client = MockClient(

@@ -27,7 +27,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
   void initState() {
     super.initState();
     _spendSub = widget.state.db.watchMonthlySpendByGroup().listen((data) {
-      setState(() => _spendByGroup = data);
+      if (mounted) setState(() => _spendByGroup = data);
     });
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import '../db/app_database.dart';
+import '../logging.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../models/user.dart';
@@ -204,6 +205,8 @@ class AppState extends ChangeNotifier {
     if (_inFlight != null) return _inFlight;
 
     if (!force &&
+        !offline &&
+        error == null &&
         lastSync != null &&
         DateTime.now().difference(lastSync!) < _staleAfter) {
       return;
@@ -218,6 +221,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _run({bool manual = false}) async {
+    talker.debug(manual ? 'Refreshing account data' : 'Loading account data');
     if (manual) refreshing = true;
     notifyListeners();
     try {
@@ -228,7 +232,8 @@ class AppState extends ChangeNotifier {
       error = null;
       lastSync = DateTime.now();
       await db.saveAccounts(fetchedAccounts);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Loading account data failed');
       refreshing = false;
       offline = true;
       if (transactions.isEmpty) {
@@ -240,8 +245,8 @@ class AppState extends ChangeNotifier {
 
     try {
       await _fetchTransactions();
-    } catch (e) {
-      debugPrint('AppState.load: transaction fetch failed: $e');
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Loading transactions failed');
       offline = true;
       if (transactions.isEmpty) error = e.toString();
     }
@@ -278,14 +283,26 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> ensureDataSince(DateTime start) async {
+    if (_inFlight != null) await _inFlight;
     if (_loadingOlder) return;
     final oldest = oldestTxnDate;
-    if (oldest != null && oldest.isBefore(start)) return;
+    if (oldest != null && !oldest.isAfter(start)) return;
     var prevCursor = txnCursor;
     for (var i = 0; i < 20; i++) {
       await loadOlder();
       final cur = oldestTxnDate;
-      if (cur != null && cur.isBefore(start)) break;
+      if (cur != null && !cur.isAfter(start)) break;
+      if (txnCursor == null || txnCursor == prevCursor) break;
+      prevCursor = txnCursor;
+    }
+  }
+
+  Future<void> ensureAllData() async {
+    if (_inFlight != null) await _inFlight;
+    if (_loadingOlder) return;
+    var prevCursor = txnCursor;
+    for (var i = 0; i < 100 && txnCursor != null; i++) {
+      await loadOlder();
       if (txnCursor == null || txnCursor == prevCursor) break;
       prevCursor = txnCursor;
     }
@@ -309,8 +326,8 @@ class AppState extends ChangeNotifier {
       _txnLimit += page.items.length;
       txnCursor = page.nextCursor;
       _subscribeTransactions();
-    } catch (e) {
-      debugPrint('AppState.loadOlder: failed: $e');
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Loading older transactions failed');
     } finally {
       _loadingOlder = false;
       notifyListeners();
@@ -329,6 +346,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> reloadAccounts() async {
+    talker.debug('Refreshing account list');
     refreshing = true;
     notifyListeners();
     try {
@@ -336,7 +354,8 @@ class AppState extends ChangeNotifier {
       error = null;
       offline = false;
       await db.saveAccounts(fetched);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Refreshing account list failed');
       error = e.toString();
     }
     refreshing = false;

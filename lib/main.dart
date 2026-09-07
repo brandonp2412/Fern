@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'logging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'screens/home_shell.dart';
@@ -17,6 +18,9 @@ Future<void> _openLink(String url) async {
 }
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  installTalkerErrorHandlers();
+  talker.info('Starting Fern');
   runApp(const FernApp());
 }
 
@@ -50,12 +54,22 @@ class _FernAppState extends State<FernApp> {
     final api = AkahuApi(userToken: userToken, appToken: appToken);
     try {
       await api.getMe();
-      if (!mounted) return;
+      talker.info('Restored saved Akahu connection');
+      if (!mounted) {
+        api.close();
+        return;
+      }
       setState(() {
         _appState = AppState(api, _settings);
         _checkedCredentials = true;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      api.close();
+      talker.handle(
+        error,
+        stackTrace,
+        'Restoring saved Akahu connection failed',
+      );
       if (!mounted) return;
       setState(() => _checkedCredentials = true);
     }
@@ -142,7 +156,11 @@ class _SetupScreenState extends State<SetupScreen> {
       );
       if (!mounted) return;
       widget.onConnected(AppState(api, widget.settings));
-    } catch (e) {
+      talker.info('Connected to Akahu');
+    } catch (e, stackTrace) {
+      api.close();
+      talker.handle(e, stackTrace, 'Connecting to Akahu failed');
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _connecting = false;

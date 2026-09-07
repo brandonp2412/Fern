@@ -42,6 +42,51 @@ void main() {
         expect(rows.first.balance?.current, 999.99);
       },
     );
+
+    test(
+      'account snapshot removes stale account history and overrides',
+      () async {
+        final anz = anzEveryday();
+        final asb = asbStreamline();
+        final anzTxn = mcdonaldsBurger(account: anz.id);
+        final asbTxn = netflixSubscription(account: asb.id);
+
+        await db.saveAccounts([anz, asb]);
+        await db.saveTransactions([anzTxn, asbTxn]);
+        await db.saveCategoryOverride(anzTxn.id, 'Dining', 'Lifestyle');
+        await db.saveCategoryOverride(asbTxn.id, 'Streaming', 'Lifestyle');
+
+        await db.saveAccounts([anz]);
+
+        final accountRows = await db.watchAccounts().first;
+        expect(accountRows.map((account) => account.id), [anz.id]);
+
+        final transactionRows = await db.watchTransactions().first;
+        expect(transactionRows.map((transaction) => transaction.id), [
+          anzTxn.id,
+        ]);
+
+        final overrides = await db.loadCategoryOverrides();
+        expect(overrides.keys, {anzTxn.id});
+      },
+    );
+
+    test(
+      'empty authoritative account snapshot clears account-backed cache',
+      () async {
+        final anz = anzEveryday();
+        final txn = mcdonaldsBurger(account: anz.id);
+        await db.saveAccounts([anz]);
+        await db.saveTransactions([txn]);
+        await db.saveCategoryOverride(txn.id, 'Dining', 'Lifestyle');
+
+        await db.saveAccounts([]);
+
+        expect(await db.watchAccounts().first, isEmpty);
+        expect(await db.watchTransactions().first, isEmpty);
+        expect(await db.loadCategoryOverrides(), isEmpty);
+      },
+    );
   });
 
   group('transactions', () {

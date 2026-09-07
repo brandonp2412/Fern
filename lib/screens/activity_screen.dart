@@ -95,8 +95,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
         final searchHay = [
           tx.description,
           tx.merchant?.name ?? '',
-          tx.category?.name ?? '',
-          tx.category?.groupName ?? '',
+          widget.state.categoryNameFor(tx) ?? '',
+          widget.state.categoryGroupFor(tx) ?? '',
           txTypeLabel(tx.type),
         ].join(' ').toLowerCase();
         if (!searchHay.contains(q)) return false;
@@ -326,84 +326,93 @@ class _ActivityScreenState extends State<ActivityScreen> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (cats.isNotEmpty)
-                          TextButton(
-                            onPressed: () => setModalState(() {
-                              pending = pending.length == cats.length
-                                  ? {}
-                                  : cats.toSet();
-                            }),
-                            child: Text(
-                              pending.length == cats.length
-                                  ? 'Clear'
-                                  : 'Select all',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(ctx).height * 0.72,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Categories',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (cats.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No categories yet'),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final cat in cats)
-                            FilterChip(
-                              label: Text(cat),
-                              selected: pending.contains(cat),
-                              showCheckmark: false,
-                              labelStyle: TextStyle(
-                                color: pending.contains(cat)
-                                    ? context.fern.onGreen
-                                    : context.fern.ink,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
+                          if (cats.isNotEmpty)
+                            TextButton(
+                              onPressed: () => setModalState(() {
+                                pending = pending.length == cats.length
+                                    ? {}
+                                    : cats.toSet();
+                              }),
+                              child: Text(
+                                pending.length == cats.length
+                                    ? 'Clear'
+                                    : 'Select all',
                               ),
-                              onSelected: (val) {
-                                setModalState(() {
-                                  if (val) {
-                                    pending = {...pending, cat};
-                                  } else {
-                                    pending = {...pending}..remove(cat);
-                                  }
-                                });
-                              },
                             ),
                         ],
                       ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () {
-                          setState(() => _selectedCategories = pending);
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text('Apply'),
+                      const SizedBox(height: 8),
+                      if (cats.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Text('No categories yet'),
+                        )
+                      else
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final cat in cats)
+                                  FilterChip(
+                                    label: Text(cat),
+                                    selected: pending.contains(cat),
+                                    showCheckmark: false,
+                                    labelStyle: TextStyle(
+                                      color: pending.contains(cat)
+                                          ? context.fern.onGreen
+                                          : context.fern.ink,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    onSelected: (val) {
+                                      setModalState(() {
+                                        if (val) {
+                                          pending = {...pending, cat};
+                                        } else {
+                                          pending = {...pending}..remove(cat);
+                                        }
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                            setState(() => _selectedCategories = pending);
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Apply'),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );

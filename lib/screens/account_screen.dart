@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../models/account.dart';
+import '../logging.dart';
 import '../models/transaction.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
@@ -29,14 +30,13 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _refreshing = false;
   bool _loadingMore = false;
   String? _error;
+  int _txnLimit = 500;
   StreamSubscription<List<Transaction>>? _txnsSub;
 
   @override
   void initState() {
     super.initState();
-    _txnsSub = widget.state.db
-        .watchTransactions(accountId: widget.account.id, limit: 500)
-        .listen(_onTxnRows);
+    _subscribeTransactions();
     _load();
     _scroll.addListener(() {
       if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 200 &&
@@ -52,6 +52,13 @@ class _AccountScreenState extends State<AccountScreen> {
     _txnsSub?.cancel();
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _subscribeTransactions() {
+    unawaited(_txnsSub?.cancel());
+    _txnsSub = widget.state.db
+        .watchTransactions(accountId: widget.account.id, limit: _txnLimit)
+        .listen(_onTxnRows);
   }
 
   void _onTxnRows(List<Transaction> rows) {
@@ -75,7 +82,7 @@ class _AccountScreenState extends State<AccountScreen> {
       ]);
       final page = results[0] as dynamic;
       final items = page.items as List<Transaction>;
-      widget.state.cacheTransactions(items);
+      await widget.state.cacheTransactions(items);
       if (mounted) {
         setState(() {
           _cursor = page.nextCursor as String?;
@@ -83,7 +90,8 @@ class _AccountScreenState extends State<AccountScreen> {
           _refreshing = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Loading account transactions failed');
       if (mounted) {
         setState(() {
           _refreshing = false;
@@ -100,14 +108,23 @@ class _AccountScreenState extends State<AccountScreen> {
         widget.account.id,
         cursor: _cursor,
       );
-      widget.state.cacheTransactions(page.items);
+      await widget.state.cacheTransactions(page.items);
+      if (page.items.isNotEmpty) {
+        _txnLimit += page.items.length;
+        _subscribeTransactions();
+      }
       if (mounted) {
         setState(() {
           _cursor = page.nextCursor;
           _loadingMore = false;
         });
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      talker.handle(
+        error,
+        stackTrace,
+        'Loading more account transactions failed',
+      );
       if (mounted) setState(() => _loadingMore = false);
     }
   }
@@ -123,9 +140,11 @@ class _AccountScreenState extends State<AccountScreen> {
         );
       }
       await Future.delayed(const Duration(seconds: 5));
+      if (!mounted) return;
       await _load();
       await widget.state.reloadAccounts();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Requesting account refresh failed');
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -1,6 +1,7 @@
 import 'package:fern/screens/stats_screen.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -80,6 +81,30 @@ void main() {
 
     expect(find.text('Lifestyle'), findsOneWidget);
     expect(find.text('Transport'), findsOneWidget);
+
+    final chart = tester.widget<PieChart>(find.byType(PieChart));
+    for (final section in chart.data.sections.where((s) => s.showTitle)) {
+      expect(section.titlePositionPercentageOffset, 0.55);
+      expect(section.titleStyle?.height, 1);
+    }
+  });
+
+  testWidgets('monthly averages include zero-activity months in the range', (
+    tester,
+  ) async {
+    final today = DateTime.now().toUtc().toIso8601String();
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      transactions: [
+        payday(date: today),
+        mcdonaldsBurger(date: today),
+      ],
+    );
+    await _pump(tester, state);
+
+    expect(find.text(r'$533.33'), findsOneWidget);
+    expect(find.text(r'$2.48'), findsOneWidget);
   });
 
   testWidgets('masks amounts when hideBalances is on', (tester) async {

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../db/app_database.dart';
+import '../logging.dart';
 import '../main.dart';
 import '../screens/home_shell.dart';
 import '../state/app_state.dart';
@@ -47,10 +48,12 @@ class ImportData extends StatelessWidget {
       final dbFolder = await getApplicationDocumentsDirectory();
       await state.db.close();
       await sourceFile.copy(p.join(dbFolder.path, 'fern_cache.sqlite'));
+      talker.info('Imported database backup');
 
       if (!context.mounted) return;
       _restart(context);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Importing database backup failed');
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -94,10 +97,12 @@ class ImportData extends StatelessWidget {
           (batch) => batch.insertAll(state.db.categoryRules, rules),
         );
       });
+      talker.info('Imported ${rules.length} category rules');
 
       if (!context.mounted) return;
       _restart(context);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Importing category rules failed');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to import category rules: $e')),

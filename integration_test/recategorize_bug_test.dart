@@ -7,6 +7,7 @@ import 'package:fern/state/app_settings.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:fern/widgets/common.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -14,19 +15,21 @@ import 'package:integration_test/integration_test.dart';
 
 // HomeShell.initState() unconditionally calls state.load(), which would
 // otherwise hit the real Akahu API with fake tokens. Fail instantly instead.
-final _offlineClient = MockClient((request) async => throw Exception('offline (recategorize bug test)'));
+final _offlineClient = MockClient(
+  (request) async => throw Exception('offline (recategorize bug test)'),
+);
 
 List<Account> _fakeAccounts() => [
-      Account(
-        id: 'acc_checking',
-        name: 'Everyday Account',
-        type: 'CHECKING',
-        attributes: const ['TRANSACTIONS'],
-        formattedAccount: '12-3456-7890123-00',
-        connection: AccountConnection(id: 'conn_bank', name: 'ANZ', logo: ''),
-        balance: AccountBalance(current: 2431.55, available: 2431.55),
-      ),
-    ];
+  Account(
+    id: 'acc_checking',
+    name: 'Everyday Account',
+    type: 'CHECKING',
+    attributes: const ['TRANSACTIONS'],
+    formattedAccount: '12-3456-7890123-00',
+    connection: AccountConnection(id: 'conn_bank', name: 'ANZ', logo: ''),
+    balance: AccountBalance(current: 2431.55, available: 2431.55),
+  ),
+];
 
 // Three categories of spend, all dated on the 1st of the *current* month at
 // an early local hour. In NZ (UTC+12, no DST in winter), local 01:00/03:00/
@@ -44,9 +47,12 @@ List<Transaction> _fakeTransactions() {
       Transaction(
         id: 'trans_$i',
         account: 'acc_checking',
-        date: DateTime(now.year, now.month, 1, 1 + i * 2)
-            .toUtc()
-            .toIso8601String(),
+        date: DateTime(
+          now.year,
+          now.month,
+          1,
+          1 + i * 2,
+        ).toUtc().toIso8601String(),
         description: merchants[i],
         amount: -(20.0 + i * 5),
         type: 'DEBIT',
@@ -66,16 +72,21 @@ List<Transaction> _fakeTransactions() {
 }
 
 Future<AppState> _seedState() async {
-  final db = AppDatabase();
-  await db.delete(db.transactions).go();
-  await db.delete(db.accounts).go();
-  await db.delete(db.categoryOverrides).go();
+  // Never use AppDatabase() in integration tests: on desktop that resolves to
+  // the user's real Fern database. Keep fixtures isolated in memory so a test
+  // run cannot erase or contaminate production cache/history.
+  final db = AppDatabase.forTesting(NativeDatabase.memory());
   await db.saveAccounts(_fakeAccounts());
   await db.saveTransactions(_fakeTransactions());
 
   final settings = AppSettings()..seedColor = Fern.green;
-  final api = AkahuApi(userToken: 'test', appToken: 'test', client: _offlineClient);
+  final api = AkahuApi(
+    userToken: 'test',
+    appToken: 'test',
+    client: _offlineClient,
+  );
   final state = AppState(api, settings, db: db);
+  addTearDown(state.dispose);
 
   final deadline = DateTime.now().add(const Duration(seconds: 10));
   while (state.transactions.length < 3 && DateTime.now().isBefore(deadline)) {
@@ -88,7 +99,10 @@ Future<void> _pumpApp(WidgetTester tester, AppState state) async {
   await tester.pumpWidget(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: Fern.buildTheme(brightness: Brightness.light, seed: state.settings.seedColor),
+      theme: Fern.buildTheme(
+        brightness: Brightness.light,
+        seed: state.settings.seedColor,
+      ),
       home: HomeShell(state: state),
     ),
   );
@@ -105,6 +119,11 @@ void main() {
       await _pumpApp(tester, state);
 
       // Overview: "Spending this month" shows all 3 seeded categories.
+      await tester.scrollUntilVisible(
+        find.text('Spending this month'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Groceries'), findsOneWidget);
       expect(find.text('Transport'), findsOneWidget);
       expect(find.text('Entertainment'), findsOneWidget);

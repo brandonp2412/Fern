@@ -6,7 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fixtures.dart';
 
-Future<void> _pump(WidgetTester tester, AppState state) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AppState state, {
+  Brightness brightness = Brightness.light,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -15,7 +19,7 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
   });
   await tester.pumpWidget(
     MaterialApp(
-      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      theme: Fern.buildTheme(brightness: brightness, seed: Fern.green),
       home: OverviewScreen(state: state),
     ),
   );
@@ -117,6 +121,26 @@ void main() {
 
     expect(find.text('Lifestyle'), findsOneWidget);
     expect(find.text('Transport'), findsOneWidget);
+  });
+
+  testWidgets('net position stays readable on the dark gradient', (
+    tester,
+  ) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday(balance: 2450.32)],
+    );
+    await _pump(tester, state, brightness: Brightness.dark);
+
+    final label = tester.widget<Text>(find.text('Net position'));
+    final amount = tester
+        .widgetList<Text>(find.textContaining(r'$2,450'))
+        .firstWhere((text) => text.style?.fontSize == 36);
+    final context = tester.element(find.text('Net position'));
+    final palette = Theme.of(context).extension<FernPalette>()!;
+
+    expect(label.style?.color, palette.onDeep.withValues(alpha: 0.9));
+    expect(amount.style?.color, palette.onDeep);
   });
 
   testWidgets('hiding balances masks the net position figure', (tester) async {

@@ -19,6 +19,11 @@ class _MonthBucket {
   const _MonthBucket(this.key, this.label);
 }
 
+DateTime statsRangeStart(DateTime today, int monthCount) {
+  assert(monthCount > 0);
+  return DateTime(today.year, today.month - monthCount + 1, 1);
+}
+
 List<_MonthBucket> _monthsBetween(DateTime start, DateTime end) {
   final result = <_MonthBucket>[];
   var cursor = DateTime(start.year, start.month, 1);
@@ -66,7 +71,9 @@ class _StatsScreenState extends State<StatsScreen> {
   void _loadMoreIfNeeded() {
     final (start, _) = _rangeBounds();
     if (start != null) {
-      widget.state.ensureDataSince(start);
+      unawaited(widget.state.ensureDataSince(start));
+    } else if (_range == _StatsRange.all) {
+      unawaited(widget.state.ensureAllData());
     }
   }
 
@@ -77,16 +84,24 @@ class _StatsScreenState extends State<StatsScreen> {
     final cats = _catFilter.isNotEmpty ? _catFilter : null;
     _monthlySub = db
         .queryMonthlyTotals(start: start, end: end, categoryFilter: cats)
-        .listen((d) => setState(() => _monthly = d));
+        .listen((d) {
+          if (mounted) setState(() => _monthly = d);
+        });
     _catSub = db
         .queryCategoryTotals(start: start, end: end, categoryFilter: cats)
-        .listen((d) => setState(() => _categoryTotals = d));
+        .listen((d) {
+          if (mounted) setState(() => _categoryTotals = d);
+        });
     _weeklySub = db
         .queryWeeklyTrend(start: start, end: end, categoryFilter: cats)
-        .listen((d) => setState(() => _weekly = d));
+        .listen((d) {
+          if (mounted) setState(() => _weekly = d);
+        });
     _merchantsSub = db
         .queryTopMerchants(start: start, end: end, categoryFilter: cats)
-        .listen((d) => setState(() => _merchants = d));
+        .listen((d) {
+          if (mounted) setState(() => _merchants = d);
+        });
   }
 
   void _unsubscribe() {
@@ -107,9 +122,9 @@ class _StatsScreenState extends State<StatsScreen> {
     final today = DateTime(now.year, now.month, now.day);
     switch (_range) {
       case _StatsRange.m6:
-        return (DateTime(today.year, today.month - 6, today.day), null);
+        return (statsRangeStart(today, 6), null);
       case _StatsRange.y1:
-        return (DateTime(today.year - 1, today.month, today.day), null);
+        return (statsRangeStart(today, 12), null);
       case _StatsRange.custom:
         return (_customRange?.start, _customRange?.end);
       case _StatsRange.all:
@@ -341,99 +356,108 @@ class _StatsScreenState extends State<StatsScreen> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                setModalState(() {
-                                  if (pending.length == cats.length) {
-                                    pending = {};
-                                  } else {
-                                    pending = cats.toSet();
-                                  }
-                                });
-                              },
-                              child: Text(
-                                pending.length == cats.length
-                                    ? 'Deselect all'
-                                    : 'Select all',
-                              ),
-                            ),
-                            if (pending.isNotEmpty)
-                              TextButton(
-                                onPressed: () =>
-                                    setModalState(() => pending = {}),
-                                child: const Text('Clear'),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (cats.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No categories yet'),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(ctx).height * 0.72,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          for (final cat in cats)
-                            FilterChip(
-                              label: Text(cat),
-                              selected: pending.contains(cat),
-                              showCheckmark: false,
-                              labelStyle: TextStyle(
-                                color: pending.contains(cat)
-                                    ? context.fern.onGreen
-                                    : context.fern.ink,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              onSelected: (val) {
-                                setModalState(() {
-                                  if (val) {
-                                    pending = {...pending, cat};
-                                  } else {
-                                    pending = {...pending}..remove(cat);
-                                  }
-                                });
-                              },
+                          const Text(
+                            'Categories',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    if (pending.length == cats.length) {
+                                      pending = {};
+                                    } else {
+                                      pending = cats.toSet();
+                                    }
+                                  });
+                                },
+                                child: Text(
+                                  pending.length == cats.length
+                                      ? 'Deselect all'
+                                      : 'Select all',
+                                ),
+                              ),
+                              if (pending.isNotEmpty)
+                                TextButton(
+                                  onPressed: () =>
+                                      setModalState(() => pending = {}),
+                                  child: const Text('Clear'),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () {
-                          setState(() => _catFilter = pending);
-                          _subscribe();
-                          Navigator.of(ctx).pop();
-                        },
-                        child: const Text('Apply'),
+                      const SizedBox(height: 8),
+                      if (cats.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Text('No categories yet'),
+                        )
+                      else
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final cat in cats)
+                                  FilterChip(
+                                    label: Text(cat),
+                                    selected: pending.contains(cat),
+                                    showCheckmark: false,
+                                    labelStyle: TextStyle(
+                                      color: pending.contains(cat)
+                                          ? context.fern.onGreen
+                                          : context.fern.ink,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    onSelected: (val) {
+                                      setModalState(() {
+                                        if (val) {
+                                          pending = {...pending, cat};
+                                        } else {
+                                          pending = {...pending}..remove(cat);
+                                        }
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                            setState(() => _catFilter = pending);
+                            _subscribe();
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Apply'),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -449,13 +473,14 @@ class _StatsScreenState extends State<StatsScreen> {
     final weekly = _buildWeeklyList();
     final merchants = _buildMerchantList();
 
-    final values = _monthly.values.toList();
-    final avgIncome = values.isEmpty
+    final avgIncome = monthly.isEmpty
         ? 0.0
-        : values.fold(0.0, (s, v) => s + v.$1) / values.length;
-    final avgExpense = values.isEmpty
+        : monthly.fold(0.0, (sum, month) => sum + month.income) /
+              monthly.length;
+    final avgExpense = monthly.isEmpty
         ? 0.0
-        : values.fold(0.0, (s, v) => s + v.$2) / values.length;
+        : monthly.fold(0.0, (sum, month) => sum + month.expense) /
+              monthly.length;
 
     if (monthly.isEmpty &&
         categories.isEmpty &&
@@ -860,8 +885,10 @@ class _StatsScreenState extends State<StatsScreen> {
               title: total == 0
                   ? ''
                   : '${(entries[i].amount / total * 100).round()}%',
+              titlePositionPercentageOffset: 0.55,
               titleStyle: TextStyle(
                 fontSize: 11,
+                height: 1,
                 fontWeight: FontWeight.w700,
                 color: onCategoryColor(entries[i].color),
               ),

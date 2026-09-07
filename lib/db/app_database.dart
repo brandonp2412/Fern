@@ -200,38 +200,83 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  /// Reconciles the cached account snapshot with Akahu's authoritative list.
+  ///
+  /// Transactions for accounts that are no longer linked are removed as well,
+  /// otherwise their stale history would continue to affect Overview/Activity/
+  /// Stats after the account itself disappeared upstream. Transactions for
+  /// accounts that are still linked are intentionally retained because Akahu's
+  /// transaction endpoint is paginated and a normal refresh may only fetch the
+  /// first page of the requested history window.
   Future<void> saveAccounts(List<Account> list) async {
-    if (list.isEmpty) return;
     final now = DateTime.now();
-    await batch((batch) {
-      batch.insertAllOnConflictUpdate(
-        accounts,
-        list
-            .map(
-              (a) => AccountsCompanion.insert(
-                id: a.id,
-                name: a.name,
-                status: a.status,
-                type: a.type,
-                attributes: json.encode(a.attributes),
-                formattedAccount: Value(a.formattedAccount),
-                connectionId: Value(a.connection?.id),
-                connectionName: Value(a.connection?.name),
-                connectionLogo: Value(a.connection?.logo),
-                connectionType: Value(a.connection?.connectionType),
-                balanceCurrent: Value(a.balance?.current?.toDouble()),
-                balanceAvailable: Value(a.balance?.available?.toDouble()),
-                balanceLimit: Value(a.balance?.limit?.toDouble()),
-                balanceOverdrawn: Value(a.balance?.overdrawn ?? false),
-                holder: Value(a.holder),
-                refreshedBalance: Value(a.refreshed?.balance),
-                refreshedMeta: Value(a.refreshed?.meta),
-                refreshedTransactions: Value(a.refreshed?.transactions),
-                updatedAt: now,
-              ),
-            )
-            .toList(),
-      );
+    final currentIds = list
+        .map((account) => account.id)
+        .toList(growable: false);
+
+    await transaction(() async {
+      final staleTransactionQuery = selectOnly(transactions)
+        ..addColumns([transactions.id]);
+      if (currentIds.isEmpty) {
+        staleTransactionQuery.where(const Constant(true));
+      } else {
+        staleTransactionQuery.where(transactions.accountId.isNotIn(currentIds));
+      }
+      final staleTransactionIds = (await staleTransactionQuery.get())
+          .map((row) => row.read(transactions.id))
+          .whereType<String>()
+          .toList(growable: false);
+
+      if (staleTransactionIds.isNotEmpty) {
+        await (delete(
+          categoryOverrides,
+        )..where((row) => row.transactionId.isIn(staleTransactionIds))).go();
+      }
+
+      if (currentIds.isEmpty) {
+        await delete(transactions).go();
+        await delete(accounts).go();
+      } else {
+        await (delete(
+          transactions,
+        )..where((row) => row.accountId.isNotIn(currentIds))).go();
+        await (delete(
+          accounts,
+        )..where((row) => row.id.isNotIn(currentIds))).go();
+      }
+
+      if (list.isNotEmpty) {
+        await batch((batch) {
+          batch.insertAllOnConflictUpdate(
+            accounts,
+            list
+                .map(
+                  (a) => AccountsCompanion.insert(
+                    id: a.id,
+                    name: a.name,
+                    status: a.status,
+                    type: a.type,
+                    attributes: json.encode(a.attributes),
+                    formattedAccount: Value(a.formattedAccount),
+                    connectionId: Value(a.connection?.id),
+                    connectionName: Value(a.connection?.name),
+                    connectionLogo: Value(a.connection?.logo),
+                    connectionType: Value(a.connection?.connectionType),
+                    balanceCurrent: Value(a.balance?.current?.toDouble()),
+                    balanceAvailable: Value(a.balance?.available?.toDouble()),
+                    balanceLimit: Value(a.balance?.limit?.toDouble()),
+                    balanceOverdrawn: Value(a.balance?.overdrawn ?? false),
+                    holder: Value(a.holder),
+                    refreshedBalance: Value(a.refreshed?.balance),
+                    refreshedMeta: Value(a.refreshed?.meta),
+                    refreshedTransactions: Value(a.refreshed?.transactions),
+                    updatedAt: now,
+                  ),
+                )
+                .toList(),
+          );
+        });
+      }
     });
   }
 
@@ -552,6 +597,7 @@ class AppDatabase extends _$AppDatabase {
       ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
       ' WHERE t.date >= \'$start\' AND t.date < \'$end\''
       ' AND t.amount < 0'
+      '${_excludeTransfersWhere()}'
       ' GROUP BY k'
       ' ORDER BY total DESC'
       ' LIMIT 6',
@@ -638,12 +684,15 @@ class AppDatabase extends _$AppDatabase {
         ? 'AND ${_dateWhere(start: start, end: end)}'
         : '';
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
+    final excludeTransfers = (categoryFilter == null || categoryFilter.isEmpty)
+        ? _excludeTransfersWhere()
+        : '';
     return _watchStat(
       'SELECT COALESCE(ov.category_group, ov.category_name, t.category_group, t.auto_category_group, \'Uncategorised\') AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
       ' LEFT JOIN category_overrides ov ON ov.transaction_id = t.id'
-      ' WHERE t.amount < 0 $where$catWhere'
+      ' WHERE t.amount < 0 $where$catWhere$excludeTransfers'
       ' GROUP BY k'
       ' ORDER BY total DESC',
       readsFrom: {transactions, categoryOverrides},
@@ -659,11 +708,14 @@ class AppDatabase extends _$AppDatabase {
   }) {
     final where = _dateWhere(start: start, end: end);
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
+    final excludeTransfers = (categoryFilter == null || categoryFilter.isEmpty)
+        ? _excludeTransfersWhere()
+        : '';
     return _watchStat(
       'SELECT date(date(t.date, \'localtime\'), \'-\' || ((strftime(\'%w\', date(t.date, \'localtime\')) + 6) % 7) || \' days\') AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
-      ' WHERE t.amount < 0 AND $where$catWhere'
+      ' WHERE t.amount < 0 AND $where$catWhere$excludeTransfers'
       ' GROUP BY k'
       ' ORDER BY k',
       readsFrom: {transactions, categoryOverrides},
@@ -680,11 +732,14 @@ class AppDatabase extends _$AppDatabase {
   }) {
     final where = _dateWhere(start: start, end: end);
     final catWhere = _categoryWhere(categoryFilter: categoryFilter);
+    final excludeTransfers = (categoryFilter == null || categoryFilter.isEmpty)
+        ? _excludeTransfersWhere()
+        : '';
     return _watchStat(
       'SELECT COALESCE(t.merchant_name, t.description) AS k,'
       ' COALESCE(SUM(ABS(CAST(t.amount AS REAL))), 0) AS total'
       ' FROM transactions t'
-      ' WHERE t.amount < 0 AND $where$catWhere'
+      ' WHERE t.amount < 0 AND $where$catWhere$excludeTransfers'
       ' AND COALESCE(t.merchant_name, t.description) != \'\''
       ' GROUP BY k'
       ' ORDER BY total DESC'

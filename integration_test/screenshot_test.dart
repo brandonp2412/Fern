@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fern/db/app_database.dart';
 import 'package:fern/models/account.dart';
 import 'package:fern/models/transaction.dart';
@@ -7,6 +9,7 @@ import 'package:fern/state/app_settings.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
 import 'package:fern/widgets/txn_tile.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -15,7 +18,9 @@ import 'package:integration_test/integration_test.dart';
 // HomeShell.initState() unconditionally calls state.load(), which would
 // otherwise hit the real Akahu API with fake tokens and hang waiting for
 // network from inside the Waydroid sandbox. Fail instantly instead.
-final _offlineClient = MockClient((request) async => throw Exception('offline (screenshot test)'));
+final _offlineClient = MockClient(
+  (request) async => throw Exception('offline (screenshot test)'),
+);
 
 const _merchants = <String, String>{
   'New World': 'Groceries',
@@ -31,48 +36,41 @@ const _merchants = <String, String>{
 };
 
 List<Account> _fakeAccounts() => [
-      Account(
-        id: 'acc_checking',
-        name: 'Everyday Account',
-        type: 'CHECKING',
-        attributes: const ['TRANSACTIONS', 'PAYMENT_FROM', 'PAYMENT_TO'],
-        formattedAccount: '12-3456-7890123-00',
-        connection: AccountConnection(
-          id: 'conn_bank',
-          name: 'ANZ',
-          logo: '',
-        ),
-        balance: AccountBalance(current: 2431.55, available: 2431.55),
-      ),
-      Account(
-        id: 'acc_savings',
-        name: 'Savings',
-        type: 'SAVINGS',
-        attributes: const ['TRANSACTIONS'],
-        formattedAccount: '12-3456-7890123-01',
-        connection: AccountConnection(
-          id: 'conn_bank',
-          name: 'ANZ',
-          logo: '',
-        ),
-        balance: AccountBalance(current: 8760.12, available: 8760.12),
-      ),
-      Account(
-        id: 'acc_credit',
-        name: 'Credit Card',
-        type: 'CREDITCARD',
-        attributes: const ['TRANSACTIONS', 'PAYMENT_FROM'],
-        formattedAccount: '4835 xxxx xxxx 1123',
-        connection: AccountConnection(
-          id: 'conn_bank',
-          name: 'ANZ',
-          logo: '',
-        ),
-        balance: AccountBalance(current: -412.30, available: 1587.70, limit: 2000),
-      ),
-    ];
+  Account(
+    id: 'acc_checking',
+    name: 'Everyday Account',
+    type: 'CHECKING',
+    attributes: const ['TRANSACTIONS', 'PAYMENT_FROM', 'PAYMENT_TO'],
+    formattedAccount: '12-3456-7890123-00',
+    connection: AccountConnection(id: 'conn_bank', name: 'ANZ', logo: ''),
+    balance: AccountBalance(current: 2431.55, available: 2431.55),
+  ),
+  Account(
+    id: 'acc_savings',
+    name: 'Savings',
+    type: 'SAVINGS',
+    attributes: const ['TRANSACTIONS'],
+    formattedAccount: '12-3456-7890123-01',
+    connection: AccountConnection(id: 'conn_bank', name: 'ANZ', logo: ''),
+    balance: AccountBalance(current: 8760.12, available: 8760.12),
+  ),
+  Account(
+    id: 'acc_credit',
+    name: 'Credit Card',
+    type: 'CREDITCARD',
+    attributes: const ['TRANSACTIONS', 'PAYMENT_FROM'],
+    formattedAccount: '4835 xxxx xxxx 1123',
+    connection: AccountConnection(id: 'conn_bank', name: 'ANZ', logo: ''),
+    balance: AccountBalance(current: -412.30, available: 1587.70, limit: 2000),
+  ),
+];
 
-Transaction _fakeTransaction(int i, DateTime date, List<String> names, {bool forceSpend = false}) {
+Transaction _fakeTransaction(
+  int i,
+  DateTime date,
+  List<String> names, {
+  bool forceSpend = false,
+}) {
   final merchant = names[i % names.length];
   final category = _merchants[merchant]!;
   final isIncome = !forceSpend && i % 11 == 0;
@@ -85,14 +83,19 @@ Transaction _fakeTransaction(int i, DateTime date, List<String> names, {bool for
     description: isIncome ? 'Salary' : merchant,
     amount: amount,
     type: isIncome ? 'CREDIT' : 'DEBIT',
-    merchant: isIncome ? null : TransactionMerchant(id: 'merch_$i', name: merchant),
+    merchant: isIncome
+        ? null
+        : TransactionMerchant(id: 'merch_$i', name: merchant),
     category: isIncome
         ? null
         : TransactionCategory(
             id: 'cat_$i',
             name: category,
             groups: {
-              'personal_finance': CategoryGroup(id: 'grp_$category', name: category),
+              'personal_finance': CategoryGroup(
+                id: 'grp_$category',
+                name: category,
+              ),
             },
           ),
   );
@@ -136,16 +139,20 @@ List<Transaction> _fakeTransactions() {
 }
 
 Future<AppState> _seedState() async {
-  final db = AppDatabase();
-  await db.delete(db.transactions).go();
-  await db.delete(db.accounts).go();
-  await db.delete(db.categoryOverrides).go();
+  // Screenshot fixtures must never share the production database on desktop.
+  // An in-memory database also keeps each screenshot case independent.
+  final db = AppDatabase.forTesting(NativeDatabase.memory());
   await db.saveAccounts(_fakeAccounts());
   await db.saveTransactions(_fakeTransactions());
 
   final settings = AppSettings()..seedColor = Fern.green;
-  final api = AkahuApi(userToken: 'screenshot', appToken: 'screenshot', client: _offlineClient);
+  final api = AkahuApi(
+    userToken: 'screenshot',
+    appToken: 'screenshot',
+    client: _offlineClient,
+  );
   final state = AppState(api, settings, db: db);
+  addTearDown(state.dispose);
 
   // Wait for the DB watch streams to actually deliver the seeded rows,
   // rather than hoping a fixed delay is long enough.
@@ -160,7 +167,10 @@ Future<void> _pumpApp(WidgetTester tester, AppState state) async {
   await tester.pumpWidget(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: Fern.buildTheme(brightness: Brightness.light, seed: state.settings.seedColor),
+      theme: Fern.buildTheme(
+        brightness: Brightness.light,
+        seed: state.settings.seedColor,
+      ),
       home: HomeShell(state: state),
     ),
   );
@@ -178,6 +188,10 @@ Future<void> _capture({
   required String name,
 }) async {
   await tester.pumpAndSettle();
+  // Flutter's integration_test plugin has no Linux captureScreenshot method.
+  // Keep the Linux run as a real device/navigation smoke test, while Android
+  // and other supported targets still generate the store screenshots.
+  if (Platform.isLinux) return;
   await binding.convertFlutterSurfaceToImage();
   await tester.pump();
   await binding.takeScreenshot(name);

@@ -7,18 +7,30 @@ import 'package:fern/models/account.dart';
 import 'package:fern/models/transaction.dart';
 import 'package:fern/models/user.dart';
 import 'package:fern/services/akahu_api.dart';
-import 'package:fern/services/auto_categorizer.dart';
 
-// Mirrors the group COALESCE(category_group, auto_category_group, 'Uncategorised')
-// logic in AppDatabase.saveTransactions/watch* queries, so expectations can be
-// derived from whatever transactions the live API happens to return.
-String _categoryGroupOf(Transaction t) {
-  final categoryGroup = t.category?.groupName;
-  if (categoryGroup != null) return categoryGroup;
-  var autoGroup = t.autoCategoryGroup;
-  autoGroup ??= AutoCategorizer.categorize(t)?.group;
-  return autoGroup ?? 'Uncategorised';
-}
+AppDatabase _memoryDb() => AppDatabase.forTesting(
+  DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true),
+);
+
+Transaction _boundarySpend({
+  required String id,
+  required DateTime localDate,
+  double amount = -25,
+}) => Transaction(
+  id: id,
+  account: 'acc_boundary',
+  date: localDate.toUtc().toIso8601String(),
+  description: 'Boundary spend',
+  amount: amount,
+  type: 'DEBIT',
+  category: TransactionCategory(
+    id: 'cat_boundary',
+    name: 'Groceries',
+    groups: {
+      'personal_finance': CategoryGroup(id: 'group_boundary', name: 'Food'),
+    },
+  ),
+);
 
 void main() {
   final userToken = Platform.environment['AKAHU_ACCESS_TOKEN'];
@@ -166,142 +178,76 @@ void main() {
       final badApi = AkahuApi(userToken: 'bad_token', appToken: appToken!);
       expect(() => badApi.getAccounts(), throwsA(isA<ApiException>()));
     });
+  });
 
-    // The three tests below pin themselves to a known window rather than
-    // "the current month" or "today": transactions dated
-    // 2026-07-31T12:00:00.000Z UTC are midnight NZST on 2026-08-01 —
-    // i.e. their raw UTC date is July but their local date is August 1st.
-    // Any query that buckets by raw UTC date instead of local date will
-    // drop these into July and fail these assertions.
-    //
-    // Rather than pin expected dollar amounts (which drift as the live/sandbox
-    // account's transaction history changes over time), expectations are
-    // derived from whatever transactions the API actually returns for the
-    // window, using the same category-grouping logic the app uses. This keeps
-    // the tests focused on their real purpose — verifying local-date bucketing
-    // across the UTC/NZST boundary — without being brittle to external data.
+  group('local-date database integration', () {
+    test('current-month spending uses the transaction local date', () async {
+      final db = _memoryDb();
+      addTearDown(db.close);
+      final now = DateTime.now();
+      final localBoundary = DateTime(now.year, now.month, 1, 0, 30);
+      final spend = _boundarySpend(
+        id: 'boundary_current_month',
+        localDate: localBoundary,
+      );
+      await db.saveTransactions([spend]);
+
+      final grouped = await db.watchMonthlySpendByGroup().first;
+
+      expect(grouped['Food'], closeTo(25, 0.01));
+    });
 
     test(
-      'Overview "spending this month" includes the Jul 31 UTC / Aug 1 NZST transactions',
+      'monthly totals attribute a UTC-boundary transaction to its local month',
       () async {
-        final page = await api.getTransactions(
-          start: '2026-07-29',
-          end: '2026-08-01',
-        );
-
-        final db = AppDatabase.forTesting(
-          DatabaseConnection(
-            NativeDatabase.memory(),
-            closeStreamsSynchronously: true,
-          ),
-        );
-        addTearDown(() => db.close());
-        await db.saveTransactions(page.items);
-
+        final db = _memoryDb();
+        addTearDown(db.close);
         final now = DateTime.now();
-        final expected = <String, double>{};
-        for (final t in page.items) {
-          if (t.amount >= 0) continue;
-          final local = DateTime.parse(t.date).toLocal();
-          if (local.year != now.year || local.month != now.month) continue;
-          final group = _categoryGroupOf(t);
-          if (group == 'Transfers') continue;
-          expected[group] = (expected[group] ?? 0) + t.amount.abs();
-        }
-        expect(
-          expected,
-          isNotEmpty,
-          reason: 'no local-current-month transactions in the fetched window',
+        final localBoundary = DateTime(now.year, now.month, 1, 0, 30);
+        final spend = _boundarySpend(
+          id: 'boundary_monthly_spend',
+          localDate: localBoundary,
         );
-
-        final grouped = await db.watchMonthlySpendByGroup().first;
-
-        for (final entry in expected.entries) {
-          expect(grouped[entry.key], closeTo(entry.value, 0.01));
-        }
-      },
-    );
-
-    test(
-      'watchMonthlyTotals attributes the Jul 31 UTC / Aug 1 NZST transactions to their local month',
-      () async {
-        final page = await api.getTransactions(
-          start: '2026-07-29',
-          end: '2026-08-01',
+        final income = Transaction(
+          id: 'boundary_monthly_income',
+          account: 'acc_boundary',
+          date: localBoundary.toUtc().toIso8601String(),
+          description: 'Boundary income',
+          amount: 100,
+          type: 'CREDIT',
         );
-
-        final db = AppDatabase.forTesting(
-          DatabaseConnection(
-            NativeDatabase.memory(),
-            closeStreamsSynchronously: true,
-          ),
-        );
-        addTearDown(() => db.close());
-        await db.saveTransactions(page.items);
-
-        final byMonth = <String, (double, double)>{};
-        for (final t in page.items) {
-          if (_categoryGroupOf(t) == 'Transfers') continue;
-          final local = DateTime.parse(t.date).toLocal();
-          final key =
-              '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}';
-          final cur = byMonth[key] ?? (0.0, 0.0);
-          if (t.amount >= 0) {
-            byMonth[key] = (cur.$1 + t.amount, cur.$2);
-          } else {
-            byMonth[key] = (cur.$1, cur.$2 + t.amount.abs());
-          }
-        }
-        expect(byMonth, isNotEmpty);
+        await db.saveTransactions([spend, income]);
+        final key =
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
 
         final monthly = await db.watchMonthlyTotals(2).first;
 
-        for (final entry in byMonth.entries) {
-          expect(monthly[entry.key]?.$1, closeTo(entry.value.$1, 0.01));
-          expect(monthly[entry.key]?.$2, closeTo(entry.value.$2, 0.01));
-        }
+        expect(monthly[key]?.$1, closeTo(100, 0.01));
+        expect(monthly[key]?.$2, closeTo(25, 0.01));
       },
     );
 
     test(
-      '_dateWhere-backed queries (queryCategoryTotals) attribute the Jul 31 UTC '
-      'transactions to the Aug 1 local day',
+      '_dateWhere-backed queries use local day across the UTC boundary',
       () async {
-        final page = await api.getTransactions(
-          start: '2026-07-29',
-          end: '2026-08-01',
-        );
-
-        final db = AppDatabase.forTesting(
-          DatabaseConnection(
-            NativeDatabase.memory(),
-            closeStreamsSynchronously: true,
-          ),
-        );
-        addTearDown(() => db.close());
-        await db.saveTransactions(page.items);
-
+        final db = _memoryDb();
+        addTearDown(db.close);
         final cutoff = DateTime(2026, 8, 1);
-        final expected = <String, double>{};
-        for (final t in page.items) {
-          if (t.amount >= 0) continue;
-          final local = DateTime.parse(t.date).toLocal();
-          final localDate = DateTime(local.year, local.month, local.day);
-          if (localDate.isBefore(cutoff)) continue;
-          final group = _categoryGroupOf(t);
-          expected[group] = (expected[group] ?? 0) + t.amount.abs();
-        }
-        expect(
-          expected,
-          isNotEmpty,
-          reason: 'no transactions on/after the Aug 1 local cutoff',
+        final before = _boundarySpend(
+          id: 'boundary_before',
+          localDate: DateTime(2026, 7, 31, 23, 30),
+          amount: -10,
         );
+        final after = _boundarySpend(
+          id: 'boundary_after',
+          localDate: DateTime(2026, 8, 1, 0, 30),
+          amount: -25,
+        );
+        await db.saveTransactions([before, after]);
 
         final categories = await db.queryCategoryTotals(start: cutoff).first;
 
-        for (final entry in expected.entries) {
-          expect(categories[entry.key], closeTo(entry.value, 0.01));
-        }
+        expect(categories['Food'], closeTo(25, 0.01));
       },
     );
   });

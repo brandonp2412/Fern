@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:chopper/chopper.dart' as chopper;
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 import '../generated/akahu.enums.swagger.dart' as gen_enums;
 import '../generated/akahu.swagger.dart' as gen;
@@ -45,6 +48,7 @@ abstract interface class AkahuClient {
 
 class AkahuApi implements AkahuClient {
   static const _baseUrl = 'https://api.akahu.io/v1';
+  static const _proxy = String.fromEnvironment('FERN_HTTP_PROXY');
 
   final String _appToken;
   final gen.Akahu _service;
@@ -55,7 +59,7 @@ class AkahuApi implements AkahuClient {
     required String appToken,
     http.Client? client,
   }) {
-    final c = client ?? http.Client();
+    final c = client ?? _defaultClient();
     return AkahuApi._(
       appToken: appToken,
       client: c,
@@ -67,6 +71,12 @@ class AkahuApi implements AkahuClient {
         ],
       ),
     );
+  }
+
+  static http.Client _defaultClient() {
+    if (_proxy.isEmpty) return http.Client();
+    final ioClient = HttpClient()..findProxy = (_) => 'PROXY $_proxy';
+    return IOClient(ioClient);
   }
 
   AkahuApi._({

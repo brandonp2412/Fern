@@ -1,5 +1,6 @@
 package com.fernmoney.fern_money
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private var channel: MethodChannel? = null
+    private var pendingPickResult: MethodChannel.Result? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,8 +26,12 @@ class MainActivity : FlutterActivity() {
         channel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "pick" -> {
-                    pick()
-                    result.success(true)
+                    if (pendingPickResult != null) {
+                        result.error("PICK_IN_PROGRESS", "A backup folder picker is already open", null)
+                    } else {
+                        pendingPickResult = result
+                        pick()
+                    }
                 }
 
                 else -> result.notImplemented()
@@ -42,15 +48,22 @@ class MainActivity : FlutterActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != WRITE_REQUEST_CODE) return
 
-        data?.data?.also { uri ->
-            val contentResolver = applicationContext.contentResolver
-            val takeFlags: Int =
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            contentResolver.takePersistableUriPermission(uri, takeFlags)
-            Log.d("auto backup", "uri=$uri")
-            writeSettings(context, true, uri.toString())
-            scheduleBackups(context)
+        val result = pendingPickResult
+        pendingPickResult = null
+        val uri = if (resultCode == Activity.RESULT_OK) data?.data else null
+        if (uri == null) {
+            result?.success(null)
+            return
         }
+
+        val contentResolver = applicationContext.contentResolver
+        val takeFlags: Int =
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        contentResolver.takePersistableUriPermission(uri, takeFlags)
+        Log.d("auto backup", "uri=$uri")
+        writeSettings(context, true, uri.toString())
+        scheduleBackups(context)
+        result?.success(uri.toString())
     }
 
     companion object {

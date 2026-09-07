@@ -426,12 +426,11 @@ class _ReportDialogState extends State<_ReportDialog> {
       );
       if (mounted) Navigator.of(context).pop('Thanks — report sent to Akahu');
     } catch (e) {
+      if (!mounted) return;
       setState(() => _sending = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 

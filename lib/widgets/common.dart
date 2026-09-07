@@ -204,16 +204,16 @@ class EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(color: fern.mist, shape: BoxShape.circle),
-            child: Icon(icon, color: fern.green, size: 48),
+            child: Icon(icon, color: fern.green, size: 36),
           ),
           const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           if (message != null) ...[
-            const SizedBox(height: 7),
+            const SizedBox(height: 6),
             Text(
               message!,
               textAlign: TextAlign.center,
@@ -232,18 +232,30 @@ class EmptyState extends StatelessWidget {
       ),
     );
 
-    return Center(
-      child: onAction == null
-          ? content
-          : Semantics(
-              button: true,
-              label: actionLabel ?? title,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: onAction,
-                child: content,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : 0.0;
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: Center(
+              child: onAction == null
+                  ? content
+                  : Semantics(
+                      button: true,
+                      label: actionLabel ?? title,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: onAction,
+                        child: content,
+                      ),
+                    ),
             ),
+          ),
+        );
+      },
     );
   }
 }

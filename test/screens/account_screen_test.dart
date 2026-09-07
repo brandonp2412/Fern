@@ -235,4 +235,83 @@ void main() {
     await tester.scrollUntilVisible(find.text('Transaction 200'), 300);
     expect(find.text('Transaction 200'), findsOneWidget);
   });
+
+  testWidgets('load more reveals transactions beyond the initial 500 rows', (
+    tester,
+  ) async {
+    final a = anzEveryday();
+    final cached = List.generate(
+      500,
+      (index) => Transaction(
+        id: 'cached_$index',
+        account: a.id,
+        date: DateTime.utc(
+          2026,
+          8,
+          31,
+        ).subtract(Duration(hours: index)).toIso8601String(),
+        description: 'Cached transaction $index',
+        amount: -(index + 1),
+        type: 'EFTPOS',
+      ),
+    );
+    final olderDate = DateTime.utc(2026, 7, 1).toIso8601String();
+    final older = Transaction(
+      id: 'older_501',
+      account: a.id,
+      connection: 'conn_anz',
+      user: 'user_test_token',
+      date: olderDate,
+      description: 'Older transaction revealed',
+      amount: -501,
+      type: 'EFTPOS',
+      createdAt: olderDate,
+      updatedAt: olderDate,
+    );
+    var transactionCalls = 0;
+    final state = await seededState(
+      tester: tester,
+      accounts: [a],
+      transactions: cached,
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          transactionCalls++;
+          if (transactionCalls == 1) {
+            return http.Response(
+              jsonEncode({
+                'success': true,
+                'items': [],
+                'cursor': {'next': 'older-page'},
+              }),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'items': [older.toJson()],
+              'cursor': {'next': null},
+            }),
+            200,
+          );
+        }),
+      ),
+    );
+
+    await _pump(tester, state, a);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -100000));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(transactionCalls, greaterThanOrEqualTo(2));
+    expect(find.text('Older transaction revealed'), findsOneWidget);
+  });
 }

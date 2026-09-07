@@ -34,12 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (widget.state.loadingOlder || _syncing) return;
     setState(() => _syncing = true);
     try {
-      while (widget.state.txnCursor != null && mounted) {
-        final before = widget.state.oldestTxnDate;
-        await widget.state.loadOlder();
-        final after = widget.state.oldestTxnDate;
-        if (before == after) break;
-      }
+      await widget.state.ensureAllData();
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
@@ -93,8 +88,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await Permission.notification.request();
     final dbFolder = await getApplicationDocumentsDirectory();
     final dbPath = p.join(dbFolder.path, 'fern_cache.sqlite');
+    final backupUri = await androidChannel.invokeMethod<String>('pick', {
+      'dbPath': dbPath,
+    });
+    if (backupUri == null || backupUri.isEmpty) return;
+    await settings.setBackupUri(backupUri);
     await settings.setAutomaticBackups(true);
-    await androidChannel.invokeMethod('pick', {'dbPath': dbPath});
   }
 
   Future<void> _openExternalLink(String url) async {
