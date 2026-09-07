@@ -289,10 +289,11 @@ Future<AppState> seededState({
   if (tester != null) {
     await tester.pump();
     await tester.pump();
-  } else {
-    await Future.delayed(Duration.zero);
-    await Future.delayed(Duration.zero);
+    return state;
   }
+
+  await Future.delayed(Duration.zero);
+  await Future.delayed(Duration.zero);
   return state;
 }
 
