@@ -5,7 +5,6 @@ import 'package:fern/services/demo_akahu_api.dart';
 import 'package:fern/state/app_settings.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
-import 'package:fern/widgets/txn_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -75,7 +74,7 @@ void main() {
     await tester.tap(find.text('Everyday'));
     await tester.pumpAndSettle();
     expect(find.text('Transactions'), findsOneWidget);
-    expect(find.byType(TxnTile), findsWidgets);
+    expect(find.text('Fresh Market'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('End of history'),
       250,
@@ -83,7 +82,7 @@ void main() {
     );
     expect(find.text('End of history'), findsOneWidget);
 
-    await tester.tap(find.byType(TxnTile).first);
+    await tester.tap(find.text('Fresh Market'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Report an issue'),
