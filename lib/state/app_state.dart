@@ -267,7 +267,8 @@ class AppState extends ChangeNotifier {
     for (var i = 0; i < _maxPages; i++) {
       final page = await api.getTransactions(start: start, cursor: cursor);
       await cacheTransactions(page.items);
-      _txnLimit += page.items.length;
+      // A normal refresh updates rows already inside the current window. Only
+      // explicit pagination should expand the watched SQLite result set.
       cursor = page.nextCursor;
       if (cursor == null) break;
     }

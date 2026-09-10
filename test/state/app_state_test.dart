@@ -287,6 +287,65 @@ void main() {
     );
 
     test(
+      'refreshing an existing first page does not grow the watched history window',
+      () async {
+        final base = DateTime.utc(2020, 1, 1);
+        final cached = List.generate(
+          2001,
+          (index) => mcdonaldsBurger(
+            date: base.add(Duration(days: index)).toIso8601String(),
+          ),
+        );
+        final newest = cached.last;
+        final client = MockClient((req) async {
+          if (req.url.path == '/v1/me') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'item': {
+                  '_id': 'user_2n2crlefk9enq9dp8dv3f',
+                  'email': 'test@example.com',
+                },
+              }),
+              200,
+            );
+          }
+          if (req.url.path == '/v1/accounts') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'items': [anzEveryday().toJson()],
+              }),
+              200,
+            );
+          }
+          if (req.url.path == '/v1/transactions') {
+            return http.Response(
+              json.encode({
+                'success': true,
+                'items': [newest.toJson()],
+                'cursor': {'next': null},
+              }),
+              200,
+            );
+          }
+          return http.Response(json.encode({'success': false}), 404);
+        });
+        final state = await seededState(
+          transactions: cached,
+          api: fakeApi(client: client),
+        );
+        expect(state.transactions, hasLength(2000));
+
+        await state.load(force: true);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+
+        expect(state.transactions, hasLength(2000));
+      },
+    );
+
+    test(
       'loadOlder() fetches the next page using the cursor from a prior load()',
       () async {
         var page = 0;
