@@ -321,10 +321,14 @@ class AppState extends ChangeNotifier {
           now.day,
         ).subtract(const Duration(days: _windowDays)),
       );
-      final page = await api.getTransactions(start: start, cursor: txnCursor);
+      final requestedCursor = txnCursor;
+      final page = await api.getTransactions(
+        start: start,
+        cursor: requestedCursor,
+      );
       await cacheTransactions(page.items);
       _txnLimit += page.items.length;
-      txnCursor = page.nextCursor;
+      txnCursor = page.nextCursor == requestedCursor ? null : page.nextCursor;
       _subscribeTransactions();
     } catch (e, stackTrace) {
       talker.handle(e, stackTrace, 'Loading older transactions failed');

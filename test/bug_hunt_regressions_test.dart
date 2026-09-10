@@ -156,6 +156,60 @@ void main() {
   });
 
   test(
+    'repeated transaction cursors stop pagination instead of refetching forever',
+    () async {
+      var transactionCalls = 0;
+      final client = MockClient((req) async {
+        if (req.url.path == '/v1/me') {
+          return http.Response(
+            json.encode({
+              'success': true,
+              'item': {
+                '_id': 'user_2n2crlefk9enq9dp8dv3f',
+                'email': 'test@example.com',
+              },
+            }),
+            200,
+          );
+        }
+        if (req.url.path == '/v1/accounts') {
+          return http.Response(
+            json.encode({
+              'success': true,
+              'items': [anzEveryday().toJson()],
+            }),
+            200,
+          );
+        }
+        if (req.url.path == '/v1/transactions') {
+          transactionCalls++;
+          return http.Response(
+            json.encode({
+              'success': true,
+              'items': [mcdonaldsBurger().toJson()],
+              'cursor': {'next': 'repeat-me'},
+            }),
+            200,
+          );
+        }
+        return http.Response(json.encode({'success': false}), 404);
+      });
+      final state = await seededState(api: fakeApi(client: client));
+      addTearDown(state.dispose);
+
+      await state.load();
+      expect(state.txnCursor, 'repeat-me');
+
+      await state.loadOlder();
+      expect(transactionCalls, 2);
+      expect(state.txnCursor, isNull);
+
+      await state.loadOlder();
+      expect(transactionCalls, 2);
+    },
+  );
+
+  test(
     'spending stats exclude internal transfers unless explicitly filtered',
     () async {
       final db = testDb();
