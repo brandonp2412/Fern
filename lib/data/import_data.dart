@@ -14,6 +14,45 @@ import '../screens/home_shell.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 
+const _sqliteHeader = <int>[
+  0x53,
+  0x51,
+  0x4c,
+  0x69,
+  0x74,
+  0x65,
+  0x20,
+  0x66,
+  0x6f,
+  0x72,
+  0x6d,
+  0x61,
+  0x74,
+  0x20,
+  0x33,
+  0x00,
+];
+
+Future<void> validateSqliteDatabaseFile(File file) async {
+  if (!await file.exists()) {
+    throw const FileSystemException('Selected file does not exist');
+  }
+  final input = await file.open();
+  try {
+    final header = await input.read(_sqliteHeader.length);
+    if (header.length != _sqliteHeader.length) {
+      throw const FormatException('Selected file is not a SQLite database');
+    }
+    for (var i = 0; i < _sqliteHeader.length; i++) {
+      if (header[i] != _sqliteHeader[i]) {
+        throw const FormatException('Selected file is not a SQLite database');
+      }
+    }
+  } finally {
+    await input.close();
+  }
+}
+
 class ImportData extends StatelessWidget {
   final AppState state;
 
@@ -41,9 +80,7 @@ class ImportData extends StatelessWidget {
       final path = result.files.single.path;
       if (path == null) return;
       final sourceFile = File(path);
-      if (!await sourceFile.exists()) {
-        throw Exception('Selected file does not exist');
-      }
+      await validateSqliteDatabaseFile(sourceFile);
 
       final dbFolder = await getApplicationDocumentsDirectory();
       await state.db.close();
