@@ -3,29 +3,20 @@ import 'package:patrol/patrol.dart';
 
 import 'package:fern/main.dart' as app;
 
+const _uiTimeout = Duration(seconds: 15);
+
 void main() {
   patrolTest('explore demo survives navigation and app resume', ($) async {
     app.main();
-    await $.pumpAndSettle();
 
-    final exploreDemo = await $('Explore demo').waitUntilVisible(
-      timeout: const Duration(seconds: 15),
-    );
-    expect(exploreDemo, findsOneWidget);
-    await exploreDemo.tap();
-    await $.pumpAndSettle();
+    await $('Explore demo').waitUntilVisible(timeout: _uiTimeout).tap();
+    await $('Overview').waitUntilVisible(timeout: _uiTimeout);
+    await $('Activity').waitUntilVisible(timeout: _uiTimeout).tap();
+    await $('Activity').waitUntilVisible(timeout: _uiTimeout);
 
-    await $('Overview').waitUntilVisible(timeout: const Duration(seconds: 15));
-    expect($('Overview'), findsWidgets);
-    await $('Activity').tap();
-    await $.pumpAndSettle();
-    await $('Activity').waitUntilVisible(timeout: const Duration(seconds: 15));
-    expect($('Activity'), findsWidgets);
-
-    // Exercise Patrol's native lifecycle controls as well as Flutter UI.
     await $.platform.mobile.pressHome();
     await $.platform.android.pressDoubleRecentApps();
-    await $.pumpAndSettle();
+    await $('Activity').waitUntilVisible(timeout: _uiTimeout);
     expect($('Activity'), findsWidgets);
   });
 }
