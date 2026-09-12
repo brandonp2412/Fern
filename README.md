@@ -7,7 +7,7 @@
 
 Fern brings your New Zealand bank accounts together in one calm, simple dashboard.
 
-  <a href="https://play.google.com/store/apps/details?id=com.fernmoney.fern_money"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="72" /></a><a href="https://github.com/brandonp2412/fern/releases/latest/download/fern.apk"><img src="assets/badges/get-apk.svg" alt="Download the Android APK" height="72" /></a>
+  <a href="https://play.google.com/store/apps/details?id=com.fernmoney.fern_money"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="72" /></a><a href="https://github.com/brandonp2412/fern/releases/latest/download/fern.apk"><img src="assets/badges/get-apk.svg" alt="Download the Android APK" style="height: 72px;" /></a>
 </div>
 
 ## See the whole picture
