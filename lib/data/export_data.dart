@@ -4,36 +4,60 @@ import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../logging.dart';
+import '../services/app_backup.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../widgets/backup_password_dialog.dart';
 
 class ExportData extends StatelessWidget {
   final AppState state;
 
   const ExportData({super.key, required this.state});
 
-  Future<void> _exportDatabase(BuildContext context) async {
-    Navigator.pop(context);
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'fern_cache.sqlite'));
-    if (Platform.isAndroid || Platform.isIOS) {
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
-      return;
-    }
-    final bytes = await file.readAsBytes();
-    final result = await FilePicker.saveFile(
-      fileName: 'fern_cache.sqlite',
-      bytes: bytes,
-      type: FileType.custom,
-      allowedExtensions: ['sqlite'],
-    );
-    if (result != null &&
-        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
-      await file.copy(result);
+  Future<void> _exportFullBackup(
+    BuildContext pageContext,
+    BuildContext sheetContext,
+  ) async {
+    final messenger = ScaffoldMessenger.of(pageContext);
+    Navigator.pop(sheetContext);
+    try {
+      final password = await showBackupPasswordDialog(
+        pageContext,
+        creating: true,
+      );
+      if (password == null) return;
+      final backup = await createFernBackup(state: state, password: password);
+      final date = DateTime.now().toIso8601String().substring(0, 10);
+      final fileName = 'fern-$date.zip';
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        await SharePlus.instance.share(
+          ShareParams(files: [XFile(backup.path, name: fileName)]),
+        );
+      } else {
+        await FilePicker.saveFile(
+          fileName: fileName,
+          bytes: await backup.readAsBytes(),
+          type: FileType.custom,
+          allowedExtensions: const ['zip'],
+        );
+      }
+      talker.info('Created encrypted full Fern backup');
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Full Fern backup created')),
+        );
+      }
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'Creating full Fern backup failed');
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to create Fern backup: $e')),
+        );
+      }
     }
   }
 
@@ -104,13 +128,14 @@ class ExportData extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
+    final pageContext = context;
     return ListTile(
       title: const Text(
         'Export data',
         style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
-        'Save your database, category rules, or transactions',
+        'Create a full backup or export selected data',
         style: TextStyle(fontSize: 12, color: fern.slate),
       ),
       trailing: const Icon(Icons.chevron_right),
@@ -118,24 +143,27 @@ class ExportData extends StatelessWidget {
         showModalBottomSheet(
           context: context,
           useRootNavigator: true,
-          builder: (context) {
+          builder: (sheetContext) {
             return SafeArea(
               child: Wrap(
                 children: <Widget>[
                   ListTile(
-                    leading: const Icon(Icons.storage),
-                    title: const Text('Database'),
-                    onTap: () => _exportDatabase(context),
+                    leading: const Icon(Icons.backup_outlined),
+                    title: const Text('Full Fern backup'),
+                    subtitle: const Text(
+                      'Encrypted .zip — database, files, settings and login',
+                    ),
+                    onTap: () => _exportFullBackup(pageContext, sheetContext),
                   ),
                   ListTile(
                     leading: const Icon(Icons.rule),
                     title: const Text('Category rules'),
-                    onTap: () => _exportCategoryRules(context),
+                    onTap: () => _exportCategoryRules(sheetContext),
                   ),
                   ListTile(
                     leading: const Icon(Icons.receipt_long),
                     title: const Text('Transactions'),
-                    onTap: () => _exportTransactions(context),
+                    onTap: () => _exportTransactions(sheetContext),
                   ),
                 ],
               ),

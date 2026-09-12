@@ -10,7 +10,7 @@ import '../support/fixtures.dart';
 Future<void> _pump(
   WidgetTester tester,
   AppState state, {
-  Future<void> Function()? onDatabaseImported,
+  Future<void> Function(bool credentialsChanged)? onDatabaseImported,
   bool loadOnStart = true,
 }) async {
   tester.view.physicalSize = const Size(800, 2000);
@@ -91,8 +91,9 @@ void main() {
   ) async {
     final state = await seededState(tester: tester, accounts: [anzEveryday()]);
     var restarted = false;
-    Future<void> onDatabaseImported() async {
+    Future<void> onDatabaseImported(bool credentialsChanged) async {
       restarted = true;
+      expect(credentialsChanged, isFalse);
     }
 
     await _pump(tester, state, onDatabaseImported: onDatabaseImported);
@@ -101,7 +102,7 @@ void main() {
 
     final importData = tester.widget<ImportData>(find.byType(ImportData));
     expect(importData.onDatabaseImported, same(onDatabaseImported));
-    await importData.onDatabaseImported!();
+    await importData.onDatabaseImported!(false);
     expect(restarted, isTrue);
   });
 

@@ -104,9 +104,9 @@ Future<void> main() async {
     reportGroupStructure(dartTestGroup);
   });
 
-// START: GENERATED TEST GROUPS
+  // START: GENERATED TEST GROUPS
   group('smoke_test', smoke_test.main);
-// END: GENERATED TEST GROUPS
+  // END: GENERATED TEST GROUPS
 
   if (constants.testDiscoveryEnabled) {
     // Returning finishes declaration; `flutter test` then runs the explorer

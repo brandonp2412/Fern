@@ -7,7 +7,7 @@ import 'activity_screen.dart';
 
 class HomeShell extends StatefulWidget {
   final AppState state;
-  final Future<void> Function()? onDatabaseImported;
+  final Future<void> Function(bool credentialsChanged)? onDatabaseImported;
   final bool loadOnStart;
 
   const HomeShell({

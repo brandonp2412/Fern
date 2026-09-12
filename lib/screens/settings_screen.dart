@@ -20,7 +20,7 @@ import 'home_shell.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppState state;
-  final Future<void> Function()? onDatabaseImported;
+  final Future<void> Function(bool credentialsChanged)? onDatabaseImported;
 
   const SettingsScreen({
     super.key,
@@ -299,7 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        'Back up your database daily to a folder you choose',
+                        'Create a database-only snapshot daily in a folder you choose',
                         style: TextStyle(fontSize: 12, color: fern.slate),
                       ),
                       value: settings.automaticBackups,

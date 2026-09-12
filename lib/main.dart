@@ -77,14 +77,30 @@ class _FernAppState extends State<FernApp> {
     }
   }
 
-  Future<void> _reloadAfterDatabaseImport() async {
+  Future<void> _reloadAfterDatabaseImport(bool credentialsChanged) async {
     final previousState = _appState;
     if (previousState == null || !mounted) return;
 
-    final api = previousState.takeApiForReload();
-    previousState.dispose();
+    AkahuClient? api;
+    if (credentialsChanged) {
+      previousState.dispose();
+      await _settings.load();
+      final userToken = await SecureStore.userToken ?? '';
+      final appToken = await SecureStore.appToken ?? '';
+      if (userToken.isNotEmpty && appToken.isNotEmpty) {
+        api = AkahuApi(userToken: userToken, appToken: appToken);
+      }
+    } else {
+      api = previousState.takeApiForReload();
+      previousState.dispose();
+    }
+
+    if (!mounted) {
+      api?.close();
+      return;
+    }
     setState(() {
-      _appState = AppState(api, _settings);
+      _appState = api == null ? null : AppState(api, _settings);
       _checkedCredentials = true;
       _skipInitialLoad = true;
     });
