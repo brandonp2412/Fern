@@ -126,10 +126,8 @@ class AppState extends ChangeNotifier {
     ImageRule? contains;
     for (final rule in imageRules) {
       final needle = rule.matchText.toLowerCase();
-      if (rule.exact) {
-        if (hay == needle) return rule.imagePath;
-        continue;
-      }
+      if (rule.exact && hay == needle) return rule.imagePath;
+      if (rule.exact) continue;
       if (contains == null && hay.contains(needle)) contains = rule;
     }
     return contains?.imagePath;
