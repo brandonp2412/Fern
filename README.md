@@ -22,14 +22,14 @@ Fern connects directly to participating New Zealand banks through [Akahu](https:
 ## Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" alt="Fern overview with net position, account balances, and monthly spending" width="180" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" alt="Fern Everyday Account balance and transaction history" width="180" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" alt="Fern Activity screen with transaction search and filters" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" alt="Fern overview with net position, account balances, and monthly spending" width="280" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" alt="Fern Everyday Account balance and transaction history" width="280" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" alt="Fern Activity screen with transaction search and filters" width="280" />
 </p>
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" alt="Fern transaction details for a New World purchase" width="180" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" alt="Fern Stats screen showing income, spending, and trends" width="180" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png" alt="Fern Settings screen with privacy and data options" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" alt="Fern transaction details for a New World purchase" width="280" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" alt="Fern Stats screen showing income, spending, and trends" width="280" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png" alt="Fern Settings screen with privacy and data options" width="280" />
 </p>
 
 ## Try Fern
