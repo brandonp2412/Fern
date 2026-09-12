@@ -9,8 +9,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../db/app_database.dart';
 import '../logging.dart';
-import '../main.dart';
-import '../screens/home_shell.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 
@@ -55,24 +53,12 @@ Future<void> validateSqliteDatabaseFile(File file) async {
 
 class ImportData extends StatelessWidget {
   final AppState state;
+  final Future<void> Function()? onDatabaseImported;
 
-  const ImportData({super.key, required this.state});
-
-  void _restart(BuildContext context) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (routeContext) => SetupScreen(
-          settings: state.settings,
-          onConnected: (newState) => Navigator.of(routeContext).pushReplacement(
-            MaterialPageRoute(builder: (_) => HomeShell(state: newState)),
-          ),
-        ),
-      ),
-      (_) => false,
-    );
-  }
+  const ImportData({super.key, required this.state, this.onDatabaseImported});
 
   Future<void> _importDatabase(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
     try {
       final result = await FilePicker.pickFiles();
@@ -82,19 +68,51 @@ class ImportData extends StatelessWidget {
       final sourceFile = File(path);
       await validateSqliteDatabaseFile(sourceFile);
 
-      final dbFolder = await getApplicationDocumentsDirectory();
-      await state.db.close();
-      await sourceFile.copy(p.join(dbFolder.path, 'fern_cache.sqlite'));
-      talker.info('Imported database backup');
+      final restart = onDatabaseImported;
+      if (restart == null) {
+        throw StateError('Database import restart handler is unavailable');
+      }
 
-      if (!context.mounted) return;
-      _restart(context);
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final targetFile = File(p.join(dbFolder.path, 'fern_cache.sqlite'));
+      final stagedFile = File('${targetFile.path}.importing');
+      final previousFile = File('${targetFile.path}.pre-import');
+
+      if (await stagedFile.exists()) await stagedFile.delete();
+      await sourceFile.copy(stagedFile.path);
+      await validateSqliteDatabaseFile(stagedFile);
+
+      await state.closeDatabaseForImport();
+      if (await previousFile.exists()) await previousFile.delete();
+      if (await targetFile.exists()) {
+        await targetFile.rename(previousFile.path);
+      }
+
+      try {
+        await stagedFile.rename(targetFile.path);
+      } catch (_) {
+        if (await previousFile.exists() && !await targetFile.exists()) {
+          await previousFile.rename(targetFile.path);
+        }
+        rethrow;
+      }
+
+      talker.info('Imported database backup');
+      await restart();
+      if (await previousFile.exists()) await previousFile.delete();
+
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Database imported successfully')),
+        );
+      }
     } catch (e, stackTrace) {
       talker.handle(e, stackTrace, 'Importing database backup failed');
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to import database: $e')));
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to import database: $e')),
+        );
+      }
     }
   }
 
@@ -136,8 +154,10 @@ class ImportData extends StatelessWidget {
       });
       talker.info('Imported ${rules.length} category rules');
 
-      if (!context.mounted) return;
-      _restart(context);
+      final restart = onDatabaseImported;
+      if (restart != null) {
+        await restart();
+      }
     } catch (e, stackTrace) {
       talker.handle(e, stackTrace, 'Importing category rules failed');
       if (!context.mounted) return;

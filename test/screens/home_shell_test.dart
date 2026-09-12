@@ -1,3 +1,4 @@
+import 'package:fern/data/import_data.dart';
 import 'package:fern/screens/home_shell.dart';
 import 'package:fern/state/app_state.dart';
 import 'package:fern/theme.dart';
@@ -6,7 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fixtures.dart';
 
-Future<void> _pump(WidgetTester tester, AppState state) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AppState state, {
+  Future<void> Function()? onDatabaseImported,
+  bool loadOnStart = true,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -16,7 +22,11 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-      home: HomeShell(state: state),
+      home: HomeShell(
+        state: state,
+        onDatabaseImported: onDatabaseImported,
+        loadOnStart: loadOnStart,
+      ),
     ),
   );
   await tester.pump();
@@ -74,6 +84,34 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Disconnect'), findsOneWidget);
+  });
+
+  testWidgets('passes database import restart callback into settings', (
+    tester,
+  ) async {
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
+    var restarted = false;
+    Future<void> onDatabaseImported() async {
+      restarted = true;
+    }
+
+    await _pump(tester, state, onDatabaseImported: onDatabaseImported);
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+
+    final importData = tester.widget<ImportData>(find.byType(ImportData));
+    expect(importData.onDatabaseImported, same(onDatabaseImported));
+    await importData.onDatabaseImported!();
+    expect(restarted, isTrue);
+  });
+
+  testWidgets('can show an imported database before syncing', (tester) async {
+    final state = await seededState(tester: tester, accounts: [anzEveryday()]);
+
+    await _pump(tester, state, loadOnStart: false);
+
+    expect(state.offline, isFalse);
+    expect(find.text('Fern'), findsOneWidget);
   });
 
   testWidgets('swipe tabs works when enabled', (tester) async {

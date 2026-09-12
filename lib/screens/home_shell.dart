@@ -7,8 +7,15 @@ import 'activity_screen.dart';
 
 class HomeShell extends StatefulWidget {
   final AppState state;
+  final Future<void> Function()? onDatabaseImported;
+  final bool loadOnStart;
 
-  const HomeShell({super.key, required this.state});
+  const HomeShell({
+    super.key,
+    required this.state,
+    this.onDatabaseImported,
+    this.loadOnStart = true,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -29,9 +36,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       OverviewScreen(key: const ValueKey('overview'), state: state),
       ActivityScreen(key: const ValueKey('activity'), state: state),
       StatsScreen(key: const ValueKey('stats'), state: state),
-      SettingsScreen(key: const ValueKey('settings'), state: state),
+      SettingsScreen(
+        key: const ValueKey('settings'),
+        state: state,
+        onDatabaseImported: widget.onDatabaseImported,
+      ),
     ];
-    state.load();
+    if (widget.loadOnStart) state.load();
   }
 
   @override

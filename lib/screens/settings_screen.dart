@@ -20,8 +20,13 @@ import 'home_shell.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppState state;
+  final Future<void> Function()? onDatabaseImported;
 
-  const SettingsScreen({super.key, required this.state});
+  const SettingsScreen({
+    super.key,
+    required this.state,
+    this.onDatabaseImported,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -71,7 +76,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (routeContext) => SetupScreen(
           settings: widget.state.settings,
           onConnected: (newState) => Navigator.of(routeContext).pushReplacement(
-            MaterialPageRoute(builder: (_) => HomeShell(state: newState)),
+            MaterialPageRoute(
+              builder: (_) => HomeShell(
+                state: newState,
+                onDatabaseImported: widget.onDatabaseImported,
+              ),
+            ),
           ),
         ),
       ),
@@ -274,7 +284,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1),
                   ExportData(state: state),
                   const Divider(height: 1),
-                  ImportData(state: state),
+                  ImportData(
+                    state: state,
+                    onDatabaseImported: widget.onDatabaseImported,
+                  ),
                   if (Platform.isAndroid) ...[
                     const Divider(height: 1),
                     SwitchListTile(

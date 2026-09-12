@@ -34,6 +34,7 @@ class FernApp extends StatefulWidget {
 class _FernAppState extends State<FernApp> {
   final _settings = AppSettings();
   bool _checkedCredentials = false;
+  bool _skipInitialLoad = false;
   AppState? _appState;
 
   @override
@@ -62,6 +63,7 @@ class _FernAppState extends State<FernApp> {
       setState(() {
         _appState = AppState(api, _settings);
         _checkedCredentials = true;
+        _skipInitialLoad = false;
       });
     } catch (error, stackTrace) {
       api.close();
@@ -73,6 +75,19 @@ class _FernAppState extends State<FernApp> {
       if (!mounted) return;
       setState(() => _checkedCredentials = true);
     }
+  }
+
+  Future<void> _reloadAfterDatabaseImport() async {
+    final previousState = _appState;
+    if (previousState == null || !mounted) return;
+
+    final api = previousState.takeApiForReload();
+    previousState.dispose();
+    setState(() {
+      _appState = AppState(api, _settings);
+      _checkedCredentials = true;
+      _skipInitialLoad = true;
+    });
   }
 
   @override
@@ -96,10 +111,17 @@ class _FernAppState extends State<FernApp> {
           home: !_checkedCredentials
               ? const Scaffold(body: SizedBox.shrink())
               : appState != null
-              ? HomeShell(state: appState)
+              ? HomeShell(
+                  state: appState,
+                  onDatabaseImported: _reloadAfterDatabaseImport,
+                  loadOnStart: !_skipInitialLoad,
+                )
               : SetupScreen(
                   settings: _settings,
-                  onConnected: (state) => setState(() => _appState = state),
+                  onConnected: (state) => setState(() {
+                    _appState = state;
+                    _skipInitialLoad = false;
+                  }),
                 ),
         );
       },

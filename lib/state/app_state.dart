@@ -44,6 +44,7 @@ class AppState extends ChangeNotifier {
   final AkahuClient api;
   final AppSettings settings;
   final AppDatabase db;
+  bool _ownsApi = true;
 
   User? user;
   List<Account> accounts = [];
@@ -72,6 +73,7 @@ class AppState extends ChangeNotifier {
 
   StreamSubscription<List<Account>>? _accountsSub;
   StreamSubscription<List<Transaction>>? _txnsSub;
+  bool _databaseClosed = false;
 
   AppState(this.api, this.settings, {AppDatabase? db})
     : db = db ?? AppDatabase() {
@@ -348,6 +350,21 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
+  AkahuClient takeApiForReload() {
+    _ownsApi = false;
+    return api;
+  }
+
+  Future<void> closeDatabaseForImport() async {
+    await _accountsSub?.cancel();
+    await _txnsSub?.cancel();
+    _accountsSub = null;
+    _txnsSub = null;
+    if (_databaseClosed) return;
+    _databaseClosed = true;
+    await db.close();
+  }
+
   Future<void> reloadAccounts() async {
     talker.debug('Refreshing account list');
     refreshing = true;
@@ -435,8 +452,11 @@ class AppState extends ChangeNotifier {
     settings.removeListener(notifyListeners);
     unawaited(_accountsSub?.cancel());
     unawaited(_txnsSub?.cancel());
-    api.close();
-    db.close();
+    if (_ownsApi) api.close();
+    if (!_databaseClosed) {
+      _databaseClosed = true;
+      unawaited(db.close());
+    }
     super.dispose();
   }
 }
