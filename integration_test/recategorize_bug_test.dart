@@ -102,7 +102,7 @@ Future<void> _pumpApp(WidgetTester tester, AppState state) async {
         brightness: Brightness.light,
         seed: state.settings.seedColor,
       ),
-      home: HomeShell(state: state),
+      home: HomeShell(state: state, onDisconnected: () async {}),
     ),
   );
   await tester.pumpAndSettle();

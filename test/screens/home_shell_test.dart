@@ -11,6 +11,7 @@ Future<void> _pump(
   WidgetTester tester,
   AppState state, {
   Future<void> Function(bool credentialsChanged)? onDatabaseImported,
+  Future<void> Function()? onDisconnected,
   bool loadOnStart = true,
 }) async {
   tester.view.physicalSize = const Size(800, 2000);
@@ -25,6 +26,7 @@ Future<void> _pump(
       home: HomeShell(
         state: state,
         onDatabaseImported: onDatabaseImported,
+        onDisconnected: onDisconnected ?? () async {},
         loadOnStart: loadOnStart,
       ),
     ),
@@ -113,6 +115,27 @@ void main() {
 
     expect(state.offline, isFalse);
     expect(find.text('Fern'), findsOneWidget);
+  });
+
+  testWidgets('rebinds screens when app state is replaced after restore', (
+    tester,
+  ) async {
+    final demoState = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+    );
+    final restoredState = await seededState(
+      tester: tester,
+      accounts: [asbStreamline()],
+    );
+
+    await _pump(tester, demoState, loadOnStart: false);
+    expect(find.text('ANZ Everyday'), findsOneWidget);
+    expect(find.text('ASB Streamline'), findsNothing);
+
+    await _pump(tester, restoredState, loadOnStart: false);
+    expect(find.text('ANZ Everyday'), findsNothing);
+    expect(find.text('ASB Streamline'), findsOneWidget);
   });
 
   testWidgets('swipe tabs works when enabled', (tester) async {

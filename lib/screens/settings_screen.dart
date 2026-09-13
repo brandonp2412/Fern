@@ -8,24 +8,23 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/export_data.dart';
 import '../data/import_data.dart';
-import '../main.dart';
 import '../services/android_channel.dart';
-import '../services/secure_store.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/common.dart';
 import 'category_rules_screen.dart';
-import 'home_shell.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppState state;
   final Future<void> Function(bool credentialsChanged)? onDatabaseImported;
+  final Future<void> Function() onDisconnected;
 
   const SettingsScreen({
     super.key,
     required this.state,
     this.onDatabaseImported,
+    required this.onDisconnected,
   });
 
   @override
@@ -68,25 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await SecureStore.clear();
-    await widget.state.db.clearAll();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (routeContext) => SetupScreen(
-          settings: widget.state.settings,
-          onConnected: (newState) => Navigator.of(routeContext).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => HomeShell(
-                state: newState,
-                onDatabaseImported: widget.onDatabaseImported,
-              ),
-            ),
-          ),
-        ),
-      ),
-      (_) => false,
-    );
+    await widget.onDisconnected();
   }
 
   Future<void> _toggleAutomaticBackups(bool value) async {

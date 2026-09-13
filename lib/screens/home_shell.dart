@@ -8,12 +8,14 @@ import 'activity_screen.dart';
 class HomeShell extends StatefulWidget {
   final AppState state;
   final Future<void> Function(bool credentialsChanged)? onDatabaseImported;
+  final Future<void> Function() onDisconnected;
   final bool loadOnStart;
 
   const HomeShell({
     super.key,
     required this.state,
     this.onDatabaseImported,
+    required this.onDisconnected,
     this.loadOnStart = true,
   });
 
@@ -25,24 +27,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _tab = 0;
   late final PageController _pageController = PageController(initialPage: _tab);
 
-  late final List<Widget> _screens;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final state = widget.state;
-    _screens = [
-      OverviewScreen(key: const ValueKey('overview'), state: state),
-      ActivityScreen(key: const ValueKey('activity'), state: state),
-      StatsScreen(key: const ValueKey('stats'), state: state),
-      SettingsScreen(
-        key: const ValueKey('settings'),
-        state: state,
-        onDatabaseImported: widget.onDatabaseImported,
-      ),
-    ];
-    if (widget.loadOnStart) state.load();
+    if (widget.loadOnStart) widget.state.load();
   }
 
   @override
@@ -68,7 +57,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [for (final s in _screens) RepaintBoundary(child: s)];
+    final state = widget.state;
+    final screens = [
+      OverviewScreen(key: const ValueKey('overview'), state: state),
+      ActivityScreen(key: const ValueKey('activity'), state: state),
+      StatsScreen(key: const ValueKey('stats'), state: state),
+      SettingsScreen(
+        key: const ValueKey('settings'),
+        state: state,
+        onDatabaseImported: widget.onDatabaseImported,
+        onDisconnected: widget.onDisconnected,
+      ),
+    ];
+    final pages = [for (final s in screens) RepaintBoundary(child: s)];
     return Scaffold(
       body: widget.state.settings.swipeTabs
           ? PageView(

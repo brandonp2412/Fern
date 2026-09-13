@@ -32,7 +32,7 @@ Future<AppState> _pumpDemoApp(WidgetTester tester) async {
           brightness: Brightness.dark,
           seed: settings.seedColor,
         ),
-        home: HomeShell(state: state),
+        home: HomeShell(state: state, onDisconnected: () async {}),
       ),
     ),
   );

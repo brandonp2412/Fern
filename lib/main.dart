@@ -106,6 +106,22 @@ class _FernAppState extends State<FernApp> {
     });
   }
 
+  Future<void> _disconnect() async {
+    final state = _appState;
+    if (state == null) return;
+
+    await SecureStore.clear();
+    await state.db.clearAll();
+    state.dispose();
+    if (!mounted) return;
+
+    setState(() {
+      _appState = null;
+      _checkedCredentials = true;
+      _skipInitialLoad = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -128,8 +144,10 @@ class _FernAppState extends State<FernApp> {
               ? const Scaffold(body: SizedBox.shrink())
               : appState != null
               ? HomeShell(
+                  key: ObjectKey(appState),
                   state: appState,
                   onDatabaseImported: _reloadAfterDatabaseImport,
+                  onDisconnected: _disconnect,
                   loadOnStart: !_skipInitialLoad,
                 )
               : SetupScreen(

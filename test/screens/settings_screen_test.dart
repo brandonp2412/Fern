@@ -12,7 +12,11 @@ import 'package:http/testing.dart';
 
 import '../support/fixtures.dart';
 
-Future<void> _pump(WidgetTester tester, AppState state) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AppState state, {
+  Future<void> Function()? onDisconnected,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -22,7 +26,10 @@ Future<void> _pump(WidgetTester tester, AppState state) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
-      home: SettingsScreen(state: state),
+      home: SettingsScreen(
+        state: state,
+        onDisconnected: onDisconnected ?? () async {},
+      ),
     ),
   );
   await tester.pump();
@@ -143,6 +150,34 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Disconnect?'), findsNothing);
+  });
+
+  testWidgets('disconnect confirmation delegates to the app root', (
+    tester,
+  ) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday()],
+      api: _userApi(),
+      db: testDb(),
+    );
+    var disconnected = false;
+
+    await _pump(
+      tester,
+      state,
+      onDisconnected: () async {
+        disconnected = true;
+      },
+    );
+
+    await tester.scrollUntilVisible(find.text('Disconnect'), 200);
+    await tester.tap(find.text('Disconnect'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Disconnect'));
+    await tester.pump();
+
+    expect(disconnected, isTrue);
   });
 }
 
