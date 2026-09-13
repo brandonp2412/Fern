@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,56 +45,55 @@ Future<File> createFernBackup({
   final snapshot = File(p.join(temporary.path, 'fern-backup-$stamp.sqlite'));
   final output = File(p.join(temporary.path, 'fern-backup-$stamp.zip'));
 
+  await _cleanupStaleBackupSnapshots(temporary);
   if (await snapshot.exists()) await snapshot.delete();
   if (await output.exists()) await output.delete();
 
-  await _snapshotDatabase(state.db, snapshot);
+  try {
+    await _snapshotDatabase(state.db, snapshot);
 
-  final archive = Archive();
-  archive.add(
-    ArchiveFile.string(
-      'manifest.json',
-      jsonEncode({
-        'format': fernBackupFormat,
-        'version': fernBackupVersion,
-        'createdAt': DateTime.now().toUtc().toIso8601String(),
-        'databaseSchemaVersion': state.db.schemaVersion,
-        'encrypted': true,
-      }),
-    ),
-  );
-  archive.add(
-    ArchiveFile.bytes(fernBackupDatabasePath, await snapshot.readAsBytes()),
-  );
+    final archive = Archive();
+    archive.add(
+      ArchiveFile.string(
+        'manifest.json',
+        jsonEncode({
+          'format': fernBackupFormat,
+          'version': fernBackupVersion,
+          'createdAt': DateTime.now().toUtc().toIso8601String(),
+          'databaseSchemaVersion': state.db.schemaVersion,
+          'encrypted': true,
+        }),
+      ),
+    );
+    archive.add(
+      ArchiveFile.bytes(fernBackupDatabasePath, await snapshot.readAsBytes()),
+    );
 
-  await _addDocumentsToArchive(
-    archive,
-    documents,
-    skipBasenames: const {
-      'fern_cache.sqlite',
-      'fern_cache.sqlite-shm',
-      'fern_cache.sqlite-wal',
-    },
-  );
+    await _addFernDocumentsToArchive(archive, documents);
 
-  final preferences = await _readPreferences();
-  archive.add(
-    ArchiveFile.string('state/preferences.json', jsonEncode(preferences)),
-  );
-  archive.add(
-    ArchiveFile.string(
-      'state/credentials.json',
-      jsonEncode({
-        'userToken': await SecureStore.userToken,
-        'appToken': await SecureStore.appToken,
-      }),
-    ),
-  );
+    final preferences = await _readPreferences();
+    archive.add(
+      ArchiveFile.string('state/preferences.json', jsonEncode(preferences)),
+    );
+    archive.add(
+      ArchiveFile.string(
+        'state/credentials.json',
+        jsonEncode({
+          'userToken': await SecureStore.userToken,
+          'appToken': await SecureStore.appToken,
+        }),
+      ),
+    );
 
-  final bytes = ZipEncoder(password: password).encodeBytes(archive);
-  await output.writeAsBytes(bytes, flush: true);
-  await snapshot.delete();
-  return output;
+    final bytes = ZipEncoder(password: password).encodeBytes(archive);
+    await output.writeAsBytes(bytes, flush: true);
+    return output;
+  } catch (_) {
+    if (await output.exists()) await output.delete();
+    rethrow;
+  } finally {
+    if (await snapshot.exists()) await snapshot.delete();
+  }
 }
 
 Future<FernBackupRestoreResult> restoreFernBackup({
@@ -250,6 +250,17 @@ Future<void> validateFernDatabase(File file) async {
   }
 }
 
+Future<void> _cleanupStaleBackupSnapshots(Directory temporary) async {
+  if (!await temporary.exists()) return;
+  await for (final entity in temporary.list(followLinks: false)) {
+    if (entity is! File) continue;
+    final name = p.basename(entity.path);
+    if (name.startsWith('fern-backup-') && name.endsWith('.sqlite')) {
+      await entity.delete();
+    }
+  }
+}
+
 Future<void> _snapshotDatabase(AppDatabase db, File destination) async {
   await destination.parent.create(recursive: true);
   if (await destination.exists()) await destination.delete();
@@ -257,25 +268,32 @@ Future<void> _snapshotDatabase(AppDatabase db, File destination) async {
   await db.customStatement("VACUUM INTO '$escapedPath'");
 }
 
-Future<void> _addDocumentsToArchive(
+Future<void> _addFernDocumentsToArchive(
   Archive archive,
-  Directory root, {
-  Set<String> skipBasenames = const {},
-}) async {
-  if (!await root.exists()) return;
-  await for (final entity in root.list(recursive: true, followLinks: false)) {
+  Directory documents,
+) async {
+  final backupSettings = File(p.join(documents.path, 'backup_settings.json'));
+  if (await backupSettings.exists()) {
+    archive.add(
+      ArchiveFile.bytes(
+        'documents/backup_settings.json',
+        await backupSettings.readAsBytes(),
+      ),
+    );
+  }
+
+  final images = Directory(p.join(documents.path, 'txn_images'));
+  if (!await images.exists()) return;
+  await for (final entity in images.list(recursive: true, followLinks: false)) {
     if (entity is! File) continue;
-    final basename = p.basename(entity.path);
-    if (skipBasenames.contains(basename) ||
-        basename.endsWith('.importing') ||
-        basename.endsWith('.pre-import')) {
-      continue;
-    }
     final relative = p
-        .relative(entity.path, from: root.path)
+        .relative(entity.path, from: images.path)
         .replaceAll('\\', '/');
     archive.add(
-      ArchiveFile.bytes('documents/$relative', await entity.readAsBytes()),
+      ArchiveFile.bytes(
+        'documents/txn_images/$relative',
+        await entity.readAsBytes(),
+      ),
     );
   }
 }
@@ -309,13 +327,20 @@ Future<void> _extractDocuments(Archive archive, Directory staging) async {
   for (final entry in archive) {
     if (!entry.isFile || !entry.name.startsWith('documents/')) continue;
     final relative = entry.name.substring('documents/'.length);
-    if (relative.isEmpty) continue;
+    if (!_isFernOwnedDocumentPath(relative)) continue;
     final destination = File(p.join(staging.path, 'documents', relative));
     await destination.parent.create(recursive: true);
     final bytes = entry.readBytes();
     if (bytes == null) throw FormatException('Unable to read ${entry.name}');
     await destination.writeAsBytes(bytes, flush: true);
   }
+}
+
+bool _isFernOwnedDocumentPath(String relative) {
+  final normalized = relative.replaceAll('\\', '/');
+  return normalized == 'fern_cache.sqlite' ||
+      normalized == 'backup_settings.json' ||
+      normalized.startsWith('txn_images/');
 }
 
 Future<void> _snapshotCurrentDocuments(
@@ -329,22 +354,19 @@ Future<void> _snapshotCurrentDocuments(
     db,
     File(p.join(rollbackDocuments.path, 'fern_cache.sqlite')),
   );
-  if (!await documents.exists()) return;
-  await for (final entity in documents.list(
-    recursive: true,
-    followLinks: false,
-  )) {
-    if (entity is! File) continue;
-    final basename = p.basename(entity.path);
-    if (basename == 'fern_cache.sqlite' ||
-        basename == 'fern_cache.sqlite-shm' ||
-        basename == 'fern_cache.sqlite-wal') {
-      continue;
-    }
-    final relative = p.relative(entity.path, from: documents.path);
-    final destination = File(p.join(rollbackDocuments.path, relative));
-    await destination.parent.create(recursive: true);
-    await entity.copy(destination.path);
+  final backupSettings = File(p.join(documents.path, 'backup_settings.json'));
+  if (await backupSettings.exists()) {
+    await backupSettings.copy(
+      p.join(rollbackDocuments.path, 'backup_settings.json'),
+    );
+  }
+
+  final images = Directory(p.join(documents.path, 'txn_images'));
+  if (await images.exists()) {
+    await _copyDirectory(
+      source: images,
+      destination: Directory(p.join(rollbackDocuments.path, 'txn_images')),
+    );
   }
 }
 
@@ -355,13 +377,58 @@ Future<void> _replaceDocuments({
   if (!await source.exists()) {
     throw const FormatException('Backup documents are missing');
   }
-  if (await destination.exists()) {
-    await for (final entity in destination.list(followLinks: false)) {
-      await entity.delete(recursive: true);
-    }
-  } else {
-    await destination.create(recursive: true);
+  await destination.create(recursive: true);
+
+  final sourceDatabase = File(p.join(source.path, 'fern_cache.sqlite'));
+  if (!await sourceDatabase.exists()) {
+    throw const FormatException('Backup database is missing');
   }
+  for (final name in const [
+    'fern_cache.sqlite',
+    'fern_cache.sqlite-shm',
+    'fern_cache.sqlite-wal',
+  ]) {
+    final existing = File(p.join(destination.path, name));
+    if (await existing.exists()) await existing.delete();
+  }
+  await sourceDatabase.copy(p.join(destination.path, 'fern_cache.sqlite'));
+
+  final destinationSettings = File(
+    p.join(destination.path, 'backup_settings.json'),
+  );
+  if (await destinationSettings.exists()) await destinationSettings.delete();
+  final sourceSettings = File(p.join(source.path, 'backup_settings.json'));
+  if (await sourceSettings.exists()) {
+    await sourceSettings.copy(destinationSettings.path);
+  }
+
+  final destinationImages = Directory(p.join(destination.path, 'txn_images'));
+  if (await destinationImages.exists()) {
+    await destinationImages.delete(recursive: true);
+  }
+  final sourceImages = Directory(p.join(source.path, 'txn_images'));
+  if (await sourceImages.exists()) {
+    await _copyDirectory(source: sourceImages, destination: destinationImages);
+  }
+}
+
+@visibleForTesting
+Future<void> addFernDocumentsToArchiveForTesting(
+  Archive archive,
+  Directory documents,
+) => _addFernDocumentsToArchive(archive, documents);
+
+@visibleForTesting
+Future<void> replaceFernDocumentsForTesting({
+  required Directory source,
+  required Directory destination,
+}) => _replaceDocuments(source: source, destination: destination);
+
+Future<void> _copyDirectory({
+  required Directory source,
+  required Directory destination,
+}) async {
+  await destination.create(recursive: true);
   await for (final entity in source.list(recursive: true, followLinks: false)) {
     if (entity is! File) continue;
     final relative = p.relative(entity.path, from: source.path);
