@@ -70,10 +70,11 @@ Transaction _fakeTransaction(
   DateTime date,
   List<String> names, {
   bool forceSpend = false,
+  bool forceIncome = false,
 }) {
   final merchant = names[i % names.length];
   final category = _merchants[merchant]!;
-  final isIncome = !forceSpend && i % 11 == 0;
+  final isIncome = forceIncome || (!forceSpend && i % 11 == 0);
   final amount = isIncome ? 1850.0 : -(12.5 + (i % 9) * 8.35);
 
   return Transaction(
@@ -125,14 +126,39 @@ List<Transaction> _fakeTransactions() {
     index++;
   }
 
-  // Fill out the rest of the history further back, starting before the 1st
-  // of this month so these never collide with the guaranteed in-month set.
-  var historyStep = 0;
-  while (index < 30) {
-    final date = startOfMonth.subtract(Duration(days: 1 + historyStep * 2));
-    txns.add(_fakeTransaction(index, date, names));
+  // Give the Stats screenshot a complete six-month history instead of a
+  // mostly empty chart. Each month gets a salary plus spending across every
+  // merchant/category, while dates stay deterministic and inside that month.
+  txns.add(
+    _fakeTransaction(
+      index,
+      startOfMonth.add(const Duration(hours: 12)),
+      names,
+      forceIncome: true,
+    ),
+  );
+  index++;
+
+  for (var monthOffset = 1; monthOffset < 6; monthOffset++) {
+    final monthStart = DateTime(now.year, now.month - monthOffset, 1);
+    final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
+
+    txns.add(
+      _fakeTransaction(
+        index,
+        monthStart.add(const Duration(hours: 12)),
+        names,
+        forceIncome: true,
+      ),
+    );
     index++;
-    historyStep++;
+
+    for (var j = 0; j < names.length; j++) {
+      final day = 2 + (j * (daysInMonth - 3)) ~/ (names.length - 1);
+      final date = DateTime(monthStart.year, monthStart.month, day, 12);
+      txns.add(_fakeTransaction(index, date, names, forceSpend: true));
+      index++;
+    }
   }
 
   return txns;
