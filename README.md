@@ -19,6 +19,19 @@ Fern brings your New Zealand bank accounts together in one calm, simple dashboar
 
 Fern connects directly to participating New Zealand banks through [Akahu](https://www.akahu.nz). Credentials are stored securely on your device.
 
+## Screenshots
+
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" alt="Fern overview with net position, account balances, and monthly spending" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" alt="Fern Everyday Account balance and transaction history" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" alt="Fern Activity screen with transaction search and filters" width="180" />
+</p>
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" alt="Fern transaction details for a New World purchase" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" alt="Fern Stats screen showing income, spending, and trends" width="180" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png" alt="Fern Settings screen with privacy and data options" width="180" />
+</p>
+
 ## Try Fern
 
 Install the app and choose **Explore demo** to look around without connecting a bank. When you're ready to use your own accounts, create a Personal App at [my.akahu.nz](https://my.akahu.nz) and enter its user and app tokens in Fern.
