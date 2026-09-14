@@ -71,11 +71,13 @@ Transaction _fakeTransaction(
   List<String> names, {
   bool forceSpend = false,
   bool forceIncome = false,
+  double? amountOverride,
 }) {
   final merchant = names[i % names.length];
   final category = _merchants[merchant]!;
   final isIncome = forceIncome || (!forceSpend && i % 11 == 0);
-  final amount = isIncome ? 1850.0 : -(12.5 + (i % 9) * 8.35);
+  final amount =
+      amountOverride ?? (isIncome ? 1850.0 : -(12.5 + (i % 9) * 8.35));
 
   return Transaction(
     id: 'trans_$i',
@@ -107,6 +109,8 @@ List<Transaction> _fakeTransactions() {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   final names = _merchants.keys.toList();
+  const monthlyIncome = [5350.0, 4980.0, 5210.0, 4760.0, 5480.0, 5090.0];
+  const monthlySpendScale = [1.12, 0.91, 1.28, 0.84, 1.05, 1.18];
   var index = 0;
 
   // Guarantee one forced-spend transaction per merchant lands within the
@@ -122,7 +126,16 @@ List<Transaction> _fakeTransactions() {
   for (var j = 0; j < names.length; j++) {
     final hoursBack = (j * monthHours) ~/ (names.length - 1);
     final date = now.subtract(Duration(hours: hoursBack));
-    txns.add(_fakeTransaction(index, date, names, forceSpend: true));
+    final baseSpend = 12.5 + (j % 9) * 8.35;
+    txns.add(
+      _fakeTransaction(
+        index,
+        date,
+        names,
+        forceSpend: true,
+        amountOverride: -baseSpend * monthlySpendScale[0],
+      ),
+    );
     index++;
   }
 
@@ -135,6 +148,7 @@ List<Transaction> _fakeTransactions() {
       startOfMonth.add(const Duration(hours: 12)),
       names,
       forceIncome: true,
+      amountOverride: monthlyIncome[0],
     ),
   );
   index++;
@@ -149,6 +163,7 @@ List<Transaction> _fakeTransactions() {
         monthStart.add(const Duration(hours: 12)),
         names,
         forceIncome: true,
+        amountOverride: monthlyIncome[monthOffset],
       ),
     );
     index++;
@@ -156,7 +171,16 @@ List<Transaction> _fakeTransactions() {
     for (var j = 0; j < names.length; j++) {
       final day = 2 + (j * (daysInMonth - 3)) ~/ (names.length - 1);
       final date = DateTime(monthStart.year, monthStart.month, day, 12);
-      txns.add(_fakeTransaction(index, date, names, forceSpend: true));
+      final baseSpend = 12.5 + (j % 9) * 8.35;
+      txns.add(
+        _fakeTransaction(
+          index,
+          date,
+          names,
+          forceSpend: true,
+          amountOverride: -baseSpend * monthlySpendScale[monthOffset],
+        ),
+      );
       index++;
     }
   }
