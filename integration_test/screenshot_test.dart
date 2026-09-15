@@ -109,8 +109,8 @@ List<Transaction> _fakeTransactions() {
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
   final names = _merchants.keys.toList();
-  const monthlyIncome = [5350.0, 4980.0, 5210.0, 4760.0, 5480.0, 5090.0];
-  const monthlySpendScale = [1.12, 0.91, 1.28, 0.84, 1.05, 1.18];
+  const monthlyIncome = [9500.0, 2600.0, 7800.0, 4200.0, 11000.0, 6500.0];
+  const monthlySpendScale = [5.2, 1.9, 8.5, 6.8, 3.3, 1.65];
   var index = 0;
 
   // Guarantee one forced-spend transaction per merchant lands within the
