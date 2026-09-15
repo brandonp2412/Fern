@@ -23,6 +23,29 @@ function Invoke-StoreCommand([string[]]$Arguments) {
   }
 }
 
+function Invoke-StoreCommandWithRetry(
+  [string[]]$Arguments,
+  [string]$Description,
+  [int]$Attempts = 5,
+  [int]$DelaySeconds = 15
+) {
+  $result = $null
+
+  for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+    $result = Invoke-StoreCommand $Arguments
+    if ($result.ExitCode -eq 0) {
+      return $result
+    }
+
+    if ($attempt -lt $Attempts) {
+      Write-Warning "$Description attempt $attempt failed with exit code $($result.ExitCode); retrying in $DelaySeconds seconds."
+      Start-Sleep -Seconds $DelaySeconds
+    }
+  }
+
+  return $result
+}
+
 function ConvertFrom-StoreJson($Output, [string]$Description) {
   $text = ($Output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
   $jsonStart = $text.IndexOf("{")
@@ -38,9 +61,9 @@ function ConvertFrom-StoreJson($Output, [string]$Description) {
 
 Set-FinalizedOutput $false
 
-$pollResult = Invoke-StoreCommand @(
+$pollResult = Invoke-StoreCommandWithRetry @(
   "submission", "poll", $ProductId, "--verbose"
-)
+) "Microsoft Store submission polling" 3 20
 
 if ($pollResult.ExitCode -ne 0) {
   $pollText = ($pollResult.Output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
@@ -64,9 +87,9 @@ if ($pollResult.ExitCode -ne 0) {
   }
 }
 
-$appResult = Invoke-StoreCommand @(
+$appResult = Invoke-StoreCommandWithRetry @(
   "apps", "get", $ProductId, "--verbose"
-)
+) "Microsoft Store application lookup"
 
 if ($appResult.ExitCode -ne 0) {
   Write-Error "Could not retrieve the Microsoft Store application."
@@ -87,14 +110,15 @@ if (-not $submissionId) {
   exit 0
 }
 
-$getResult = Invoke-StoreCommand @(
+$getResult = Invoke-StoreCommandWithRetry @(
   "submission", "rollout", "get", $ProductId,
   "--submissionId", $submissionId, "--verbose"
-)
+) "Microsoft Store rollout lookup"
 
 if ($getResult.ExitCode -ne 0) {
-  Write-Error "Could not retrieve the Microsoft Store package rollout."
-  exit $getResult.ExitCode
+  Set-FinalizedOutput $true
+  Write-Warning "Microsoft Store did not return a usable package rollout after retries. Treating it as no active rollout; the publish step will still verify Store readiness."
+  exit 0
 }
 
 try {
@@ -113,13 +137,34 @@ if (
   exit 0
 }
 
-$finalizeResult = Invoke-StoreCommand @(
+$finalizeResult = Invoke-StoreCommandWithRetry @(
   "submission", "rollout", "finalize", $ProductId,
   "--submissionId", $submissionId, "--verbose"
-)
+) "Microsoft Store rollout finalization" 3 15
 
 if ($finalizeResult.ExitCode -ne 0) {
-  Write-Error "Microsoft Store package rollout finalization failed."
+  $verifyResult = Invoke-StoreCommandWithRetry @(
+    "submission", "rollout", "get", $ProductId,
+    "--submissionId", $submissionId, "--verbose"
+  ) "Microsoft Store rollout verification" 3 10
+
+  if ($verifyResult.ExitCode -eq 0) {
+    try {
+      $verifiedRollout = ConvertFrom-StoreJson $verifyResult.Output "rollout"
+      if (
+        -not $verifiedRollout.IsPackageRollout -or
+        $verifiedRollout.PackageRolloutStatus -eq "PackageRolloutComplete"
+      ) {
+        Set-FinalizedOutput $true
+        Write-Host "Microsoft Store rollout is already complete after finalization retries."
+        exit 0
+      }
+    } catch {
+      Write-Warning $_.Exception.Message
+    }
+  }
+
+  Write-Error "Microsoft Store package rollout finalization failed after retries."
   exit $finalizeResult.ExitCode
 }
 
