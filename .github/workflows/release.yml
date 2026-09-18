@@ -90,6 +90,7 @@ jobs:
           retention-days: 7
 
   patrol:
+    if: github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +133,7 @@ jobs:
 
   version-bump:
     if: "github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')"
-    needs: [test, screenshots, patrol]
+    needs: [test, screenshots]
     runs-on: ubuntu-latest
     permissions:
       contents: write
