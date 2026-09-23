@@ -448,6 +448,7 @@ class _SetupStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fern = context.fern;
+    final scheme = Theme.of(context).colorScheme;
     final baseStyle = TextStyle(
       fontSize: 12.5,
       color: fern.slate,
@@ -460,13 +461,13 @@ class _SetupStep extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 10,
-            backgroundColor: fern.sprout.withValues(alpha: 0.3),
+            backgroundColor: scheme.primaryContainer,
             child: Text(
               number,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: fern.green,
+                color: scheme.onPrimaryContainer,
               ),
             ),
           ),

@@ -220,7 +220,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Text(
             'Net position',
             style: TextStyle(
-              color: foreground.withValues(alpha: 0.9),
+              color: dark ? foreground : foreground.withValues(alpha: 0.9),
               fontSize: 13,
             ),
           ),
@@ -260,10 +260,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 11.5),
-        ),
+        Text(label, style: TextStyle(color: color, fontSize: 11.5)),
         Text(
           masked ? '••••' : money(value),
           style: TextStyle(

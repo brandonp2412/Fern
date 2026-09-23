@@ -10,6 +10,7 @@ Future<void> _pump(
   WidgetTester tester,
   AppState state, {
   Brightness brightness = Brightness.light,
+  Color seed = Fern.green,
 }) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
@@ -19,12 +20,53 @@ Future<void> _pump(
   });
   await tester.pumpWidget(
     MaterialApp(
-      theme: Fern.buildTheme(brightness: brightness, seed: Fern.green),
+      theme: Fern.buildTheme(brightness: brightness, seed: seed),
       home: OverviewScreen(state: state),
     ),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
+}
+
+Color _composite(Color foreground, Color background) {
+  final alpha = foreground.a;
+  return Color.from(
+    alpha: 1,
+    red: foreground.r * alpha + background.r * (1 - alpha),
+    green: foreground.g * alpha + background.g * (1 - alpha),
+    blue: foreground.b * alpha + background.b * (1 - alpha),
+  );
+}
+
+double _contrast(Color foreground, Color background) {
+  final actual = foreground.a < 1
+      ? _composite(foreground, background)
+      : foreground;
+  final foregroundLuminance = actual.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+double _worstGradientContrast(Color foreground, List<Color> colors) {
+  var worst = double.infinity;
+  for (var segment = 0; segment < colors.length - 1; segment++) {
+    for (var step = 0; step <= 100; step++) {
+      final background = Color.lerp(
+        colors[segment],
+        colors[segment + 1],
+        step / 100,
+      )!;
+      final ratio = _contrast(foreground, background);
+      if (ratio < worst) worst = ratio;
+    }
+  }
+  return worst;
 }
 
 void main() {
@@ -139,8 +181,41 @@ void main() {
     final context = tester.element(find.text('Net position'));
     final palette = Theme.of(context).extension<FernPalette>()!;
 
-    expect(label.style?.color, palette.onDeep.withValues(alpha: 0.9));
+    expect(label.style?.color, palette.onDeep);
     expect(amount.style?.color, palette.onDeep);
+  });
+
+  testWidgets('overview debt label keeps AA contrast across every palette', (
+    tester,
+  ) async {
+    final state = await seededState(
+      tester: tester,
+      accounts: [anzEveryday(balance: 2450.32), amexCreditCard(owing: 512.40)],
+    );
+
+    for (final seed in FernSeed.values) {
+      for (final brightness in Brightness.values) {
+        await _pump(tester, state, brightness: brightness, seed: seed.color);
+
+        final debt = tester.widget<Text>(find.text('Debt'));
+        final hero = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere((container) {
+              final decoration = container.decoration;
+              return decoration is BoxDecoration &&
+                  decoration.gradient is LinearGradient &&
+                  decoration.borderRadius == BorderRadius.circular(24);
+            });
+        final gradient =
+            (hero.decoration! as BoxDecoration).gradient! as LinearGradient;
+
+        expect(
+          _worstGradientContrast(debt.style!.color!, gradient.colors),
+          greaterThanOrEqualTo(4.5),
+          reason: '${seed.name} ${brightness.name} debt label',
+        );
+      }
+    }
   });
 
   testWidgets('hiding balances masks the net position figure', (tester) async {

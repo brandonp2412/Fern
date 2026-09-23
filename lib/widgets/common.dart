@@ -126,10 +126,14 @@ class StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final background = Color.alphaBlend(
+      color.withValues(alpha: 0.12),
+      Theme.of(context).colorScheme.surface,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: background,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

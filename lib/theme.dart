@@ -137,8 +137,9 @@ class Fern {
         space: 1,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: palette.deep,
-        contentTextStyle: TextStyle(color: palette.onGreen),
+        backgroundColor: scheme.inverseSurface,
+        contentTextStyle: TextStyle(color: scheme.onInverseSurface),
+        actionTextColor: scheme.inversePrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

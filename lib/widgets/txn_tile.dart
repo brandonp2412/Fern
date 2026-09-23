@@ -96,15 +96,13 @@ class TxnTile extends StatelessWidget {
       );
     }
     return Container(
+      key: const ValueKey('txn-selection-indicator'),
       width: 38,
       height: 38,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: selected ? fern.green : fern.mist,
-        border: Border.all(
-          color: selected ? fern.green : fern.slate.withValues(alpha: 0.4),
-          width: 2,
-        ),
+        border: Border.all(color: selected ? fern.green : fern.slate, width: 2),
       ),
       child: selected ? Icon(Icons.check, color: fern.onGreen, size: 20) : null,
     );

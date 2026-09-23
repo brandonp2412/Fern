@@ -295,6 +295,13 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _balanceHero(Account a) {
     final fern = context.fern;
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    final foreground = dark ? fern.onDeep : fern.onGreen;
+    final secondaryForeground = foreground.withValues(alpha: 0.85);
+    final gradientColors = dark
+        ? [fern.deep, scheme.primaryContainer]
+        : [fern.deep, fern.green];
     final masked = widget.state.settings.hideBalances;
     return Container(
       width: double.infinity,
@@ -303,7 +310,7 @@ class _AccountScreenState extends State<AccountScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [fern.deep, fern.green],
+          colors: gradientColors,
         ),
         borderRadius: BorderRadius.circular(22),
       ),
@@ -325,14 +332,14 @@ class _AccountScreenState extends State<AccountScreen> {
                     Text(
                       a.connection?.name ?? '',
                       style: TextStyle(
-                        color: fern.onGreen.withValues(alpha: 0.85),
+                        color: secondaryForeground,
                         fontSize: 12.5,
                       ),
                     ),
                     Text(
                       accountTypeLabel(a.type),
                       style: TextStyle(
-                        color: fern.onGreen.withValues(alpha: 0.75),
+                        color: secondaryForeground,
                         fontSize: 12,
                       ),
                     ),
@@ -351,7 +358,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     currency: a.balance?.currency ?? 'NZD',
                   ),
             style: TextStyle(
-              color: fern.onGreen,
+              color: foreground,
               fontSize: 32,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.8,
@@ -366,26 +373,17 @@ class _AccountScreenState extends State<AccountScreen> {
                   masked
                       ? '•••• available'
                       : '${money(a.balance!.available)} available',
-                  style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.85),
-                    fontSize: 12.5,
-                  ),
+                  style: TextStyle(color: secondaryForeground, fontSize: 12.5),
                 ),
               if (a.balance?.limit != null)
                 Text(
                   masked ? '•••• limit' : '${money(a.balance!.limit)} limit',
-                  style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.85),
-                    fontSize: 12.5,
-                  ),
+                  style: TextStyle(color: secondaryForeground, fontSize: 12.5),
                 ),
               if (a.refreshed?.balance != null)
                 Text(
                   'Updated ${relativeDate(a.refreshed!.balance)}',
-                  style: TextStyle(
-                    color: fern.onGreen.withValues(alpha: 0.85),
-                    fontSize: 12.5,
-                  ),
+                  style: TextStyle(color: secondaryForeground, fontSize: 12.5),
                 ),
             ],
           ),
@@ -393,10 +391,7 @@ class _AccountScreenState extends State<AccountScreen> {
             const SizedBox(height: 8),
             Text(
               a.formattedAccount!,
-              style: TextStyle(
-                color: fern.onGreen.withValues(alpha: 0.7),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: secondaryForeground, fontSize: 12),
             ),
           ],
         ],

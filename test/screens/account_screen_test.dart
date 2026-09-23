@@ -12,7 +12,13 @@ import 'package:http/testing.dart';
 
 import '../support/fixtures.dart';
 
-Future<void> _pump(WidgetTester tester, AppState state, Account account) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AppState state,
+  Account account, {
+  Brightness brightness = Brightness.light,
+  Color seed = Fern.green,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -21,12 +27,53 @@ Future<void> _pump(WidgetTester tester, AppState state, Account account) async {
   });
   await tester.pumpWidget(
     MaterialApp(
-      theme: Fern.buildTheme(brightness: Brightness.light, seed: Fern.green),
+      theme: Fern.buildTheme(brightness: brightness, seed: seed),
       home: AccountScreen(state: state, account: account),
     ),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
+}
+
+Color _composite(Color foreground, Color background) {
+  final alpha = foreground.a;
+  return Color.from(
+    alpha: 1,
+    red: foreground.r * alpha + background.r * (1 - alpha),
+    green: foreground.g * alpha + background.g * (1 - alpha),
+    blue: foreground.b * alpha + background.b * (1 - alpha),
+  );
+}
+
+double _contrast(Color foreground, Color background) {
+  final actual = foreground.a < 1
+      ? _composite(foreground, background)
+      : foreground;
+  final foregroundLuminance = actual.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+double _worstGradientContrast(Color foreground, List<Color> colors) {
+  var worst = double.infinity;
+  for (var segment = 0; segment < colors.length - 1; segment++) {
+    for (var step = 0; step <= 100; step++) {
+      final background = Color.lerp(
+        colors[segment],
+        colors[segment + 1],
+        step / 100,
+      )!;
+      final ratio = _contrast(foreground, background);
+      if (ratio < worst) worst = ratio;
+    }
+  }
+  return worst;
 }
 
 void main() {
@@ -59,6 +106,63 @@ void main() {
 
     expect(find.text('ANZ Everyday'), findsOneWidget);
     expect(find.text("\$2,450.32"), findsOneWidget);
+  });
+
+  testWidgets('balance hero keeps AA contrast across every theme palette', (
+    tester,
+  ) async {
+    final a = anzEveryday(balance: 2450.32);
+    final state = await seededState(
+      tester: tester,
+      accounts: [a],
+      api: fakeApi(
+        client: MockClient((req) async {
+          if (req.url.path.contains('/transactions/pending')) {
+            return http.Response(
+              jsonEncode({'success': true, 'items': []}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({'success': true, 'items': [], 'cursor': null}),
+            200,
+          );
+        }),
+      ),
+      db: testDb(),
+    );
+
+    for (final seed in FernSeed.values) {
+      for (final brightness in Brightness.values) {
+        await _pump(tester, state, a, brightness: brightness, seed: seed.color);
+
+        final amount = tester
+            .widgetList<Text>(find.textContaining(r'$2,450'))
+            .firstWhere((text) => text.style?.fontSize == 32);
+        final bank = tester.widget<Text>(find.text('ANZ'));
+        final hero = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere((container) {
+              final decoration = container.decoration;
+              return decoration is BoxDecoration &&
+                  decoration.gradient is LinearGradient &&
+                  decoration.borderRadius == BorderRadius.circular(22);
+            });
+        final gradient =
+            (hero.decoration! as BoxDecoration).gradient! as LinearGradient;
+
+        expect(
+          _worstGradientContrast(amount.style!.color!, gradient.colors),
+          greaterThanOrEqualTo(4.5),
+          reason: '${seed.name} ${brightness.name} balance',
+        );
+        expect(
+          _worstGradientContrast(bank.style!.color!, gradient.colors),
+          greaterThanOrEqualTo(4.5),
+          reason: '${seed.name} ${brightness.name} metadata',
+        );
+      }
+    }
   });
 
   testWidgets('shows masked balance when hideBalances is on', (tester) async {
