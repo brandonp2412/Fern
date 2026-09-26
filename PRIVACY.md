@@ -36,4 +36,4 @@ This policy may be updated when Fern's features or legal obligations change. The
 
 ## Contact
 
-For privacy questions, contact Brandon Presley at <brandon@presley.nz>.
+For privacy questions, contact Brandon Dick at <brandon@presley.nz>.
