@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:fern/db/app_database.dart';
 import 'package:fern/models/account.dart';
+import 'package:fern/models/page.dart' as models;
 import 'package:fern/models/transaction.dart';
+import 'package:fern/models/user.dart';
 import 'package:fern/screens/home_shell.dart';
 import 'package:fern/services/akahu_api.dart';
 import 'package:fern/state/app_settings.dart';
@@ -12,15 +14,86 @@ import 'package:fern/widgets/txn_tile.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/testing.dart';
 import 'package:integration_test/integration_test.dart';
 
-// HomeShell.initState() unconditionally calls state.load(), which would
-// otherwise hit the real Akahu API with fake tokens and hang waiting for
-// network from inside the Waydroid sandbox. Fail instantly instead.
-final _offlineClient = MockClient(
-  (request) async => throw Exception('offline (screenshot test)'),
-);
+// HomeShell.initState() unconditionally calls state.load(). Keep screenshot
+// runs deterministic and fully offline without deliberately throwing errors:
+// the screenshot harness treats any app/framework error log as a test failure.
+class _ScreenshotAkahuClient implements AkahuClient {
+  @override
+  Future<User> getMe() async =>
+      User(id: 'screenshot-user', email: 'screenshots@example.invalid');
+
+  @override
+  Future<List<Account>> getAccounts() async => _fakeAccounts();
+
+  @override
+  Future<Account> getAccount(String id) async =>
+      _fakeAccounts().firstWhere((account) => account.id == id);
+
+  @override
+  Future<models.Page<Transaction>> getAccountTransactions(
+    String accountId, {
+    String? start,
+    String? end,
+    String? cursor,
+  }) async => models.Page(
+    items: _fakeTransactions()
+        .where((transaction) => transaction.account == accountId)
+        .toList(),
+  );
+
+  @override
+  Future<List<PendingTransaction>> getAccountPendingTransactions(
+    String accountId,
+  ) async => const [];
+
+  @override
+  Future<models.Page<Transaction>> getTransactions({
+    String? start,
+    String? end,
+    String? cursor,
+  }) async => models.Page(items: _fakeTransactions());
+
+  @override
+  Future<Transaction> getTransaction(String id) async =>
+      _fakeTransactions().firstWhere((transaction) => transaction.id == id);
+
+  @override
+  Future<List<PendingTransaction>> getPendingTransactions() async => const [];
+
+  @override
+  Future<List<Transaction>> getTransactionsByIds(List<String> ids) async {
+    final wanted = ids.toSet();
+    return _fakeTransactions()
+        .where((transaction) => wanted.contains(transaction.id))
+        .toList();
+  }
+
+  @override
+  Future<void> deleteAuthorisation(String id) async {}
+
+  @override
+  Future<void> refreshAll() async {}
+
+  @override
+  Future<void> refresh(String id) async {}
+
+  @override
+  Future<void> reportTransaction(
+    String transactionId, {
+    required String type,
+    String? otherId,
+    List<String>? fields,
+    String? comment,
+  }) async {}
+
+  @override
+  Future<void> revokeToken() async {}
+
+  @override
+  void close() {}
+}
 
 const _merchants = <String, String>{
   'New World': 'Groceries',
@@ -196,11 +269,7 @@ Future<AppState> _seedState() async {
   await db.saveTransactions(_fakeTransactions());
 
   final settings = AppSettings()..seedColor = Fern.green;
-  final api = AkahuApi(
-    userToken: 'screenshot',
-    appToken: 'screenshot',
-    client: _offlineClient,
-  );
+  final api = _ScreenshotAkahuClient();
   final state = AppState(api, settings, db: db);
   addTearDown(state.dispose);
 
